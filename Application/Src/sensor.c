@@ -22,15 +22,20 @@ void PP_sensorFunc(void *argument) {
 
 	for(;;) {
 		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_11);
+
 	    HAL_ADC_Start(&hadc1);
+	    HAL_ADC_Start(&hadc2);
+	    HAL_ADC_Start(&hadc3);
+
+
 	    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	    PP_sensorData[PP_PRESSURE_1] = HAL_ADC_GetValue(&hadc1);
-	    HAL_ADC_Start(&hadc2);
 	    HAL_ADC_PollForConversion(&hadc2, HAL_MAX_DELAY);
 	    PP_sensorData[PP_PRESSURE_2] = HAL_ADC_GetValue(&hadc2);
-	    HAL_ADC_Start(&hadc3);
 	    HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
 	    PP_sensorData[PP_TEMPERATURE_1] = HAL_ADC_GetValue(&hadc3);
+
+
 	    vTaskDelayUntil( &lastWakeTime, period );
 
 	}

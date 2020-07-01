@@ -12,6 +12,8 @@
 #include "cmsis_os.h"
 
 
+#ifdef ARC_EN_CIEL
+
 #define HSV_HUE_SEXTANT		256
 #define HSV_HUE_STEPS		(6 * HSV_HUE_SEXTANT)
 
@@ -99,7 +101,7 @@ void hsv2rgb(uint16_t h, uint8_t s, uint8_t v, uint8_t *r, uint8_t *g , uint8_t 
 			*r = d >> 16;
 		}
 }
-/*   ARCENCIEL
+
 void PP_blinkerFunc(void *argument) {
 	  uint8_t r, g, b, s, v;
 	  s = 255;
@@ -116,7 +118,9 @@ void PP_blinkerFunc(void *argument) {
 		 osDelay(100);
 	  }
 }
-*/
+
+#else
+
 void PP_blinkerFunc(void *argument) {
 	  uint16_t r, g, b;
 	  for(;;)
@@ -129,6 +133,7 @@ void PP_blinkerFunc(void *argument) {
 	  }
 }
 
+#endif
 
 
 
