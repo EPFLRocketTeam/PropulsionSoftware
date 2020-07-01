@@ -22,11 +22,13 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <threads.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,14 +95,18 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_ADC3_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_1);
+  HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_2);
+  HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_3);
+
 
   /* USER CODE END 2 */
 
   /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init(); 
-  PP_initThreads();
   /* Start scheduler */
   osKernelStart();
  

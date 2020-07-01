@@ -10,6 +10,7 @@
 #include <threads.h>
 #include <blinker.h>
 #include <main.h>
+#include <led.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
@@ -42,6 +43,8 @@ const osThreadAttr_t PP_blinker_attributes = {
 
 
 void PP_initThreads(void) {
+
+
 	//blinker init
 	PP_blinkerHandle = osThreadNew(PP_blinkerFunc, NULL, &PP_blinker_attributes);
 
