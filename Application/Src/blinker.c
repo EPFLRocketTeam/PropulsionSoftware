@@ -8,6 +8,7 @@
 #include <blinker.h>
 #include <main.h>
 #include <led.h>
+#include <sensor.h>
 #include "cmsis_os.h"
 
 
@@ -98,9 +99,8 @@ void hsv2rgb(uint16_t h, uint8_t s, uint8_t v, uint8_t *r, uint8_t *g , uint8_t 
 			*r = d >> 16;
 		}
 }
-
+/*   ARCENCIEL
 void PP_blinkerFunc(void *argument) {
-	  PP_setLed(0, 0, 10);
 	  uint8_t r, g, b, s, v;
 	  s = 255;
 	  v = 255;
@@ -116,6 +116,20 @@ void PP_blinkerFunc(void *argument) {
 		 osDelay(100);
 	  }
 }
+*/
+void PP_blinkerFunc(void *argument) {
+	  uint16_t r, g, b;
+	  for(;;)
+	  {
+		  r = PP_getData(PP_PRESSURE_1);
+		  g = PP_getData(PP_PRESSURE_2);
+		  b = PP_getData(PP_TEMPERATURE_1);
+		 PP_setLed((r>>4)/5, (g>>4)/5, (b>>4)/5);
+		 osDelay(100);
+	  }
+}
+
+
 
 
 

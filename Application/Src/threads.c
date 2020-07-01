@@ -9,12 +9,10 @@
 
 #include <threads.h>
 #include <blinker.h>
+#include <sensor.h>
 #include <main.h>
 #include <led.h>
-#include "FreeRTOS.h"
-#include "task.h"
-#include "main.h"
-#include "cmsis_os.h"
+
 
 typedef StaticTask_t osStaticThreadDef_t;
 
@@ -34,6 +32,20 @@ const osThreadAttr_t PP_blinker_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 
+//sensor thread
+
+osThreadId_t PP_sensorHandle;
+uint32_t PP_sensorBuffer[ 128 ];
+osStaticThreadDef_t PP_sensorControlBlock;
+const osThreadAttr_t PP_sensor_attributes = {
+  .name = "PP_sensor",
+  .stack_mem = &PP_sensorBuffer[0],
+  .stack_size = sizeof(PP_sensorBuffer),
+  .cb_mem = &PP_sensorControlBlock,
+  .cb_size = sizeof(PP_sensorControlBlock),
+  .priority = (osPriority_t) osPriorityRealtime,
+};
+
 
 
 
@@ -47,6 +59,8 @@ void PP_initThreads(void) {
 
 	//blinker init
 	PP_blinkerHandle = osThreadNew(PP_blinkerFunc, NULL, &PP_blinker_attributes);
+	//sensor init
+	PP_sensorHandle = osThreadNew(PP_sensorFunc, NULL, &PP_sensor_attributes);
 
 
 }
