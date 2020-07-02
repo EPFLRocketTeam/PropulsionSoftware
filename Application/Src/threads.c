@@ -57,7 +57,7 @@ const osThreadAttr_t PP_sensor_attributes = {
 void PP_initThreads(void) {
 
 
-	//blinker init
+	//control thread init
 	PP_controlHandle = osThreadNew(PP_controlFunc, NULL, &PP_control_attributes);
 	//sensor init
 	PP_sensorInit();

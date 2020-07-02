@@ -15,6 +15,7 @@
 
 static uint16_t PP_sensorData[PP_NB_SENSOR];
 static uint16_t adcBuffer[PP_NB_SENSOR];
+//static uint32_t last_measure_time;
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 
