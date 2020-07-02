@@ -13,11 +13,13 @@ typedef enum {
 	PP_PRESSURE_1,
 	PP_PRESSURE_2,
 	PP_TEMPERATURE_1,
+	PP_TEMPERATURE_2,
+	PP_TEMPERATURE_3,
 	PP_NB_SENSOR
 }PP_SENSOR_t;
 
 
-
+void PP_sensorInit(void);
 
 void PP_sensorFunc(void *argument);
 

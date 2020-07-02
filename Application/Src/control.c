@@ -1,11 +1,11 @@
 /*
- * blinker.c
+ * control.c
  *
  * author: Iacopo Sprenger
  */
 
 
-#include <blinker.h>
+#include <control.h>
 #include <main.h>
 #include <led.h>
 #include <sensor.h>
@@ -121,7 +121,7 @@ void PP_blinkerFunc(void *argument) {
 
 #else
 
-void PP_blinkerFunc(void *argument) {
+void PP_controlFunc(void *argument) {
 	  uint16_t r, g, b;
 	  for(;;)
 	  {

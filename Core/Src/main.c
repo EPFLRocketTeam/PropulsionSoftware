@@ -22,6 +22,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "dma.h"
 #include "tim.h"
 #include "gpio.h"
 
@@ -92,14 +93,17 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
-  MX_ADC2_Init();
-  MX_ADC3_Init();
   MX_TIM8_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_2);
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_3);
+
+
+
 
 
   /* USER CODE END 2 */

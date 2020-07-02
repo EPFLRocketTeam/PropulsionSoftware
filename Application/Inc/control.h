@@ -1,14 +1,15 @@
 /*
- * blinker.h
+ * control.h
  *
  * author: Iacopo Sprenger
  */
 
 
-#ifndef BLINKER_H
-#define BLINKER_H
+#ifndef CONTROL_H
+#define CONTROL_H
 
 void PP_blinkerFunc(void *argument);
+void PP_controlFunc(void *argument);
 
 
 #endif
