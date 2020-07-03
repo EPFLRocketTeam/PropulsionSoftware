@@ -26,6 +26,7 @@
 #include "fatfs.h"
 #include "sdio.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -100,6 +101,7 @@ int main(void)
   MX_TIM8_Init();
   MX_TIM2_Init();
   MX_SDIO_SD_Init();
+  MX_USART6_UART_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_1);

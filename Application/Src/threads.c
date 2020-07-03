@@ -12,6 +12,7 @@
 #include <sensor.h>
 #include <main.h>
 #include <led.h>
+#include <comm.h>
 
 
 typedef StaticTask_t osStaticThreadDef_t;
@@ -47,6 +48,18 @@ const osThreadAttr_t PP_sensor_attributes = {
 };
 */
 
+osThreadId_t PP_commHandle;
+uint32_t PP_commBuffer[ 128 ];
+osStaticThreadDef_t PP_commControlBlock;
+const osThreadAttr_t PP_comm_attributes = {
+  .name = "PP_comm",
+  .stack_mem = &PP_commBuffer[0],
+  .stack_size = sizeof(PP_commBuffer),
+  .cb_mem = &PP_commControlBlock,
+  .cb_size = sizeof(PP_commControlBlock),
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
 
 
 
@@ -63,6 +76,8 @@ void PP_initThreads(void) {
 	PP_sensorInit();
 	//plus besoin d'un thread pour les capteurs vu que tout est géré par tim2 et adc+dma
 	//PP_sensorHandle = osThreadNew(PP_sensorFunc, NULL, &PP_sensor_attributes);
+
+	PP_commHandle = osThreadNew(PP_commFunc, NULL, &PP_comm_attributes);
 
 
 }
