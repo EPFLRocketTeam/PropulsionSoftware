@@ -48,6 +48,7 @@ const osThreadAttr_t PP_sensor_attributes = {
 };
 */
 
+/*
 osThreadId_t PP_commHandle;
 uint32_t PP_commBuffer[ 128 ];
 osStaticThreadDef_t PP_commControlBlock;
@@ -60,7 +61,7 @@ const osThreadAttr_t PP_comm_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 
-
+*/
 
 
 
@@ -77,7 +78,9 @@ void PP_initThreads(void) {
 	//plus besoin d'un thread pour les capteurs vu que tout est géré par tim2 et adc+dma
 	//PP_sensorHandle = osThreadNew(PP_sensorFunc, NULL, &PP_sensor_attributes);
 
-	PP_commHandle = osThreadNew(PP_commFunc, NULL, &PP_comm_attributes);
+	PP_commInit();
+	//pas de comm thread pour l'instant!
+	//PP_commHandle = osThreadNew(PP_commFunc, NULL, &PP_comm_attributes);
 
 
 }
