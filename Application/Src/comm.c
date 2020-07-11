@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <sensor.h>
 #include <control.h>
+#include <semphr.h>
+#include <maxon_comm.h>
 
 
 #define MENU_NAME_LEN 	16
@@ -20,7 +22,26 @@
 #define NB_MENU_ITEM 	(sizeof(menu)/sizeof(MENU_ITEM_t))
 
 
-static uint8_t rxBuffer;
+#define LONG_TIME 0xffff
+#define MSG_SIZE 64
+
+
+static uint8_t rxBuffer6;
+static uint8_t rxBuffer1;
+static uint8_t msgBuffer[MSG_SIZE];
+
+
+static SemaphoreHandle_t uart6_sem = NULL;
+static StaticSemaphore_t uart6_semBuffer;
+
+static SemaphoreHandle_t uart1_sem = NULL;
+static StaticSemaphore_t uart1_semBuffer;
+
+
+typedef enum {
+	MENU_SELECTION,
+	MENU_ENTRY
+}MENU_CONTEXT_t;
 
 
 
@@ -32,12 +53,14 @@ typedef struct {
 }MENU_ITEM_t;
 
 
-
+static MENU_CONTEXT_t menu_context;
 
 void show_menu(void);
 void toggle_solenoid(void);
 void read_sensors(void);
 void sys_diag(void);
+void send_msg(void);
+void maxon_test(void);
 
 
 
@@ -58,9 +81,19 @@ MENU_ITEM_t menu[] = {
 				.func = read_sensors
 		},
 		{
-				.id = 2,
+				.id = 3,
 				.name = "SYS DIAG",
 				.func = sys_diag
+		},
+		{
+				.id = 4,
+				.name = "SEND MSG",
+				.func = send_msg
+		},
+		{
+				.id = 5,
+				.name = "TEST_MAXON",
+				.func = maxon_test
 		},
 
 };
@@ -160,31 +193,103 @@ void sys_diag(void) {
 	HAL_UART_Transmit(&huart6, (uint8_t *) str, strlen(str), 500);
 }
 
+void send_msg(void) {
+	menu_context = MENU_ENTRY;
+}
+
+static uint8_t sendBuffer[MAX_FRAME_LEN];
+static uint16_t test_data[] = {
+		0x3456,
+		0x9066,
+		0xff90
+};
+
+void maxon_test(void) {
+	uint16_t length = Create_frame(sendBuffer, 0x23, 3, test_data);
+	HAL_UART_Transmit(&huart6, sendBuffer, length, 500);
+}
+
+
+
+int32_t PP_read_entry(uint8_t entry_buffer, uint8_t * exit_buffer, uint16_t exit_buffer_size) {
+	static uint16_t bytes_read = 0;
+	if(bytes_read<exit_buffer_size && entry_buffer != '\n') {
+		exit_buffer[bytes_read] = entry_buffer;
+		bytes_read++;
+	}else{
+		int32_t tmp = bytes_read;
+		bytes_read = 0;
+		return tmp;
+	}
+	return -1;
+
+}
+
+
+
+
+
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	uint8_t i = rxBuffer-'0';
-	if(i < NB_MENU_ITEM) {
-		menu[i].func();
+	//HAL callbacks are called from ISR so they are part of the ISR!!!
+
+	if(huart->Instance == huart6.Instance) {
+		static BaseType_t xHigherPriorityTaskWoken6;
+		xHigherPriorityTaskWoken6 = pdFALSE;
+		xSemaphoreGiveFromISR( uart6_sem, &xHigherPriorityTaskWoken6 );
 	}
+	if(huart->Instance == huart1.Instance) {
+		static BaseType_t xHigherPriorityTaskWoken1;
+		xHigherPriorityTaskWoken1 = pdFALSE;
+		xSemaphoreGiveFromISR( uart1_sem, &xHigherPriorityTaskWoken1 );
+	}
+
 }
 
 
 void PP_commInit(void) {
-	HAL_UART_Receive_DMA(&huart6, &rxBuffer, 1);
+	rxBuffer6 = 0;
+	rxBuffer1 = 0;
+	HAL_UART_Receive_DMA(&huart6, &rxBuffer6, 1);
+	HAL_UART_Receive_DMA(&huart1, &rxBuffer1, 1);
+	uart6_sem = xSemaphoreCreateBinaryStatic( &uart6_semBuffer );
+	uart1_sem = xSemaphoreCreateBinaryStatic( &uart1_semBuffer );
+
+	menu_context = MENU_SELECTION;
+
 	show_menu();
 }
 
 
 
 
-void PP_commFunc(void *argument) {
-
-
-
-
+void PP_comm6Func(void *argument) {
 	for(;;) {
 
-		osDelay(1000);
+		if( xSemaphoreTake( uart6_sem, LONG_TIME ) == pdTRUE ) {
+			if(menu_context == MENU_SELECTION) {
+				uint8_t i = rxBuffer6-'0';
+				if(i < NB_MENU_ITEM) {
+					menu[i].func();
+				}
+			} else if(menu_context == MENU_ENTRY){
+				int32_t msg_len = PP_read_entry(rxBuffer6, msgBuffer, MSG_SIZE);
+				if(msg_len != -1) {
+					HAL_UART_Transmit(&huart6, msgBuffer, msg_len, 500);
+					menu_context = MENU_SELECTION;
+				}
+			}
+		}
+	}
+}
+
+void PP_comm1Func(void *argument) {
+
+	for(;;) {
+		if( xSemaphoreTake( uart1_sem, LONG_TIME ) == pdTRUE ) {
+
+		}
+
 	}
 }

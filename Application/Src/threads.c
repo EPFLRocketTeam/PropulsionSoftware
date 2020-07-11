@@ -48,20 +48,32 @@ const osThreadAttr_t PP_sensor_attributes = {
 };
 */
 
-/*
-osThreadId_t PP_commHandle;
-uint32_t PP_commBuffer[ 128 ];
-osStaticThreadDef_t PP_commControlBlock;
-const osThreadAttr_t PP_comm_attributes = {
-  .name = "PP_comm",
-  .stack_mem = &PP_commBuffer[0],
-  .stack_size = sizeof(PP_commBuffer),
-  .cb_mem = &PP_commControlBlock,
-  .cb_size = sizeof(PP_commControlBlock),
+
+osThreadId_t PP_comm6Handle;
+uint32_t PP_comm6Buffer[ 128 ];
+osStaticThreadDef_t PP_comm6ControlBlock;
+const osThreadAttr_t PP_comm6_attributes = {
+  .name = "PP_comm6",
+  .stack_mem = &PP_comm6Buffer[0],
+  .stack_size = sizeof(PP_comm6Buffer),
+  .cb_mem = &PP_comm6ControlBlock,
+  .cb_size = sizeof(PP_comm6ControlBlock),
   .priority = (osPriority_t) osPriorityNormal,
 };
 
-*/
+osThreadId_t PP_comm1Handle;
+uint32_t PP_comm1Buffer[ 128 ];
+osStaticThreadDef_t PP_comm1ControlBlock;
+const osThreadAttr_t PP_comm1_attributes = {
+  .name = "PP_comm1",
+  .stack_mem = &PP_comm1Buffer[0],
+  .stack_size = sizeof(PP_comm1Buffer),
+  .cb_mem = &PP_comm1ControlBlock,
+  .cb_size = sizeof(PP_comm1ControlBlock),
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+
 
 
 
@@ -79,8 +91,9 @@ void PP_initThreads(void) {
 	//PP_sensorHandle = osThreadNew(PP_sensorFunc, NULL, &PP_sensor_attributes);
 
 	PP_commInit();
-	//pas de comm thread pour l'instant!
-	//PP_commHandle = osThreadNew(PP_commFunc, NULL, &PP_comm_attributes);
+	//comm thread va gerer les interruptions de "basse importance"
+	PP_comm6Handle = osThreadNew(PP_comm6Func, NULL, &PP_comm6_attributes);
+	PP_comm1Handle = osThreadNew(PP_comm1Func, NULL, &PP_comm1_attributes);
 
 
 }

@@ -9,7 +9,8 @@
 
 
 void PP_commInit(void);
-void PP_commFunc(void *argument);
+void PP_comm1Func(void *argument);
+void PP_comm6Func(void *argument);
 
 
 #endif

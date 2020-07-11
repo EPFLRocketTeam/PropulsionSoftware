@@ -22,6 +22,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "crc.h"
 #include "dma.h"
 #include "fatfs.h"
 #include "sdio.h"
@@ -103,6 +104,8 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_USART6_UART_Init();
   MX_FATFS_Init();
+  MX_CRC_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_2);
