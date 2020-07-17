@@ -70,7 +70,8 @@ void PP_controlFunc(void *argument) {
 		r = PP_getData(PP_PRESSURE_1);
 		g = PP_getData(PP_PRESSURE_2);
 		b = PP_getData(PP_TEMPERATURE_1);
-		PP_setLed((r>>4)/5, (g>>4)/5, (b>>4)/5);
+		//PP_setLed((r>>4)/5, (g>>4)/5, (b>>4)/5);
+		PP_setLed(0, 0, 5);
 		osDelay(100);
 	  }
 }

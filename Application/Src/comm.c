@@ -207,16 +207,12 @@ void send_msg(void) {
 	menu_context = MENU_ENTRY;
 }
 
-static uint8_t sendBuffer[MAX_FRAME_LEN];
-static uint16_t test_data[] = {
-		0x3456,
-		0x9066,
-		0xff90
-};
+
 
 void maxon_test(void) {
-	uint16_t length = Create_frame(sendBuffer, 0x23, 3, test_data);
-	HAL_UART_Transmit(&huart6, sendBuffer, length, 500);
+	static uint8_t data[DATA_SIZE];
+	Read_object(0x6402, 0x00, data);
+	HAL_UART_Transmit(&huart6, (uint8_t *) data, DATA_SIZE, 500);
 }
 
 
@@ -298,7 +294,7 @@ void PP_comm1Func(void *argument) {
 
 	for(;;) {
 		if( xSemaphoreTake( uart1_sem, LONG_TIME ) == pdTRUE ) {
-
+			Reception(rxBuffer1);
 		}
 
 	}
