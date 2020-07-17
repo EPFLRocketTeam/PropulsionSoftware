@@ -67,7 +67,6 @@ void PP_controlFunc(void *argument) {
 
 	static uint16_t r, g, b;
 	for(;;) {
-		self_diagnose();
 		r = PP_getData(PP_PRESSURE_1);
 		g = PP_getData(PP_PRESSURE_2);
 		b = PP_getData(PP_TEMPERATURE_1);

@@ -41,7 +41,7 @@ uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, u
 	frameBuffer[1] = STX;
 	frameBuffer[2] = opcode;
 	frameBuffer[3] = data_len;
-	crcDataArray[0] = frameBuffer[2];
+	crcDataArray[0] = (frameBuffer[2]<<8) | frameBuffer[3];
 	uint16_t counter=4;
 	for(uint16_t i = 0; i < data_len; i++) {
 		frameBuffer[counter++] = data[i];
@@ -85,6 +85,7 @@ typedef enum {
 
 int32_t Decode_frame(uint8_t recvBuffer, uint8_t * opcode, uint16_t * data) {
 	//recieve order DLE STX OPCODE LEN DATA[0]LOW DATA[0]HIGH ....
+	static uint16_t crc = 0;
 	static DECODE_STATE_t d_state = WAITING_DLE;
 	static uint8_t stuffing = 0;
 	static uint16_t len = 0;
@@ -114,13 +115,15 @@ int32_t Decode_frame(uint8_t recvBuffer, uint8_t * opcode, uint16_t * data) {
 	}
 	if(d_state == WAITING_LEN) {
 		len = recvBuffer*2;  //mult by 2 to have the length in bytes!
+		crcDataArray[0] = 0;
+		crcDataArray[0] = ((*opcode)<<8) | recvBuffer;
 		d_state = WAITING_DATA;
 		return -1;
 	}
 
 	if(d_state == WAITING_DATA) {
 		if(len==0) {
-			d_state == WAITING_CRC1;
+			d_state = WAITING_CRC1;
 		}
 		if(len%2 == 1) {
 			data[--len] |= recvBuffer<<8;
@@ -130,18 +133,23 @@ int32_t Decode_frame(uint8_t recvBuffer, uint8_t * opcode, uint16_t * data) {
 		return -1;
 	}
 	if(d_state == WAITING_CRC1) {
+		crc = 0;
+		crc = recvBuffer<<8;
 		d_state = WAITING_CRC2;
 		return -1;
 	}
 	if(d_state == WAITING_CRC2) {
+		crc |= recvBuffer;
 		d_state = WAITING_DLE;
-		return 0;
+		uint16_t array_len = len+1; //we add 1 for the opcode and len fields
+		if(crc == CalcFieldCRC(crcDataArray, array_len)) {
+			return len;
+		}else {
+			return 0;
+		}
 	}
 
 	return -1;
-
-
-
 
 }
 

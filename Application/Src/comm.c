@@ -38,6 +38,16 @@ static SemaphoreHandle_t uart1_sem = NULL;
 static StaticSemaphore_t uart1_semBuffer;
 
 
+//new comm "layout"
+/*
+ * there will be a "add_to_comm_buffer function that will add strings to a circular buffer
+ * the contents of the buffer will be sent to the uart whenever there is need to transmit something.
+ * the reception for each uart/can interface is handled in a different thread.
+ */
+
+
+
+
 typedef enum {
 	MENU_SELECTION,
 	MENU_ENTRY
