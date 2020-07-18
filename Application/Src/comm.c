@@ -212,7 +212,7 @@ void send_msg(void) {
 void maxon_test(void) {
 	static uint8_t data[DATA_SIZE];
 	Read_object(0x6402, 0x00, data);
-	HAL_UART_Transmit(&huart6, (uint8_t *) data, DATA_SIZE, 500);
+	//HAL_UART_Transmit(&huart6, (uint8_t *) data, DATA_SIZE, 500);
 }
 
 
@@ -263,29 +263,29 @@ void PP_commInit(void) {
 	uart1_sem = xSemaphoreCreateBinaryStatic( &uart1_semBuffer );
 
 	menu_context = MENU_SELECTION;
-
-	show_menu();
+	osDelay(1000);
+	maxon_test();
 }
 
 
 
-
+//I use uart6 instead of 1 because 1 is broken!!!!!
 void PP_comm6Func(void *argument) {
 	for(;;) {
 
 		if( xSemaphoreTake( uart6_sem, LONG_TIME ) == pdTRUE ) {
-			if(menu_context == MENU_SELECTION) {
-				uint8_t i = rxBuffer6-'0';
-				if(i < NB_MENU_ITEM) {
-					menu[i].func();
-				}
-			} else if(menu_context == MENU_ENTRY){
-				int32_t msg_len = PP_read_entry(rxBuffer6, msgBuffer, MSG_SIZE);
-				if(msg_len != -1) {
-					HAL_UART_Transmit(&huart6, msgBuffer, msg_len, 500);
-					menu_context = MENU_SELECTION;
-				}
-			}
+//			if(menu_context == MENU_SELECTION) {
+//				uint8_t i = rxBuffer6-'0';
+//				if(i < NB_MENU_ITEM) {
+//					menu[i].func();
+//				}
+//			} else if(menu_context == MENU_ENTRY){
+//				int32_t msg_len = PP_read_entry(rxBuffer6, msgBuffer, MSG_SIZE);
+//				if(msg_len != -1) {
+//					HAL_UART_Transmit(&huart6, msgBuffer, msg_len, 500);
+//					menu_context = MENU_SELECTION;
+//				}
+//			}
 		}
 	}
 }

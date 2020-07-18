@@ -44,6 +44,10 @@ uint16_t CalcFieldCRC(uint16_t *pDataArray, uint16_t ArrayLength) {
 //CRC calculated before sync and before data stuffing!!
 //framebuffer size must be MAX_FRAME_LEN
 //data_len in WORDS
+
+//bytes are invertes (LSB first) in crc calculation, (which is correct)
+//but I STILL HAVE TO INVERT BYTES IN FRAME!!!!!!
+
 uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, uint8_t * data) {
 	uint16_t array_len = data_len+2; //we add 1 for the opcode and len fields
 	frameBuffer[0] = DLE;
@@ -52,14 +56,16 @@ uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, u
 	frameBuffer[3] = data_len;
 	crcDataArray[0] = (data_len<<8) | opcode;
 	uint16_t counter=4;
-	for(uint16_t i = 0; i < data_len*2; i++) {
-		frameBuffer[counter++] = data[i];
+	for(uint16_t i = 0; i < data_len; i++) {
+		frameBuffer[counter++] = data[2*i];
 		if(frameBuffer[counter-1] == DLE) {
 			frameBuffer[counter++] = DLE;
 		}
-		if(i%2==0) {
-			crcDataArray[i/2+1] = (data[i+1]<<8) |  data[i];
+		frameBuffer[counter++] = data[2*i+1];
+		if(frameBuffer[counter-1] == DLE) {
+			frameBuffer[counter++] = DLE;
 		}
+		crcDataArray[i+1] = (data[2*i+1]<<8) |  data[2*i];
 	}
 	crcDataArray[array_len-1] = 0x0000;
 	uint16_t crc = CalcFieldCRC(crcDataArray, array_len);
@@ -171,6 +177,7 @@ void Reception(uint8_t recvBuffer) {
 }
 
 //returns the comm error code
+
 uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	static uint8_t send_data[WRITE_OBJECT_LEN*2];
 	static uint16_t length = 0;
@@ -182,7 +189,7 @@ uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 		send_data[3+i] = data[i];
 	}
 	length = Create_frame(send_frame, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
-	HAL_UART_Transmit(&huart1, send_frame, length, 500);
+	HAL_UART_Transmit(&huart6, send_frame, length, 500);
 //	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
 //		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 //	} else {
@@ -198,7 +205,7 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	send_data[2] = index >> 8;
 	send_data[3] = subindex;
 	length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
-	HAL_UART_Transmit(&huart1, send_frame, length, 500);
+	HAL_UART_Transmit(&huart6, send_frame, length, 500);
 //	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
 //		for(uint8_t i = 0; i < DATA_SIZE; i++){
 //				data[i] = recieved_data[3+i];
