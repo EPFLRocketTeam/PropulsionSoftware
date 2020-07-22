@@ -52,11 +52,11 @@ uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, u
 	uint16_t array_len = data_len+2; //we add 1 for the opcode and len fields
 	frameBuffer[0] = DLE;
 	frameBuffer[1] = STX;
-	frameBuffer[2] = opcode;
-	frameBuffer[3] = data_len;
-	crcDataArray[0] = (data_len<<8) | opcode;
+	frameBuffer[3] = opcode;
+	frameBuffer[2] = data_len;
+	crcDataArray[0] = (opcode<<8) | len;  //header bytes inverted
 	uint16_t counter=4;
-	for(uint16_t i = 0; i < data_len; i++) {
+	for(uint16_t i = 0; i < data_len; i++) { //the data bytes are sent AS IS and need to be arranged correctly before this function
 		frameBuffer[counter++] = data[2*i];
 		if(frameBuffer[counter-1] == DLE) {
 			frameBuffer[counter++] = DLE;
@@ -69,7 +69,7 @@ uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, u
 	}
 	crcDataArray[array_len-1] = 0x0000;
 	uint16_t crc = CalcFieldCRC(crcDataArray, array_len);
-	frameBuffer[counter++] = crc&0xff;
+	frameBuffer[counter++] = crc&0xff; //crc bytes are inverted (LSB first) !!
 	if(frameBuffer[counter-1] == DLE) {
 		frameBuffer[counter++] = DLE;
 	}
@@ -95,7 +95,8 @@ typedef enum {
 }DECODE_STATE_t;
 
 
-
+//this function will be tuned according to what answer is observed!!
+//when I manage a transmission
 int32_t Decode_frame(uint8_t recvBuffer, uint8_t * opcode, uint8_t * data) {
 	//recieve order DLE STX OPCODE LEN DATA[0]LOW DATA[0]HIGH ....
 	static uint16_t crc = 0;
@@ -201,11 +202,12 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	static uint8_t send_data[READ_OBJECT_LEN*2];
 	static uint16_t length = 0;
 	send_data[0] = NODE_ID; //node ID
-	send_data[1] = index & 0xff;
+	send_data[1] = index & 0xff;  //LSB first
 	send_data[2] = index >> 8;
 	send_data[3] = subindex;
 	length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
 	HAL_UART_Transmit(&huart6, send_frame, length, 500);
+	// this will remained commented until the card works because it blocs the transmission thread
 //	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
 //		for(uint8_t i = 0; i < DATA_SIZE; i++){
 //				data[i] = recieved_data[3+i];
