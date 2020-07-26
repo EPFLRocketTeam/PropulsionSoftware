@@ -49,15 +49,15 @@ uint16_t CalcFieldCRC(uint16_t *pDataArray, uint16_t ArrayLength) {
 //but I STILL HAVE TO INVERT BYTES IN FRAME!!!!!!
 
 uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, uint8_t * data) {
-	uint16_t array_len = data_len+2; //we add 1 for the opcode and len fields
+	uint16_t array_len = data_len+2; //we add 1 for the opcode and len fields and 1 for the crc
 	frameBuffer[0] = DLE;
 	frameBuffer[1] = STX;
-	frameBuffer[3] = opcode;
-	frameBuffer[2] = data_len;
-	crcDataArray[0] = (opcode<<8) | len;  //header bytes inverted
+	frameBuffer[2] = opcode;
+	frameBuffer[3] = data_len;
+	crcDataArray[0] = (data_len<<8) | opcode;  //header bytes inverted
 	uint16_t counter=4;
-	for(uint16_t i = 0; i < data_len; i++) { //the data bytes are sent AS IS and need to be arranged correctly before this function
-		frameBuffer[counter++] = data[2*i];
+	for(uint16_t i = 0; i < data_len; i++) {
+		frameBuffer[counter++] = data[2*i]; //bytes in data need to be inverted before
 		if(frameBuffer[counter-1] == DLE) {
 			frameBuffer[counter++] = DLE;
 		}

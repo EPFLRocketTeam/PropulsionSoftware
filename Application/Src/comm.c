@@ -211,7 +211,7 @@ void send_msg(void) {
 
 void maxon_test(void) {
 	static uint8_t data[DATA_SIZE];
-	Read_object(0x6402, 0x00, data);
+	Read_object(0x30B0, 0x00, data);
 	//HAL_UART_Transmit(&huart6, (uint8_t *) data, DATA_SIZE, 500);
 }
 
