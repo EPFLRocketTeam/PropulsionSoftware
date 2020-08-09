@@ -26,6 +26,7 @@
 #define MSG_SIZE 64
 
 
+
 static uint8_t rxBuffer6;
 static uint8_t rxBuffer1;
 static uint8_t msgBuffer[MSG_SIZE];
@@ -211,8 +212,8 @@ void send_msg(void) {
 
 void maxon_test(void) {
 	static uint8_t data[DATA_SIZE];
-	Read_object(0x30B0, 0x00, data);
-	//HAL_UART_Transmit(&huart6, (uint8_t *) data, DATA_SIZE, 500);
+	Read_object(0x1018, 0x02, data);
+	HAL_UART_Transmit(&huart6, (uint8_t *) data, DATA_SIZE, 500);
 }
 
 
@@ -294,7 +295,7 @@ void PP_comm1Func(void *argument) {
 
 	for(;;) {
 		if( xSemaphoreTake( uart1_sem, LONG_TIME ) == pdTRUE ) {
-			Reception(rxBuffer1);
+			//Reception(rxBuffer1);
 		}
 
 	}

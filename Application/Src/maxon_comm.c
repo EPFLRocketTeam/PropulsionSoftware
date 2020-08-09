@@ -8,6 +8,7 @@ static uint16_t crcDataArray[MAX_FRAME_LEN];
 
 static uint8_t recieved_data[MAX_FRAME_LEN*2];
 static uint8_t recieved_opcode = 0, recieved_length = 0;
+static uint16_t recieved_crc = 0;
 
 
 static uint8_t send_frame[MAX_FRAME_LEN*2];
@@ -95,73 +96,74 @@ typedef enum {
 }DECODE_STATE_t;
 
 
-//this function will be tuned according to what answer is observed!!
-//when I manage a transmission
-int32_t Decode_frame(uint8_t recvBuffer, uint8_t * opcode, uint8_t * data) {
-	//recieve order DLE STX OPCODE LEN DATA[0]LOW DATA[0]HIGH ....
-	static uint16_t crc = 0;
-	static DECODE_STATE_t d_state = WAITING_DLE;
-	static uint8_t stuffing = 0;
-	static uint16_t len = 0;
-	if(d_state == WAITING_DLE && recvBuffer == DLE) {
-		d_state = WAITING_STX;
-		return -1;
-	}
-	if(recvBuffer == DLE) {
-		stuffing = 1;
-		return -1;
-	}
-	if(stuffing == 1 && recvBuffer == STX) {
-		d_state = WAITING_OPCODE;
-		stuffing = 0;
-		return -1;
-	} else {
-		stuffing = 0;
-	}
-	if(d_state == WAITING_STX && recvBuffer == STX) {
-		d_state = WAITING_OPCODE;
-		return -1;
-	}
-	if(d_state == WAITING_OPCODE) {
-		*opcode = recvBuffer;
-		d_state = WAITING_LEN;
-		return -1;
-	}
-	if(d_state == WAITING_LEN) {
-		len = recvBuffer*2;  //mult by 2 to have the length in bytes!
-		crcDataArray[0] = 0;
-		crcDataArray[0] = ((*opcode)<<8) | recvBuffer;
-		d_state = WAITING_DATA;
-		return -1;
-	}
+//returns length in WORDS
 
-	if(d_state == WAITING_DATA) {
-		if(len==0) {
-			d_state = WAITING_CRC1;
-		}
-		data[--len] = recvBuffer;
+int32_t decode_frame(uint8_t inChar, uint8_t * opcode, uint8_t * data, uint16_t * crc) {
+    static uint8_t escape = 0;
+    static uint16_t length = 0;
+    static uint16_t counter = 0;
+    static DECODE_STATE_t state = WAITING_DLE;
+    //if a DLE in data is followed by STX, we start again
+    if (escape == 1 && d == STX) {
+        state = WAITING_OPCODE;
+        escape = 0;
+        return -1;
+    }
 
-		return -1;
-	}
-	if(d_state == WAITING_CRC1) {
-		crc = 0;
-		crc = recvBuffer;
-		d_state = WAITING_CRC2;
-		return -1;
-	}
-	if(d_state == WAITING_CRC2) {
-		crc |= recvBuffer<<8;
-		d_state = WAITING_DLE;
-		uint16_t array_len = len+1; //we add 1 for the opcode and len fields
-		if(crc == CalcFieldCRC(crcDataArray, array_len)) {
-			return len;
-		}else {
-			return 0;
-		}
-	}
+    if (state == WAITING_DLE && d == DLE) {
+        state = WAITING_STX;
+        return -1;
+    }
+    //escape in case a DLE is in the data
+    if (d == DLE && escape == 0) {
+        escape = 1;
+        return -1;
+    }
+    //if it is doubled, it counts as data
+    if (d == DLE && escape == 1) {
+        escape = 0;
 
-	return -1;
+    }
 
+    if (state == WAITING_STX && d == STX) {
+        state = WAITING_OPCODE;
+        return -1;
+    }
+
+    if (state == WAITING_OPCODE) {
+        *opcode = d;
+        state = WAITING_LEN;
+        return -1;
+    }
+
+    if (state == WAITING_LEN) {
+        length = d;
+        state = WAITING_DATA;
+        return -1;
+    }
+
+    if (state == WAITING_DATA) {
+        data[counter] = d;
+        counter += 1;
+        //the length  is in WORDS, but we read BYTES
+        if (counter==2*length) {
+            state = WAITING_CRC1;
+        }
+        return -1;
+    }
+
+    if (state == WAITING_CRC1) {
+        *crc = d;
+        state = WAITING_CRC2;
+        return -1;
+
+    }
+
+    if (state == WAITING_CRC2) {
+        *crc += d<<8;
+        state = WAITING_DLE;
+        return length;
+    }
 }
 
 
@@ -171,8 +173,9 @@ void maxon_comm_init(void) {
 
 
 void Reception(uint8_t recvBuffer) {
-	int32_t res = Decode_frame(recvBuffer, &recieved_opcode, recieved_data);
+	int32_t res = Decode_frame(recvBuffer, &recieved_opcode, recieved_data, &recieved_crc);
 	if(res != -1) {
+		recieved_length = res;
 		xSemaphoreGive(recep_end_sem);
 	}
 }
@@ -208,7 +211,7 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
 	HAL_UART_Transmit(&huart6, send_frame, length, 500);
 	// this will remained commented until the card works because it blocs the transmission thread
-//	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
+//	if(xSemaphoreTake(recep_end_sem, 0xffff) == pdTRUE) {
 //		for(uint8_t i = 0; i < DATA_SIZE; i++){
 //				data[i] = recieved_data[3+i];
 //		}
