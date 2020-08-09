@@ -233,46 +233,46 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 
 
 void store_uint8(uint8_t value, uint8_t * data) {
-	data[0] = 0x00;
-	data[1] = value;
+	data[0] = value;
+	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
 
 void store_uint16(uint16_t value, uint8_t * data) {
-	data[1] = value & 0xff;
-	data[0] = (value<<8) & 0xff;
+	data[0] = value & 0xff;
+	data[1] = (value>>8) & 0xff;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
 
 void store_uint32(uint32_t value, uint8_t * data) {
-	data[1] = value & 0xff;
-	data[0] = (value<<8) & 0xff;
-	data[3] = (value<<16) & 0xff;
-	data[2] = (value<<24) & 0xff;
+	data[0] = value & 0xff;
+	data[1] = (value>>8) & 0xff;
+	data[2] = (value>>16) & 0xff;
+	data[3] = (value>>24) & 0xff;
 
 }
 
 void store_int8(int8_t value, uint8_t * data) {
-	data[0] = 0x00;
-	data[1] = value;
+	data[0] = value;
+	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
 
 void store_int16(int16_t value, uint8_t * data) {
-	data[1] = value & 0xff;
-	data[0] = (value<<8) & 0xff;
+	data[0] = value & 0xff;
+	data[1] = (value>>8) & 0xff;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
 
 void store_int32(int32_t value, uint8_t * data) {
-	data[1] = value & 0xff;
-	data[0] = (value<<8) & 0xff;
-	data[3] = (value<<16) & 0xff;
-	data[2] = (value<<24) & 0xff;
+	data[0] = value & 0xff;
+	data[1] = (value>>8) & 0xff;
+	data[2] = (value>>16) & 0xff;
+	data[3] = (value>>24) & 0xff;
 }
 
 
