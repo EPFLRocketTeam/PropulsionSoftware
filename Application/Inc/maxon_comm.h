@@ -31,4 +31,14 @@ void maxon_comm_init(void);
 
 void Reception(uint8_t recvBuffer);
 
+
+
+//functionS
+void motor_config_ppm();
+void motor_set_target(int32_t pos);
+void motor_enable();
+void motor_disable();
+void motor_quickstop();
+
+
 #endif

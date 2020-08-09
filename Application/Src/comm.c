@@ -104,13 +104,28 @@ MENU_ITEM_t menu[] = {
 				.func = read_sensors
 		},
 		{
-				.id = 4,
-				.name = "SEND MSG",
-				.func = send_msg
+				.id = 5,
+				.name = "SETUP_MOTOR",
+				.func = motor_config_ppm
 		},
 		{
 				.id = 5,
-				.name = "TEST_MAXON",
+				.name = "ENABLE MOTOR",
+				.func = motor_enable
+		},
+		{
+				.id = 5,
+				.name = "DISABLE MOTOR",
+				.func = motor_disable
+		},
+		{
+				.id = 5,
+				.name = "STOP MOTOR",
+				.func = motor_quickstop
+		},
+		{
+				.id = 5,
+				.name = "RUN MOTOR",
 				.func = maxon_test
 		},
 
@@ -163,10 +178,7 @@ void send_msg(void) {
 
 
 void maxon_test(void) {
-	static uint8_t data[DATA_SIZE] = {0x00, 18, 0x00, 0x00};
-	Write_object(0x6098, 0x00, data);
-	Read_object(0x6098, 0x00, data);
-	HAL_UART_Transmit(&huart3, (uint8_t *) data, DATA_SIZE, 500);
+	motor_set_target(10000);
 
 
 //	static uint8_t test_data[] = {0x90, 0x02, 0x00, 0x04, 0x90, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x65, 0x50, 0x23};

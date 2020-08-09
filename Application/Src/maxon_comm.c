@@ -230,7 +230,134 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 
 //BINARY UTILITIES
 
+
+
+void store_uint8(uint8_t value, uint8_t * data) {
+	data[0] = 0x00;
+	data[1] = value;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+
+void store_uint16(uint16_t value, uint8_t * data) {
+	data[1] = value & 0xff;
+	data[0] = (value<<8) & 0xff;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+
+void store_uint32(uint32_t value, uint8_t * data) {
+	data[1] = value & 0xff;
+	data[0] = (value<<8) & 0xff;
+	data[3] = (value<<16) & 0xff;
+	data[2] = (value<<24) & 0xff;
+
+}
+
+void store_int8(int8_t value, uint8_t * data) {
+	data[0] = 0x00;
+	data[1] = value;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+
+void store_int16(int16_t value, uint8_t * data) {
+	data[1] = value & 0xff;
+	data[0] = (value<<8) & 0xff;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+
+void store_int32(int32_t value, uint8_t * data) {
+	data[1] = value & 0xff;
+	data[0] = (value<<8) & 0xff;
+	data[3] = (value<<16) & 0xff;
+	data[2] = (value<<24) & 0xff;
+}
+
+
+
 //MAXON MOTOR SETUP COMMANDS
+
+#include <maxon_def.h>
+
+
+static uint8_t tmp_data[DATA_SIZE];
+
+#define MAX_POS			1000000
+#define MIN_POS			0
+#define MAX_PROFILE_VEL	1000
+#define MAX_MOTOR_SPEED	10000
+#define QUICK_STOP_DEC	10000
+#define MAX_ACC			50000
+
+#define PROFILE_ACC 	9999
+#define PROFILE_DEC 	9989
+#define PROFILE_VEL 	10000
+#define PROFILE_TYPE	0
+
+
+void motor_config_ppm() {
+
+	store_uint8(MAXON_MODE_PPM, tmp_data);
+	Write_object(MAXON_MODE_OF_OPERATION, tmp_data);
+
+	store_int32(MAX_POS, tmp_data);
+	Write_object(MAXON_SOFTWARE_MAX_POSITION, tmp_data);
+
+	store_int32(MIN_POS, tmp_data);
+	Write_object(MAXON_SOFTWARE_MIN_POSITION, tmp_data);
+
+	store_uint32(MAX_PROFILE_VEL, tmp_data);
+	Write_object(MAXON_MAX_PROFILE_VELOCITY, tmp_data);
+
+	store_uint32(MAX_MOTOR_SPEED, tmp_data);
+	Write_object(MAXON_MAX_MOTOR_SPEED, tmp_data);
+
+	store_uint32(QUICK_STOP_DEC, tmp_data);
+	Write_object(MAXON_QUICKSTOP_DECELERATION, tmp_data);
+
+	store_uint32(MAX_ACC, tmp_data);
+	Write_object(MAXON_MAX_ACCELERATION, tmp_data);
+
+	store_uint32(PROFILE_ACC, tmp_data);
+	Write_object(MAXON_PROFILE_ACCELERATION, tmp_data);
+
+	store_uint32(PROFILE_DEC, tmp_data);
+	Write_object(MAXON_PROFILE_DECELERATION, tmp_data);
+
+	store_uint32(PROFILE_VEL, tmp_data);
+	Write_object(MAXON_PROFILE_VELOCITY, tmp_data);
+
+	store_uint32(PROFILE_TYPE, tmp_data);
+	Write_object(MAXON_MOTION_PROFILE_TYPE, tmp_data);
+
+}
+
+void motor_set_target(int32_t pos) {
+	store_int32(pos, tmp_data);
+	Write_object(MAXON_TARGET_POSITION, tmp_data);
+}
+
+void motor_enable() {
+
+	store_uint16(0x0F, tmp_data);
+	Write_object(MAXON_CONTROL_WORD, tmp_data);
+
+}
+
+void motor_disable() {
+	store_uint16(0x07, tmp_data);
+	Write_object(MAXON_CONTROL_WORD, tmp_data);
+
+}
+
+void motor_quickstop() {
+	store_uint16(0b0010, tmp_data);
+	Write_object(MAXON_CONTROL_WORD, tmp_data);
+
+}
+
 
 
 
