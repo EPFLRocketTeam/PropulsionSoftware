@@ -61,15 +61,15 @@ const osThreadAttr_t PP_comm6_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 
-osThreadId_t PP_comm1Handle;
-uint32_t PP_comm1Buffer[ 128 ];
-osStaticThreadDef_t PP_comm1ControlBlock;
-const osThreadAttr_t PP_comm1_attributes = {
-  .name = "PP_comm1",
-  .stack_mem = &PP_comm1Buffer[0],
-  .stack_size = sizeof(PP_comm1Buffer),
-  .cb_mem = &PP_comm1ControlBlock,
-  .cb_size = sizeof(PP_comm1ControlBlock),
+osThreadId_t PP_comm3Handle;
+uint32_t PP_comm3Buffer[ 128 ];
+osStaticThreadDef_t PP_comm3ControlBlock;
+const osThreadAttr_t PP_comm3_attributes = {
+  .name = "PP_comm3",
+  .stack_mem = &PP_comm3Buffer[0],
+  .stack_size = sizeof(PP_comm3Buffer),
+  .cb_mem = &PP_comm3ControlBlock,
+  .cb_size = sizeof(PP_comm3ControlBlock),
   .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -93,7 +93,7 @@ void PP_initThreads(void) {
 	PP_commInit();
 	//comm thread va gerer les interruptions de "basse importance"
 	PP_comm6Handle = osThreadNew(PP_comm6Func, NULL, &PP_comm6_attributes);
-	PP_comm1Handle = osThreadNew(PP_comm1Func, NULL, &PP_comm1_attributes);
+	PP_comm3Handle = osThreadNew(PP_comm3Func, NULL, &PP_comm3_attributes);
 
 
 }

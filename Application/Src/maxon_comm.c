@@ -2,6 +2,7 @@
 #include "cmsis_os.h"
 #include <semphr.h>
 #include "usart.h"
+#include <led.h>
 
 
 static uint16_t crcDataArray[MAX_FRAME_LEN];
@@ -16,6 +17,8 @@ static uint8_t send_frame[MAX_FRAME_LEN*2];
 static SemaphoreHandle_t recep_end_sem = NULL;
 static StaticSemaphore_t recep_end_semBuffer;
 
+
+//COMMUNICATION UTILITIES
 
 
 uint16_t CalcFieldCRC(uint16_t *pDataArray, uint16_t ArrayLength) {
@@ -98,7 +101,7 @@ typedef enum {
 
 //returns length in WORDS
 
-int32_t decode_frame(uint8_t inChar, uint8_t * opcode, uint8_t * data, uint16_t * crc) {
+int32_t Decode_frame(uint8_t d, uint8_t * opcode, uint8_t * data, uint16_t * crc) {
     static uint8_t escape = 0;
     static uint16_t length = 0;
     static uint16_t counter = 0;
@@ -138,6 +141,7 @@ int32_t decode_frame(uint8_t inChar, uint8_t * opcode, uint8_t * data, uint16_t 
 
     if (state == WAITING_LEN) {
         length = d;
+        counter = 0;
         state = WAITING_DATA;
         return -1;
     }
@@ -194,11 +198,11 @@ uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	}
 	length = Create_frame(send_frame, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
 	HAL_UART_Transmit(&huart6, send_frame, length, 500);
-//	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
-//		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
-//	} else {
-//		return -1;
-//	}
+	if(xSemaphoreTake(recep_end_sem, 0xffff) == pdTRUE) {
+		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+	} else {
+		return -1;
+	}
 }
 
 uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
@@ -210,16 +214,33 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	send_data[3] = subindex;
 	length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
 	HAL_UART_Transmit(&huart6, send_frame, length, 500);
-	// this will remained commented until the card works because it blocs the transmission thread
-//	if(xSemaphoreTake(recep_end_sem, 0xffff) == pdTRUE) {
-//		for(uint8_t i = 0; i < DATA_SIZE; i++){
-//				data[i] = recieved_data[3+i];
-//		}
-//		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
-//	} else {
-//		return -1;
-//	}
+
+	if(xSemaphoreTake(recep_end_sem, 0xffff) == pdTRUE) {
+		for(uint8_t i = 0; i < DATA_SIZE; i++){
+				data[i] = recieved_data[3+i];
+		}
+		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+	} else {
+		return -1;
+	}
 }
+
+
+
+
+//BINARY UTILITIES
+
+//MAXON MOTOR SETUP COMMANDS
+
+
+
+
+
+
+
+
+
+
 
 
 
