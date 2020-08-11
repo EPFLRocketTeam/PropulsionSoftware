@@ -308,12 +308,16 @@ static uint8_t tmp_data2[DATA_SIZE];
 
 //motor csts
 #define MOTOR_MAX_SPEED	10000
-#define MOTOR_MAX_CUR	7320
+#define MOTOR_NOM_CUR	7320
+#define MOTOR_MAX_CURRENT	10000
 #define MOTOR_THERMAL	32
+#define MOTOR_TORQUE    14 //CHECKKKKK UNITS
 
 #define GEAR_MAX_SPEED	8000
 #define GEAR_NUM		66
 #define GEAR_DEN		1
+
+#define NUM_POLE_PAIRS	4
 
 
 #define PROFILE_ACC 	1000
@@ -321,6 +325,38 @@ static uint8_t tmp_data2[DATA_SIZE];
 #define PROFILE_VEL 	8000
 #define PROFILE_TYPE	0
 
+
+
+void motor_config_gen() {
+	store_uint32(MOTOR_MAX_SPEED, tmp_data);
+	Write_object(MAXON_MOTOR_MAX_SPEED, tmp_data);
+
+	store_uint32(MOTOR_NOM_CUR, tmp_data);
+	Write_object(MAXON_MOTOR_NOMINAL_CURRENT, tmp_data);
+
+	store_uint32(MOTOR_MAX_CURRENT, tmp_data);
+	Write_object(MAXON_MOTOR_CURRENT_LIMIT, tmp_data);
+
+	store_uint16(MOTOR_THERMAL, tmp_data);
+	Write_object(MAXON_MOTOR_THERMAL_CST, tmp_data);
+
+
+	store_uint32(GEAR_MAX_SPEED, tmp_data);
+	Write_object(MAXON_GEAR_MAX_INPUT_SPEED, tmp_data);
+
+	store_uint32(GEAR_NUM, tmp_data);
+	Write_object(MAXON_GEAR_NUMERATOR, tmp_data);
+
+	store_uint32(GEAR_DEN, tmp_data);
+	Write_object(MAXON_GEAR_DENOMINATOR, tmp_data);
+
+	store_uint8(NUM_POLE_PAIRS, tmp_data);
+	Write_object(MAXON_MOTOR_POLE_PAIRS, tmp_data);
+
+
+
+
+}
 
 void motor_config_ppm() {
 
@@ -338,9 +374,6 @@ void motor_config_ppm() {
 
 	store_uint32(MAX_PROFILE_VEL, tmp_data);
 	Write_object(MAXON_MAX_PROFILE_VELOCITY, tmp_data);
-
-	store_uint32(MAX_MOTOR_SPEED, tmp_data);
-	Write_object(MAXON_MAX_MOTOR_SPEED, tmp_data);
 
 	store_uint32(QUICK_STOP_DEC, tmp_data);
 	Write_object(MAXON_QUICKSTOP_DECELERATION, tmp_data);

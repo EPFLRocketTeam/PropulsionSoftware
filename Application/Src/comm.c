@@ -194,17 +194,10 @@ void maxon_test(void) {
 	//HAL_UART_Transmit(&huart3, data, DATA_SIZE, 500);
 	if(state) {
 		motor_set_target(100000);
-	} else{
+	} else {
 		motor_set_target(0);
 	}
 	state = !state;
-}
-
-
-//	static uint8_t test_data[] = {0x90, 0x02, 0x00, 0x04, 0x90, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x65, 0x50, 0x23};
-//	for(int i = 0; i < sizeof(test_data); i++) {
-//		Reception(test_data[i]);
-//	}
 }
 
 
