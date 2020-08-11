@@ -168,6 +168,8 @@ int32_t Decode_frame(uint8_t d, uint8_t * opcode, uint8_t * data, uint16_t * crc
         state = WAITING_DLE;
         return length;
     }
+    state=WAITING_DLE;
+    return -1;
 }
 
 
@@ -187,6 +189,7 @@ void Reception(uint8_t recvBuffer) {
 //returns the comm error code
 
 uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data) {
+	PP_setLed(5, 5, 0);
 	static uint8_t send_data[WRITE_OBJECT_LEN*2];
 	static uint16_t length = 0;
 	send_data[0] = NODE_ID; //node ID
@@ -194,18 +197,21 @@ uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	send_data[2] = index >> 8;
 	send_data[3] = subindex;
 	for(uint8_t i = 0; i < DATA_SIZE; i++){
-		send_data[3+i] = data[i];
+		send_data[4+i] = data[i];
 	}
 	length = Create_frame(send_frame, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
 	HAL_UART_Transmit(&huart6, send_frame, length, 500);
-	if(xSemaphoreTake(recep_end_sem, 0xffff) == pdTRUE) {
+	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
+		PP_setLed(0, 5, 0);
 		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 	} else {
+		PP_setLed(5, 0, 0);
 		return -1;
 	}
 }
 
 uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
+	PP_setLed(5, 5, 0);
 	static uint8_t send_data[READ_OBJECT_LEN*2];
 	static uint16_t length = 0;
 	send_data[0] = NODE_ID; //node ID
@@ -215,12 +221,14 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 	length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
 	HAL_UART_Transmit(&huart6, send_frame, length, 500);
 
-	if(xSemaphoreTake(recep_end_sem, 0xffff) == pdTRUE) {
+	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
 		for(uint8_t i = 0; i < DATA_SIZE; i++){
-				data[i] = recieved_data[3+i];
+				data[i] = recieved_data[4+i];
 		}
+		PP_setLed(0, 5, 0);
 		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 	} else {
+		PP_setLed(5, 0, 0);
 		return -1;
 	}
 }
@@ -232,6 +240,8 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 
 
 
+
+
 void store_uint8(uint8_t value, uint8_t * data) {
 	data[0] = value;
 	data[1] = 0x00;
@@ -239,18 +249,20 @@ void store_uint8(uint8_t value, uint8_t * data) {
 	data[3] = 0x00;
 }
 
+
+
 void store_uint16(uint16_t value, uint8_t * data) {
-	data[0] = value & 0xff;
-	data[1] = (value>>8) & 0xff;
+	data[0] = value;
+	data[1] = value>>8;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
 
 void store_uint32(uint32_t value, uint8_t * data) {
-	data[0] = value & 0xff;
-	data[1] = (value>>8) & 0xff;
-	data[2] = (value>>16) & 0xff;
-	data[3] = (value>>24) & 0xff;
+	data[0] = value;
+	data[1] = value>>8;
+	data[2] = value>>16;
+	data[3] = value>>24;
 
 }
 
@@ -262,17 +274,17 @@ void store_int8(int8_t value, uint8_t * data) {
 }
 
 void store_int16(int16_t value, uint8_t * data) {
-	data[0] = value & 0xff;
-	data[1] = (value>>8) & 0xff;
+	data[0] = value;
+	data[1] = value>>8;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
 
 void store_int32(int32_t value, uint8_t * data) {
-	data[0] = value & 0xff;
-	data[1] = (value>>8) & 0xff;
-	data[2] = (value>>16) & 0xff;
-	data[3] = (value>>24) & 0xff;
+	data[0] = value;
+	data[1] = value>>8;
+	data[2] = value>>16;
+	data[3] = value>>24;
 }
 
 
@@ -283,21 +295,37 @@ void store_int32(int32_t value, uint8_t * data) {
 
 
 static uint8_t tmp_data[DATA_SIZE];
+static uint8_t tmp_data2[DATA_SIZE];
 
-#define MAX_POS			1000000
+#define MAX_POS			100000000
 #define MIN_POS			0
-#define MAX_PROFILE_VEL	1000
-#define MAX_MOTOR_SPEED	10000
+#define MAX_PROFILE_VEL	50000
+#define MAX_MOTOR_SPEED	50000
 #define QUICK_STOP_DEC	10000
-#define MAX_ACC			50000
+#define MAX_ACC			5000000
 
-#define PROFILE_ACC 	9999
-#define PROFILE_DEC 	9989
-#define PROFILE_VEL 	10000
+
+
+//motor csts
+#define MOTOR_MAX_SPEED	10000
+#define MOTOR_MAX_CUR	7320
+#define MOTOR_THERMAL	32
+
+#define GEAR_MAX_SPEED	8000
+#define GEAR_NUM		66
+#define GEAR_DEN		1
+
+
+#define PROFILE_ACC 	1000
+#define PROFILE_DEC 	1000
+#define PROFILE_VEL 	8000
 #define PROFILE_TYPE	0
 
 
 void motor_config_ppm() {
+
+	motor_shutdown();
+	motor_switch_on();
 
 	store_uint8(MAXON_MODE_PPM, tmp_data);
 	Write_object(MAXON_MODE_OF_OPERATION, tmp_data);
@@ -317,48 +345,98 @@ void motor_config_ppm() {
 	store_uint32(QUICK_STOP_DEC, tmp_data);
 	Write_object(MAXON_QUICKSTOP_DECELERATION, tmp_data);
 
-	store_uint32(MAX_ACC, tmp_data);
-	Write_object(MAXON_MAX_ACCELERATION, tmp_data);
+	//store_uint32(MAX_ACC, tmp_data);
+	//Write_object(MAXON_MAX_ACCELERATION, tmp_data);
 
-	store_uint32(PROFILE_ACC, tmp_data);
+	motor_setup_ppm(PROFILE_ACC, PROFILE_DEC, PROFILE_VEL);
+
+}
+
+void motor_setup_ppm(uint32_t profile_acc, uint32_t profile_dec, uint32_t profile_vel) {
+	store_uint32(profile_acc, tmp_data);
 	Write_object(MAXON_PROFILE_ACCELERATION, tmp_data);
 
-	store_uint32(PROFILE_DEC, tmp_data);
+	store_uint32(profile_dec, tmp_data);
 	Write_object(MAXON_PROFILE_DECELERATION, tmp_data);
 
-	store_uint32(PROFILE_VEL, tmp_data);
+	store_uint32(profile_vel, tmp_data);
 	Write_object(MAXON_PROFILE_VELOCITY, tmp_data);
 
 	store_uint32(PROFILE_TYPE, tmp_data);
 	Write_object(MAXON_MOTION_PROFILE_TYPE, tmp_data);
-
 }
 
 void motor_set_target(int32_t pos) {
 	store_int32(pos, tmp_data);
 	Write_object(MAXON_TARGET_POSITION, tmp_data);
+	motor_set_abs();
+	motor_new_pos();
+
 }
 
-void motor_enable() {
 
-	store_uint16(0x0F, tmp_data);
+
+
+//motor control
+
+void write_to_controlword(uint16_t set, uint16_t clr) {
+	Read_object(MAXON_CONTROL_WORD, tmp_data2);
+	uint16_t tmp_cw = tmp_data2[0] + ( tmp_data2[1] << 8);
+	tmp_cw = tmp_cw | set;
+	tmp_cw = tmp_cw & (~clr);
+	store_uint16(tmp_cw, tmp_data);
 	Write_object(MAXON_CONTROL_WORD, tmp_data);
+}
 
+
+void motor_enable() {
+	write_to_controlword(MAXON_SET_ENABLE, MAXON_CLR_ENABLE);
 }
 
 void motor_disable() {
-	store_uint16(0x07, tmp_data);
-	Write_object(MAXON_CONTROL_WORD, tmp_data);
-
+	write_to_controlword(MAXON_SET_DISABLE, MAXON_CLR_DISABLE);
 }
 
 void motor_quickstop() {
-	store_uint16(0b0010, tmp_data);
-	Write_object(MAXON_CONTROL_WORD, tmp_data);
+	write_to_controlword(MAXON_SET_QUICKSTOP, MAXON_CLR_QUICKSTOP);
+}
 
+void motor_disable_voltage() {
+	write_to_controlword(MAXON_SET_DISABLE_V, MAXON_CLR_DISABLE_V);
+}
+
+void motor_shutdown() {
+	write_to_controlword(MAXON_SET_SHUTDOWN, MAXON_CLR_SHUTDOWN);
+}
+
+void motor_switch_on() {
+	write_to_controlword(MAXON_SET_SWITCH_ON, MAXON_CLR_SWITCH_ON);
+}
+
+void motor_fault_rst() {
+	write_to_controlword(MAXON_SET_FAULT_RST, MAXON_CLR_FAULT_RST);
+}
+
+void motor_set_rel() {
+	write_to_controlword(MAXON_SET_REL, MAXON_CLR_REL);
+}
+
+void motor_set_abs() {
+	write_to_controlword(MAXON_SET_ABS, MAXON_CLR_ABS);
+}
+
+void motor_new_pos() {
+	write_to_controlword(MAXON_SET_NEW_POS, MAXON_CLR_NEW_POS);
 }
 
 
+void read_status_word(uint8_t * data) {
+	Read_object(MAXON_STATUS_WORD, data);
+}
+
+void read_max_prof_vel(uint8_t * data) {
+	Read_object(MAXON_PROFILE_VELOCITY, data);
+}
 
 
 
