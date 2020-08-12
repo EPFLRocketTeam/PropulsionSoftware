@@ -30,12 +30,43 @@
 
 
 static uint8_t rxBuffer6;
-static uint8_t rxBuffer1;
 static uint8_t rxBuffer3;
 
-static uint8_t current_index = 0;
-static uint8_t last_processed_index = 0;
-static uint8_t comm_buffer[BUFFER_LEN];
+
+//universal comm rx buffer
+//CIRCULAR BUFFER CODE
+typedef struct {
+	uint8_t c_ix;
+	uint8_t l_ix;
+	uint8_t buffer[BUFFER_LEN];
+}RX_BUFFER_t;
+
+void rx_buffer_init(RX_BUFFER_t * bfr) {
+	bfr->c_ix = 0;
+	bfr->l_ix = 0;
+}
+
+void rx_buffer_add(RX_BUFFER_t * bfr, uint8_t d) {
+	bfr->buffer[bfr->c_ix++] = d; //store recieved in a buffer
+	if(bfr->c_ix == BUFFER_LEN) bfr->c_ix = 0; //loop around
+}
+
+uint8_t rx_buffer_get(RX_BUFFER_t * bfr) {
+	uint8_t tmp = bfr->buffer[bfr->l_ix++];
+	if(bfr->l_ix == BUFFER_LEN) bfr->l_ix=0;
+	return tmp;
+}
+
+uint8_t rx_buffer_is_empty(RX_BUFFER_t * bfr) {
+	return bfr->l_ix == bfr->c_ix;
+}
+//END OF CIRCULAR BUFFER CODE
+
+
+
+static RX_BUFFER_t motor_rx_buffer;
+static RX_BUFFER_t user_rx_buffer;
+
 
 
 static uint8_t msgBuffer[MSG_SIZE];
@@ -43,9 +74,6 @@ static uint8_t msgBuffer[MSG_SIZE];
 
 static SemaphoreHandle_t uart6_sem = NULL;
 static StaticSemaphore_t uart6_semBuffer;
-
-static SemaphoreHandle_t uart1_sem = NULL;
-static StaticSemaphore_t uart1_semBuffer;
 
 static SemaphoreHandle_t uart3_sem = NULL;
 static StaticSemaphore_t uart3_semBuffer;
@@ -220,42 +248,39 @@ int32_t PP_read_entry(uint8_t entry_buffer, uint8_t * exit_buffer, uint16_t exit
 
 
 
-
+//investigate SEMAPHORE FROM ISR!!!
+//I should Use TASK NOTIFY instead of semaphores as they appear to be faster for
+//the purpose of unblocking a task afetr an interrupt has  occured.
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	//HAL callbacks are called from ISR so they are part of the ISR!!!
-
+	static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	if(huart->Instance == huart6.Instance) {
-		comm_buffer[current_index++] = rxBuffer6; //store recieved in a buffer
-		if(current_index == BUFFER_LEN) current_index = 0; //loop around
-		static BaseType_t xHigherPriorityTaskWoken6;
-		xHigherPriorityTaskWoken6 = pdFALSE;
-		xSemaphoreGiveFromISR( uart6_sem, &xHigherPriorityTaskWoken6 );
+		rx_buffer_add(&motor_rx_buffer, rxBuffer6);
+		//xSemaphoreGiveFromISR( uart6_sem, &xHigherPriorityTaskWoken );
+		vTaskNotifyGiveFromISR(PP_comm6Handle, &xHigherPriorityTaskWoken);
 	}
-//	if(huart->Instance == huart1.Instance) {
-//		static BaseType_t xHigherPriorityTaskWoken1;
-//		xHigherPriorityTaskWoken1 = pdFALSE;
-//		xSemaphoreGiveFromISR( uart1_sem, &xHigherPriorityTaskWoken1 );
-//	}
+
 	if(huart->Instance == huart3.Instance) {
-		static BaseType_t xHigherPriorityTaskWoken3;
-		xHigherPriorityTaskWoken3 = pdFALSE;
-		xSemaphoreGiveFromISR( uart3_sem, &xHigherPriorityTaskWoken3 );
+		//xSemaphoreGiveFromISR( uart3_sem, &xHigherPriorityTaskWoken );
+		vTaskNotifyGiveFromISR(PP_comm3Handle, &xHigherPriorityTaskWoken);
 	}
+	//yield from ISR if a higher priority task has  woken!
+	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+
 }
 
 
 void PP_commInit(void) {
 	rxBuffer6 = 0;
-	rxBuffer1 = 0;
 	rxBuffer3 = 0;
 	HAL_UART_Receive_DMA(&huart6, &rxBuffer6, 1);
-	//HAL_UART_Receive_DMA(&huart1, &rxBuffer1, 1);
 	HAL_UART_Receive_DMA(&huart3, &rxBuffer3, 1);
 	uart6_sem = xSemaphoreCreateBinaryStatic( &uart6_semBuffer );
-	uart1_sem = xSemaphoreCreateBinaryStatic( &uart1_semBuffer );
 	uart3_sem = xSemaphoreCreateBinaryStatic( &uart3_semBuffer );
 	maxon_comm_init();
+	rx_buffer_init(&motor_rx_buffer);
+	rx_buffer_init(&user_rx_buffer);
 	menu_context = MENU_SELECTION;
 	show_menu();
 	PP_setLed(0, 0, 5);
@@ -265,22 +290,25 @@ void PP_commInit(void) {
 
 
 //I use uart6 instead of 1 because 1 is broken!!!!!
+//due to this, the analog reads must be changed!!
 void PP_comm6Func(void *argument) {
 	for(;;) {
-
-		if( xSemaphoreTake( uart6_sem, LONG_TIME ) == pdTRUE ) {
-			while(last_processed_index != current_index) {
-				Reception(comm_buffer[last_processed_index++]);
-				if(last_processed_index == BUFFER_LEN) last_processed_index=0;
+		//if( xSemaphoreTake( uart6_sem, LONG_TIME ) == pdTRUE ) {
+		if( ulTaskNotifyTake( pdTRUE, LONG_TIME ) == pdTRUE ) {
+			while(!rx_buffer_is_empty(&motor_rx_buffer)) {
+				maxon_comm_receive(rx_buffer_get(&motor_rx_buffer));
 			}
 		}
 	}
 }
 
+
+
 void PP_comm3Func(void *argument) {
 	for(;;) {
 
-		if( xSemaphoreTake( uart3_sem, LONG_TIME ) == pdTRUE ) {
+		//if( xSemaphoreTake( uart3_sem, LONG_TIME ) == pdTRUE ) {
+		if( ulTaskNotifyTake( pdTRUE, LONG_TIME ) == pdTRUE ) {
 			if(menu_context == MENU_SELECTION) {
 				uint8_t i = rxBuffer3-'0';
 				if(i < NB_MENU_ITEM) {
@@ -294,15 +322,5 @@ void PP_comm3Func(void *argument) {
 				}
 			}
 		}
-	}
-}
-
-void PP_comm1Func(void *argument) {
-
-	for(;;) {
-		if( xSemaphoreTake( uart1_sem, LONG_TIME ) == pdTRUE ) {
-
-		}
-
 	}
 }

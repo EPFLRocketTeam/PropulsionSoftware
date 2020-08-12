@@ -14,6 +14,9 @@ static uint16_t recieved_crc = 0;
 
 static uint8_t send_frame[MAX_FRAME_LEN*2];
 
+
+//semaphores here because those functions could be executed
+//from anywhere!
 static SemaphoreHandle_t recep_end_sem = NULL;
 static StaticSemaphore_t recep_end_semBuffer;
 
@@ -178,7 +181,7 @@ void maxon_comm_init(void) {
 }
 
 
-void Reception(uint8_t recvBuffer) {
+void maxon_comm_receive(uint8_t recvBuffer) {
 	int32_t res = Decode_frame(recvBuffer, &recieved_opcode, recieved_data, &recieved_crc);
 	if(res != -1) {
 		recieved_length = res;

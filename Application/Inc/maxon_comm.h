@@ -25,8 +25,9 @@ uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, u
 int32_t Decode_frame(uint8_t d, uint8_t * opcode, uint8_t * data, uint16_t * crc);
 uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data);
 uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data);
+
 void maxon_comm_init(void);
-void Reception(uint8_t recvBuffer);
+void maxon_comm_receive(uint8_t recvBuffer);
 
 //functions
 void motor_config_gen();

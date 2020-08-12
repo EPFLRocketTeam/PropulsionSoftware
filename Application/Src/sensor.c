@@ -24,6 +24,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	}
 }
 
+
+//SETUP THE SENSOR VALUES IN CUBE_MX  -> they need to be on the S2 because s1 is used for maxon_comm.
 void PP_sensorInit(void) {
 
 	//the sampling rate is 50Hz to be setup in  prop_soft.ioc

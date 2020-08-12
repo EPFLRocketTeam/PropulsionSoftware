@@ -49,7 +49,7 @@ const osThreadAttr_t PP_sensor_attributes = {
 */
 
 
-osThreadId_t PP_comm6Handle;
+//osThreadId_t PP_comm6Handle; //already in comm.h
 uint32_t PP_comm6Buffer[ 128 ];
 osStaticThreadDef_t PP_comm6ControlBlock;
 const osThreadAttr_t PP_comm6_attributes = {
@@ -61,7 +61,7 @@ const osThreadAttr_t PP_comm6_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 
-osThreadId_t PP_comm3Handle;
+//osThreadId_t PP_comm3Handle; //already in comm.h
 uint32_t PP_comm3Buffer[ 128 ];
 osStaticThreadDef_t PP_comm3ControlBlock;
 const osThreadAttr_t PP_comm3_attributes = {
