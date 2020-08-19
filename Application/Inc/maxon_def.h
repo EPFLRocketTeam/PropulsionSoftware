@@ -62,4 +62,21 @@
 
 
 
+//STATUSWORD BIT TESTS
+#define SW_READY_TO_SWITCH_ON(sw) 	((sw & 0x0001)?1:0)
+#define SW_SWITCHED_ON(sw) 			((sw & 0x0002)?1:0)
+#define SW_ENABLED(sw) 				((sw & 0x0004)?1:0)
+#define SW_FAULT(sw)			 	((sw & 0x0008)?1:0)
+#define SW_VOLTAGE_ENABLED(sw) 		((sw & 0x0010)?1:0)
+#define SW_QUICKSTOP(sw)		 	((sw & 0x0020)?1:0)
+#define SW_SWITCH_ON_DISABLED(sw) 	((sw & 0x0040)?1:0)
+#define SW_WARNING(sw) 				((sw & 0x0080)?1:0)
+#define SW_REMOTE(sw) 				((sw & 0x0200)?1:0)
+#define SW_TARGET_REACHED(sw) 		((sw & 0x0400)?1:0)
+#define SW_LIMIT_ACTIVE(sw) 		((sw & 0x0800)?1:0)
+#define SW_SET_ACK(sw) 				((sw & 0x1000)?1:0)
+#define SW_HOMING_ATTAINED(sw) 		((sw & 0x1000)?1:0)
+#define SW_SPECIFIC_ERROR(sw) 		((sw & 0x2000)?1:0)
+#define SW_POSITION_REF_TO_HOME(sw) ((sw & 0x8000)?1:0)
+
 #endif

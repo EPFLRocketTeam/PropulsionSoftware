@@ -16,7 +16,10 @@
 #include <semphr.h>
 #include <maxon_comm.h>
 #include <led.h>
+#include <debug_ui.h>
 
+
+#define USE_SEM		1  //TASK notify marche pas alors on utilise les semaphores
 
 #define MENU_NAME_LEN 	16
 #define LINE_LEN		32
@@ -68,8 +71,7 @@ static RX_BUFFER_t motor_rx_buffer;
 static RX_BUFFER_t user_rx_buffer;
 
 
-
-static uint8_t msgBuffer[MSG_SIZE];
+#if USE_SEM == 1
 
 
 static SemaphoreHandle_t uart6_sem = NULL;
@@ -77,7 +79,7 @@ static StaticSemaphore_t uart6_semBuffer;
 
 static SemaphoreHandle_t uart3_sem = NULL;
 static StaticSemaphore_t uart3_semBuffer;
-
+#endif
 
 //new comm "layout"
 /*
@@ -216,10 +218,8 @@ void send_msg(void) {
 
 
 void maxon_test(void) {
-	uint8_t data[DATA_SIZE];
-	read_status_word(data);
 	static uint8_t state = 1;
-	//HAL_UART_Transmit(&huart3, data, DATA_SIZE, 500);
+
 	if(state) {
 		motor_set_target(100000);
 	} else {
@@ -250,20 +250,27 @@ int32_t PP_read_entry(uint8_t entry_buffer, uint8_t * exit_buffer, uint16_t exit
 
 //investigate SEMAPHORE FROM ISR!!!
 //I should Use TASK NOTIFY instead of semaphores as they appear to be faster for
-//the purpose of unblocking a task afetr an interrupt has  occured.
+//the purpose of unblocking a task afetr an interrupt has occured.
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	//HAL callbacks are called from ISR so they are part of the ISR!!!
 	static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	if(huart->Instance == huart6.Instance) {
 		rx_buffer_add(&motor_rx_buffer, rxBuffer6);
-		//xSemaphoreGiveFromISR( uart6_sem, &xHigherPriorityTaskWoken );
+#if USE_SEM == 1
+		xSemaphoreGiveFromISR( uart6_sem, &xHigherPriorityTaskWoken );
+#else
 		vTaskNotifyGiveFromISR(PP_comm6Handle, &xHigherPriorityTaskWoken);
+#endif
 	}
 
 	if(huart->Instance == huart3.Instance) {
-		//xSemaphoreGiveFromISR( uart3_sem, &xHigherPriorityTaskWoken );
+		rx_buffer_add(&user_rx_buffer, rxBuffer3);
+#if USE_SEM == 1
+		xSemaphoreGiveFromISR( uart3_sem, &xHigherPriorityTaskWoken );
+#else
 		vTaskNotifyGiveFromISR(PP_comm3Handle, &xHigherPriorityTaskWoken);
+#endif
 	}
 	//yield from ISR if a higher priority task has  woken!
 	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
@@ -276,14 +283,15 @@ void PP_commInit(void) {
 	rxBuffer3 = 0;
 	HAL_UART_Receive_DMA(&huart6, &rxBuffer6, 1);
 	HAL_UART_Receive_DMA(&huart3, &rxBuffer3, 1);
+#if USE_SEM == 1
 	uart6_sem = xSemaphoreCreateBinaryStatic( &uart6_semBuffer );
 	uart3_sem = xSemaphoreCreateBinaryStatic( &uart3_semBuffer );
+#endif
 	maxon_comm_init();
 	rx_buffer_init(&motor_rx_buffer);
 	rx_buffer_init(&user_rx_buffer);
-	menu_context = MENU_SELECTION;
-	show_menu();
-	PP_setLed(0, 0, 5);
+	//menu_context = MENU_SELECTION;
+	//PP_setLed(0, 0, 5);
 	//osDelay(1000);
 }
 
@@ -293,8 +301,11 @@ void PP_commInit(void) {
 //due to this, the analog reads must be changed!!
 void PP_comm6Func(void *argument) {
 	for(;;) {
-		//if( xSemaphoreTake( uart6_sem, LONG_TIME ) == pdTRUE ) {
+#if USE_SEM == 1
+		if( xSemaphoreTake( uart6_sem, LONG_TIME ) == pdTRUE ) {
+#else
 		if( ulTaskNotifyTake( pdTRUE, LONG_TIME ) == pdTRUE ) {
+#endif
 			while(!rx_buffer_is_empty(&motor_rx_buffer)) {
 				maxon_comm_receive(rx_buffer_get(&motor_rx_buffer));
 			}
@@ -306,9 +317,16 @@ void PP_comm6Func(void *argument) {
 
 void PP_comm3Func(void *argument) {
 	for(;;) {
-
-		//if( xSemaphoreTake( uart3_sem, LONG_TIME ) == pdTRUE ) {
+#if USE_SEM == 1
+		if( xSemaphoreTake( uart3_sem, LONG_TIME ) == pdTRUE ) {
+#else
 		if( ulTaskNotifyTake( pdTRUE, LONG_TIME ) == pdTRUE ) {
+#endif
+			while(!rx_buffer_is_empty(&user_rx_buffer)) {
+				debug_ui_receive(rx_buffer_get(&user_rx_buffer));
+			}
+			//OLD MENU
+			/*
 			if(menu_context == MENU_SELECTION) {
 				uint8_t i = rxBuffer3-'0';
 				if(i < NB_MENU_ITEM) {
@@ -321,6 +339,7 @@ void PP_comm3Func(void *argument) {
 					menu_context = MENU_SELECTION;
 				}
 			}
+			*/
 		}
 	}
 }

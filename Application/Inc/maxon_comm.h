@@ -14,9 +14,9 @@
 #define DATA_SIZE 4
 
 #define COMM_TIMEOUT pdMS_TO_TICKS(1000)
+#define LONG_TIME 0xffff
 
 #define MAX_FRAME_LEN	64
-
 
 
 
@@ -44,8 +44,11 @@ void motor_fault_rst();
 void motor_set_rel();
 void motor_set_abs();
 void motor_new_pos();
-void read_status_word(uint8_t * data);
+uint8_t read_status_word(uint16_t * data);
 void read_max_prof_vel(uint8_t * data);
+
+
+uint8_t get_busy_state(void);
 
 
 #endif

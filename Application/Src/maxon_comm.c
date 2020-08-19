@@ -19,7 +19,16 @@ static uint8_t send_frame[MAX_FRAME_LEN*2];
 //from anywhere!
 static SemaphoreHandle_t recep_end_sem = NULL;
 static StaticSemaphore_t recep_end_semBuffer;
+static SemaphoreHandle_t driver_busy_sem = NULL;
+static StaticSemaphore_t driver_busy_semBuffer;
 
+
+
+//DEBUG
+
+uint8_t get_busy_state(void) {
+	return uxSemaphoreGetCount(driver_busy_sem);
+}
 
 //COMMUNICATION UTILITIES
 
@@ -177,7 +186,10 @@ int32_t Decode_frame(uint8_t d, uint8_t * opcode, uint8_t * data, uint16_t * crc
 
 
 void maxon_comm_init(void) {
+	//this semaphore is only avaiable when data is recieved -> starts taken
 	recep_end_sem = xSemaphoreCreateBinaryStatic(&recep_end_semBuffer);
+	driver_busy_sem = xSemaphoreCreateMutexStatic(&driver_busy_semBuffer);
+	//this semaphore is avaiable at start
 }
 
 
@@ -192,46 +204,55 @@ void maxon_comm_receive(uint8_t recvBuffer) {
 //returns the comm error code
 
 uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data) {
-	PP_setLed(5, 5, 0);
-	static uint8_t send_data[WRITE_OBJECT_LEN*2];
-	static uint16_t length = 0;
-	send_data[0] = NODE_ID; //node ID
-	send_data[1] = index & 0xff;
-	send_data[2] = index >> 8;
-	send_data[3] = subindex;
-	for(uint8_t i = 0; i < DATA_SIZE; i++){
-		send_data[4+i] = data[i];
-	}
-	length = Create_frame(send_frame, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
-	HAL_UART_Transmit(&huart6, send_frame, length, 500);
-	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
-		PP_setLed(0, 5, 0);
-		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+	if (xSemaphoreTake(driver_busy_sem, COMM_TIMEOUT) == pdTRUE) { //only one transmission at a time
+		static uint8_t send_data[WRITE_OBJECT_LEN*2];
+		static uint16_t length = 0;
+		send_data[0] = NODE_ID; //node ID
+		send_data[1] = index & 0xff;
+		send_data[2] = index >> 8;
+		send_data[3] = subindex;
+		for(uint8_t i = 0; i < DATA_SIZE; i++){
+			send_data[4+i] = data[i];
+		}
+		length = Create_frame(send_frame, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
+		HAL_UART_Transmit(&huart6, send_frame, length, 500);
+		if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
+			uint32_t tmp = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+			xSemaphoreGive(driver_busy_sem); //release the sem to allow another transmission
+			return tmp;
+		} else {
+			xSemaphoreGive(driver_busy_sem); //release the sem to allow another transmission
+			return -1;
+		}
 	} else {
-		PP_setLed(5, 0, 0);
+
 		return -1;
 	}
 }
 
 uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
-	PP_setLed(5, 5, 0);
-	static uint8_t send_data[READ_OBJECT_LEN*2];
-	static uint16_t length = 0;
-	send_data[0] = NODE_ID; //node ID
-	send_data[1] = index & 0xff;  //LSB first
-	send_data[2] = index >> 8;
-	send_data[3] = subindex;
-	length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
-	HAL_UART_Transmit(&huart6, send_frame, length, 500);
+	if (xSemaphoreTake(driver_busy_sem, COMM_TIMEOUT) == pdTRUE) { //only one transmission at a time
+		static uint8_t send_data[READ_OBJECT_LEN*2];
+		static uint16_t length = 0;
+		send_data[0] = NODE_ID; //node ID
+		send_data[1] = index & 0xff;  //LSB first
+		send_data[2] = index >> 8;
+		send_data[3] = subindex;
+		length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
+		HAL_UART_Transmit(&huart6, send_frame, length, 500);
 
-	if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
-		for(uint8_t i = 0; i < DATA_SIZE; i++){
+		if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
+			for(uint8_t i = 0; i < DATA_SIZE; i++){
 				data[i] = recieved_data[4+i];
+			}
+			uint32_t tmp = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+			xSemaphoreGive(driver_busy_sem); //release the sem to allow another transmission
+			return tmp;
+		} else {
+			xSemaphoreGive(driver_busy_sem); //release the sem to allow another transmission
+			return -1;
 		}
-		PP_setLed(0, 5, 0);
-		return recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 	} else {
-		PP_setLed(5, 0, 0);
 		return -1;
 	}
 }
@@ -314,7 +335,7 @@ static uint8_t tmp_data2[DATA_SIZE];
 #define MOTOR_NOM_CUR	7320
 #define MOTOR_MAX_CURRENT	10000
 #define MOTOR_THERMAL	32
-#define MOTOR_TORQUE    14 //CHECKKKKK UNITS
+#define MOTOR_TORQUE    14 //CHECK UNITS
 
 #define GEAR_MAX_SPEED	8000
 #define GEAR_NUM		66
@@ -323,8 +344,8 @@ static uint8_t tmp_data2[DATA_SIZE];
 #define NUM_POLE_PAIRS	4
 
 
-#define PROFILE_ACC 	1000
-#define PROFILE_DEC 	1000
+#define PROFILE_ACC 	10000
+#define PROFILE_DEC 	10000
 #define PROFILE_VEL 	8000
 #define PROFILE_TYPE	0
 
@@ -356,6 +377,11 @@ void motor_config_gen() {
 	store_uint8(NUM_POLE_PAIRS, tmp_data);
 	Write_object(MAXON_MOTOR_POLE_PAIRS, tmp_data);
 
+	store_int32(-10000000, tmp_data);
+	Write_object(MAXON_SOFTWARE_MIN_POSITION, tmp_data);
+
+	store_int32(10000000, tmp_data);
+	Write_object(MAXON_SOFTWARE_MAX_POSITION, tmp_data);
 
 
 
@@ -402,7 +428,7 @@ void motor_setup_ppm(uint32_t profile_acc, uint32_t profile_dec, uint32_t profil
 	Write_object(MAXON_MOTION_PROFILE_TYPE, tmp_data);
 }
 
-void motor_set_target(int32_t pos) {
+void motor_set_target_abs(int32_t pos) {
 	store_int32(pos, tmp_data);
 	Write_object(MAXON_TARGET_POSITION, tmp_data);
 	motor_set_abs();
@@ -410,18 +436,42 @@ void motor_set_target(int32_t pos) {
 
 }
 
+void motor_set_target_rel(int32_t pos) {
+	store_int32(pos, tmp_data);
+	Write_object(MAXON_TARGET_POSITION, tmp_data);
+	motor_set_rel();
+	motor_new_pos();
+
+}
+
+
+
+uint8_t read_status_word(uint16_t * data) {
+	if(Read_object(MAXON_STATUS_WORD, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8);
+	return 0;
+}
+
 
 
 
 //motor control
 
-void write_to_controlword(uint16_t set, uint16_t clr) {
-	Read_object(MAXON_CONTROL_WORD, tmp_data2);
+uint8_t write_to_controlword(uint16_t set, uint16_t clr) {
+	if(Read_object(MAXON_CONTROL_WORD, tmp_data2) == -1) {
+		return -1;
+	}
 	uint16_t tmp_cw = tmp_data2[0] + ( tmp_data2[1] << 8);
 	tmp_cw = tmp_cw | set;
 	tmp_cw = tmp_cw & (~clr);
 	store_uint16(tmp_cw, tmp_data);
-	Write_object(MAXON_CONTROL_WORD, tmp_data);
+	if(Write_object(MAXON_CONTROL_WORD, tmp_data) == -1) {
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -466,13 +516,7 @@ void motor_new_pos() {
 }
 
 
-void read_status_word(uint8_t * data) {
-	Read_object(MAXON_STATUS_WORD, data);
-}
 
-void read_max_prof_vel(uint8_t * data) {
-	Read_object(MAXON_PROFILE_VELOCITY, data);
-}
 
 
 

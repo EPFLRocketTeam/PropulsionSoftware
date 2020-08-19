@@ -13,7 +13,6 @@
 
 
 
-void PP_blinkerFunc(void *argument);
 void PP_controlFunc(void *argument);
 
 

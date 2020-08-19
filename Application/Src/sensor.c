@@ -45,7 +45,7 @@ void PP_sensorFunc(void *argument) {
 
 
 	for(;;) {
-		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_11);
+		//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_11);
 
 		for(int i = 0; i < PP_NB_SENSOR; i++) {
 		    PP_sensorData[i] = adcBuffer[i];
