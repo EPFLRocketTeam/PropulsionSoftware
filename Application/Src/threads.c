@@ -13,6 +13,7 @@
 #include <main.h>
 #include <led.h>
 #include <comm.h>
+#include <maxon_comm.h>
 
 
 typedef StaticTask_t osStaticThreadDef_t;
@@ -49,29 +50,42 @@ const osThreadAttr_t PP_sensor_attributes = {
 */
 
 
-//osThreadId_t PP_comm6Handle; //already in comm.h
-uint32_t PP_comm6Buffer[ 128 ];
-osStaticThreadDef_t PP_comm6ControlBlock;
-const osThreadAttr_t PP_comm6_attributes = {
-  .name = "PP_comm6",
-  .stack_mem = &PP_comm6Buffer[0],
-  .stack_size = sizeof(PP_comm6Buffer),
-  .cb_mem = &PP_comm6ControlBlock,
-  .cb_size = sizeof(PP_comm6ControlBlock),
+
+uint32_t PP_commMotorBuffer[ 128 ];
+osStaticThreadDef_t PP_commMotorControlBlock;
+const osThreadAttr_t PP_commMotor_attributes = {
+  .name = "PP_commMotor",
+  .stack_mem = &PP_commMotorBuffer[0],
+  .stack_size = sizeof(PP_commMotorBuffer),
+  .cb_mem = &PP_commMotorControlBlock,
+  .cb_size = sizeof(PP_commMotorControlBlock),
   .priority = (osPriority_t) osPriorityNormal,
 };
 
-//osThreadId_t PP_comm3Handle; //already in comm.h
-uint32_t PP_comm3Buffer[ 128 ];
-osStaticThreadDef_t PP_comm3ControlBlock;
-const osThreadAttr_t PP_comm3_attributes = {
-  .name = "PP_comm3",
-  .stack_mem = &PP_comm3Buffer[0],
-  .stack_size = sizeof(PP_comm3Buffer),
-  .cb_mem = &PP_comm3ControlBlock,
-  .cb_size = sizeof(PP_comm3ControlBlock),
+
+uint32_t PP_commUserBuffer[ 128 ];
+osStaticThreadDef_t PP_commUserControlBlock;
+const osThreadAttr_t PP_commUser_attributes = {
+  .name = "PP_commUser",
+  .stack_mem = &PP_commUserBuffer[0],
+  .stack_size = sizeof(PP_commUserBuffer),
+  .cb_mem = &PP_commUserControlBlock,
+  .cb_size = sizeof(PP_commUserControlBlock),
   .priority = (osPriority_t) osPriorityNormal,
 };
+
+osThreadId_t motor_commHandle;
+uint32_t motor_commBuffer[ 128 ];
+osStaticThreadDef_t motor_commControlBlock;
+const osThreadAttr_t motor_comm_attributes = {
+  .name = "motor_comm",
+  .stack_mem = &motor_commBuffer[0],
+  .stack_size = sizeof(motor_commBuffer),
+  .cb_mem = &motor_commControlBlock,
+  .cb_size = sizeof(motor_commControlBlock),
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
 
 
 
@@ -90,10 +104,16 @@ void PP_initThreads(void) {
 	//plus besoin d'un thread pour les capteurs vu que tout est géré par tim2 et adc+dma
 	//PP_sensorHandle = osThreadNew(PP_sensorFunc, NULL, &PP_sensor_attributes);
 
+	maxon_comm_init();
+	motor_commHandle = osThreadNew(motor_mainloop, NULL, &motor_comm_attributes);
+
 	PP_commInit();
 	//comm thread va gerer les interruptions de "basse importance"
-	PP_comm6Handle = osThreadNew(PP_comm6Func, NULL, &PP_comm6_attributes);
-	PP_comm3Handle = osThreadNew(PP_comm3Func, NULL, &PP_comm3_attributes);
+	PP_commMotorHandle = osThreadNew(PP_commMotorFunc, NULL, &PP_commMotor_attributes);
+	PP_commUserHandle = osThreadNew(PP_commUserFunc, NULL, &PP_commUser_attributes);
+
+
+
 
 
 }

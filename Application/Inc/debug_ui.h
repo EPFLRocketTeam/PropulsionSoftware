@@ -15,7 +15,10 @@
 
 #define DUI_MAX_ARGS		8
 
-
+/*
+ * @brief				receive a char from user input
+ * @param recvBuffer	buffer containing the char to receive.
+ */
 void debug_ui_receive(uint8_t recvBuffer);
 
 

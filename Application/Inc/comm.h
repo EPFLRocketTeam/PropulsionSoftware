@@ -9,13 +9,23 @@
 
 #include "cmsis_os.h"
 
-osThreadId_t PP_comm6Handle;
-osThreadId_t PP_comm3Handle;
+osThreadId_t PP_commMotorHandle;
+osThreadId_t PP_commUserHandle;
 
-
+/*
+ * @brief	initialize communication module
+ */
 void PP_commInit(void);
-void PP_comm3Func(void *argument);
-void PP_comm6Func(void *argument);
+
+/*
+ * @brief	user uart comm main function
+ */
+void PP_commUserFunc(void *argument);
+
+/*
+ * @brief	motor uart comm main function
+ */
+void PP_commMotorFunc(void *argument);
 
 
 #endif

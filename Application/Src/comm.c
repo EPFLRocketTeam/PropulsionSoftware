@@ -74,179 +74,12 @@ static RX_BUFFER_t user_rx_buffer;
 
 #if USE_SEM == 1
 
-
 static SemaphoreHandle_t uartM_sem = NULL;
 static StaticSemaphore_t uartM_semBuffer;
 
 static SemaphoreHandle_t uartU_sem = NULL;
 static StaticSemaphore_t uartU_semBuffer;
 #endif
-
-//new comm "layout"
-/*
- * there will be a "add_to_comm_buffer function that will add strings to a circular buffer
- * the contents of the buffer will be sent to the uart whenever there is need to transmit something.
- * the reception for each uart/can interface is handled in a different thread.
- */
-
-
-
-
-typedef enum {
-	MENU_SELECTION,
-	MENU_ENTRY
-}MENU_CONTEXT_t;
-
-
-
-
-typedef struct {
-	uint8_t id;
-	char name[MENU_NAME_LEN];
-	void (*func)(void);
-}MENU_ITEM_t;
-
-
-static MENU_CONTEXT_t menu_context;
-
-void show_menu(void);
-void toggle_solenoid(void);
-void read_sensors(void);
-void sys_diag(void);
-void send_msg(void);
-void maxon_test(void);
-
-
-
-MENU_ITEM_t menu[] = {
-		{
-				.id = 0,
-				.name = "SHOW MENU",
-				.func = show_menu
-		},
-		{
-				.id = 1,
-				.name = "TOGGLE SOLENOID",
-				.func = toggle_solenoid
-		},
-		{
-				.id = 2,
-				.name = "READ SENSORS",
-				.func = read_sensors
-		},
-		{
-				.id = 5,
-				.name = "SETUP_MOTOR",
-				.func = motor_config_ppm
-		},
-		{
-				.id = 5,
-				.name = "ENABLE MOTOR",
-				.func = motor_enable
-		},
-		{
-				.id = 5,
-				.name = "DISABLE MOTOR",
-				.func = motor_disable
-		},
-		{
-				.id = 5,
-				.name = "STOP MOTOR",
-				.func = motor_quickstop
-		},
-		{
-				.id = 5,
-				.name = "RUN MOTOR",
-				.func = maxon_test
-		},
-		{
-				.id = 5,
-				.name = "VOLTAGE OFF",
-				.func = motor_disable_voltage
-		},
-		{
-				.id = 5,
-				.name = "RESET",
-				.func = motor_fault_rst
-		}
-
-};
-
-
-void show_menu(void) {
-	static char msg[] = "\nPropulsion Software\nAuthor: Iacopo Sprenger\n";
-	static char msg2[] = "==MENU==\n";
-	static char msg3[] = ">";
-	static char str[LINE_LEN];
-
-	HAL_UART_Transmit(&huart3, (uint8_t *) msg, sizeof(msg), 500);
-	HAL_UART_Transmit(&huart3, (uint8_t *) msg2, sizeof(msg2), 500);
-	for(int i = 0; i < NB_MENU_ITEM; i++) {
-		sprintf(str, "%d: %s\n", i, menu[i].name);
-		HAL_UART_Transmit(&huart3, (uint8_t *) str, strlen(str), 500);
-	}
-	HAL_UART_Transmit(&huart3, (uint8_t *) msg3, sizeof(msg3), 500);
-
-}
-
-void toggle_solenoid(void) {
-	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_11);
-}
-
-void read_sensors(void) {
-	static char str[LINE_LEN];
-	static char msg[] = "\n==SENSOR VALUES==\n";
-	static char * sensor_name[] = {
-			"PP_PRESSURE_1   ",
-			"PP_PRESSURE_2   ",
-			"PP_TEMPERATURE_1",
-			"PP_TEMPERATURE_2",
-			"PP_TEMPERATURE_3"
-	};
-	HAL_UART_Transmit(&huart3, (uint8_t *) msg, strlen(msg), 500);
-	for(int i = 0; i < PP_NB_SENSOR; i++) {
-		sprintf(str, "%s: %d\n", sensor_name[i], PP_getData(i));
-		HAL_UART_Transmit(&huart3, (uint8_t *) str, strlen(str), 500);
-	}
-}
-
-
-
-void send_msg(void) {
-	menu_context = MENU_ENTRY;
-}
-
-
-
-void maxon_test(void) {
-	static uint8_t state = 1;
-
-	if(state) {
-		motor_set_target(100000);
-	} else {
-		motor_set_target(0);
-	}
-	state = !state;
-}
-
-
-
-int32_t PP_read_entry(uint8_t entry_buffer, uint8_t * exit_buffer, uint16_t exit_buffer_size) {
-	static uint16_t bytes_read = 0;
-	if(bytes_read<exit_buffer_size && entry_buffer != '\n') {
-		exit_buffer[bytes_read] = entry_buffer;
-		bytes_read++;
-	}else{
-		int32_t tmp = bytes_read;
-		bytes_read = 0;
-		return tmp;
-	}
-	return -1;
-
-}
-
-
-
 
 
 //investigate SEMAPHORE FROM ISR!!!
@@ -288,19 +121,15 @@ void PP_commInit(void) {
 	uartM_sem = xSemaphoreCreateBinaryStatic( &uartM_semBuffer );
 	uartU_sem = xSemaphoreCreateBinaryStatic( &uartU_semBuffer );
 #endif
-	maxon_comm_init();
 	rx_buffer_init(&motor_rx_buffer);
 	rx_buffer_init(&user_rx_buffer);
-	//menu_context = MENU_SELECTION;
-	//PP_setLed(0, 0, 5);
-	//osDelay(1000);
 }
 
 
 
 //I use uart6 instead of 1 because 1 is broken!!!!!
 //due to this, the analog reads must be changed!!
-void PP_comm6Func(void *argument) {
+void PP_commMotorFunc(void *argument) {
 	for(;;) {
 #if USE_SEM == 1
 		if( xSemaphoreTake( uartM_sem, LONG_TIME ) == pdTRUE ) {
@@ -316,7 +145,7 @@ void PP_comm6Func(void *argument) {
 
 
 
-void PP_comm3Func(void *argument) {
+void PP_commUserFunc(void *argument) {
 	for(;;) {
 #if USE_SEM == 1
 		if( xSemaphoreTake( uartU_sem, LONG_TIME ) == pdTRUE ) {
@@ -326,21 +155,6 @@ void PP_comm3Func(void *argument) {
 			while(!rx_buffer_is_empty(&user_rx_buffer)) {
 				debug_ui_receive(rx_buffer_get(&user_rx_buffer));
 			}
-			//OLD MENU
-			/*
-			if(menu_context == MENU_SELECTION) {
-				uint8_t i = rxBuffer3-'0';
-				if(i < NB_MENU_ITEM) {
-					menu[i].func();
-				}
-			} else if(menu_context == MENU_ENTRY){
-				int32_t msg_len = PP_read_entry(rxBuffer3, msgBuffer, MSG_SIZE);
-				if(msg_len != -1) {
-					HAL_UART_Transmit(&huart3, msgBuffer, msg_len, 500);
-					menu_context = MENU_SELECTION;
-				}
-			}
-			*/
 		}
 	}
 }
