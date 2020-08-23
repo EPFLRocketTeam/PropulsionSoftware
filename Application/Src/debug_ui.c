@@ -196,12 +196,11 @@ void debug_ui_receive(uint8_t recvBuffer) {
 					} else {
 						break;
 					}
-
 				}
 				//invoke function
 				ui_items[i].func(args_read, args, resp);
 
-				HAL_UART_Transmit(&huart3, resp, str_len(resp, DUI_RESP_LEN), 500);
+				HAL_UART_Transmit(&UI_UART, resp, str_len(resp, DUI_RESP_LEN), 500);
 				return;
 			}
 		}

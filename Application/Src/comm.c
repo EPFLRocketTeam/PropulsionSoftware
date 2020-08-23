@@ -17,6 +17,7 @@
 #include <maxon_comm.h>
 #include <led.h>
 #include <debug_ui.h>
+#include <error.h>
 
 
 #define USE_SEM		1  //TASK notify marche pas alors on utilise les semaphores
@@ -32,8 +33,8 @@
 
 
 
-static uint8_t rxBuffer6;
-static uint8_t rxBuffer3;
+static uint8_t rxBufferM;
+static uint8_t rxBufferU;
 
 
 //universal comm rx buffer
@@ -74,11 +75,11 @@ static RX_BUFFER_t user_rx_buffer;
 #if USE_SEM == 1
 
 
-static SemaphoreHandle_t uart6_sem = NULL;
-static StaticSemaphore_t uart6_semBuffer;
+static SemaphoreHandle_t uartM_sem = NULL;
+static StaticSemaphore_t uartM_semBuffer;
 
-static SemaphoreHandle_t uart3_sem = NULL;
-static StaticSemaphore_t uart3_semBuffer;
+static SemaphoreHandle_t uartU_sem = NULL;
+static StaticSemaphore_t uartU_semBuffer;
 #endif
 
 //new comm "layout"
@@ -255,19 +256,19 @@ int32_t PP_read_entry(uint8_t entry_buffer, uint8_t * exit_buffer, uint16_t exit
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	//HAL callbacks are called from ISR so they are part of the ISR!!!
 	static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	if(huart->Instance == huart6.Instance) {
-		rx_buffer_add(&motor_rx_buffer, rxBuffer6);
+	if(huart->Instance == MOTOR_UART.Instance) {
+		rx_buffer_add(&motor_rx_buffer, rxBufferM);
 #if USE_SEM == 1
-		xSemaphoreGiveFromISR( uart6_sem, &xHigherPriorityTaskWoken );
+		xSemaphoreGiveFromISR( uartM_sem, &xHigherPriorityTaskWoken );
 #else
 		vTaskNotifyGiveFromISR(PP_comm6Handle, &xHigherPriorityTaskWoken);
 #endif
 	}
 
 	if(huart->Instance == huart3.Instance) {
-		rx_buffer_add(&user_rx_buffer, rxBuffer3);
+		rx_buffer_add(&user_rx_buffer, rxBufferU);
 #if USE_SEM == 1
-		xSemaphoreGiveFromISR( uart3_sem, &xHigherPriorityTaskWoken );
+		xSemaphoreGiveFromISR( uartU_sem, &xHigherPriorityTaskWoken );
 #else
 		vTaskNotifyGiveFromISR(PP_comm3Handle, &xHigherPriorityTaskWoken);
 #endif
@@ -279,13 +280,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 
 void PP_commInit(void) {
-	rxBuffer6 = 0;
-	rxBuffer3 = 0;
-	HAL_UART_Receive_DMA(&huart6, &rxBuffer6, 1);
-	HAL_UART_Receive_DMA(&huart3, &rxBuffer3, 1);
+	rxBufferM = 0;
+	rxBufferU = 0;
+	HAL_UART_Receive_DMA(&MOTOR_UART, &rxBufferM, 1);
+	HAL_UART_Receive_DMA(&UI_UART, &rxBufferU, 1);
 #if USE_SEM == 1
-	uart6_sem = xSemaphoreCreateBinaryStatic( &uart6_semBuffer );
-	uart3_sem = xSemaphoreCreateBinaryStatic( &uart3_semBuffer );
+	uartM_sem = xSemaphoreCreateBinaryStatic( &uartM_semBuffer );
+	uartU_sem = xSemaphoreCreateBinaryStatic( &uartU_semBuffer );
 #endif
 	maxon_comm_init();
 	rx_buffer_init(&motor_rx_buffer);
@@ -302,7 +303,7 @@ void PP_commInit(void) {
 void PP_comm6Func(void *argument) {
 	for(;;) {
 #if USE_SEM == 1
-		if( xSemaphoreTake( uart6_sem, LONG_TIME ) == pdTRUE ) {
+		if( xSemaphoreTake( uartM_sem, LONG_TIME ) == pdTRUE ) {
 #else
 		if( ulTaskNotifyTake( pdTRUE, LONG_TIME ) == pdTRUE ) {
 #endif
@@ -318,7 +319,7 @@ void PP_comm6Func(void *argument) {
 void PP_comm3Func(void *argument) {
 	for(;;) {
 #if USE_SEM == 1
-		if( xSemaphoreTake( uart3_sem, LONG_TIME ) == pdTRUE ) {
+		if( xSemaphoreTake( uartU_sem, LONG_TIME ) == pdTRUE ) {
 #else
 		if( ulTaskNotifyTake( pdTRUE, LONG_TIME ) == pdTRUE ) {
 #endif

@@ -2,11 +2,14 @@
 #define DEBUG_UI_H
 
 #include <main.h>
+#include "usart.h"
 
 #define DUI_NAME_LEN		32
 #define DUI_ENTRY_LEN		256
 
 #define DUI_RESP_LEN		1024
+
+#define UI_UART				huart3
 
 
 

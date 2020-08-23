@@ -2,6 +2,7 @@
 #define MAXON_COMM_H
 
 #include <main.h>
+#include "usart.h"
 
 //control sequences
 #define DLE	0x90
@@ -17,6 +18,8 @@
 #define LONG_TIME 0xffff
 
 #define MAX_FRAME_LEN	64
+
+#define MOTOR_UART	huart6
 
 
 

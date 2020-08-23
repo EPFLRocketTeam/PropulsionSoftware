@@ -215,7 +215,7 @@ uint32_t Write_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 			send_data[4+i] = data[i];
 		}
 		length = Create_frame(send_frame, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
-		HAL_UART_Transmit(&huart6, send_frame, length, 500);
+		HAL_UART_Transmit(&MOTOR_UART, send_frame, length, 500);
 		if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
 			uint32_t tmp = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 			xSemaphoreGive(driver_busy_sem); //release the sem to allow another transmission
@@ -239,7 +239,7 @@ uint32_t Read_object(uint16_t index, uint8_t subindex, uint8_t * data) {
 		send_data[2] = index >> 8;
 		send_data[3] = subindex;
 		length = Create_frame(send_frame, READ_OBJECT, READ_OBJECT_LEN, send_data);
-		HAL_UART_Transmit(&huart6, send_frame, length, 500);
+		HAL_UART_Transmit(&MOTOR_UART, send_frame, length, 500);
 
 		if(xSemaphoreTake(recep_end_sem, COMM_TIMEOUT) == pdTRUE) {
 			for(uint8_t i = 0; i < DATA_SIZE; i++){
@@ -321,7 +321,7 @@ void store_int32(int32_t value, uint8_t * data) {
 static uint8_t tmp_data[DATA_SIZE];
 static uint8_t tmp_data2[DATA_SIZE];
 
-#define MAX_POS			100000000
+#define MAX_POS			0
 #define MIN_POS			0
 #define MAX_PROFILE_VEL	50000
 #define MAX_MOTOR_SPEED	50000

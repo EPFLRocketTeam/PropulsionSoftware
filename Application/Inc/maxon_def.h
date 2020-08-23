@@ -1,6 +1,7 @@
 #ifndef MAXON_DEF_H
 #define MAXON_DEF_H
 
+
 #define MAXON_DEVICE_TYPE		0x1000, 0x00 //U32
 #define MAXON_ERROR_REGISTER 	0x1001, 0x00 //U8
 

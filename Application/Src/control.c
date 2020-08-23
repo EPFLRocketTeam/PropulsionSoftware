@@ -35,6 +35,19 @@ void PP_init_control(void) {
 
 }
 
+
+PP_STATUS_t PP_start_setup(void) {
+	return PP_SUCCESS;
+}
+
+
+PP_STATUS_t PP_start_operation(void) {
+	return PP_SUCCESS;
+}
+
+
+
+
 void PP_controlFunc(void *argument) {
 
 	 TickType_t lastWakeTime;
