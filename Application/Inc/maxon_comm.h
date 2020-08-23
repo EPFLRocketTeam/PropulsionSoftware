@@ -70,6 +70,7 @@ void motor_def_start_homing_operation();
 
 void motor_register_speed(uint32_t speed);
 void motor_register_acceleration(uint32_t acc);
+void motor_register_target(int32_t target);
 
 
 
