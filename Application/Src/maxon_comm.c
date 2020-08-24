@@ -366,6 +366,14 @@ void motor_setup_ppm(uint32_t profile_acc, uint32_t profile_dec, uint32_t profil
 	Write_object(MAXON_MOTION_PROFILE_TYPE, tmp_data);
 }
 
+int8_t motor_get_mode(int8_t * mode) {
+	if(Read_object(MAXON_MODE_OF_OPERATION, tmp_data) == -1) {
+			return -1;
+		}
+		*mode = tmp_data[0];
+		return 0;
+}
+
 void motor_set_target_abs(int32_t pos) {
 	store_int32(pos, tmp_data);
 	Write_object(MAXON_TARGET_POSITION, tmp_data);
@@ -384,13 +392,15 @@ void motor_set_target_rel(int32_t pos) {
 
 
 
-uint8_t read_status_word(uint16_t * data) {
+int8_t read_status_word(uint16_t * data) {
 	if(Read_object(MAXON_STATUS_WORD, tmp_data) == -1) {
 		return -1;
 	}
 	*data = tmp_data[0] | (tmp_data[1]<<8);
 	return 0;
 }
+
+
 
 
 
@@ -469,12 +479,18 @@ typedef struct {
 	uint8_t set_homing;
 	uint8_t start_ppm_operation;
 	uint8_t start_homing_operation;
+	uint8_t start_operation;
 }MOTOR_TODO_t;
 
 typedef struct {
 	uint32_t acceleration;
 	uint32_t deceleration;
 	uint32_t speed;
+	int32_t target;
+	int32_t half_target;
+	uint32_t half_wait; //ms
+	uint32_t end_wait; //ms
+	uint8_t absolute;
 }MOTOR_PPM_PARAMS_t;
 
 
@@ -503,9 +519,11 @@ typedef struct {
 
 
 static MOTOR_TODO_t motor_todo;
+static MOTOR_TODO_t motor_todo_buf;
 static MOTOR_GEN_PARAMS_t motor_gen_params;
 static MOTOR_PPM_PARAMS_t motor_ppm_params;
 static uint16_t motor_status;
+static uint32_t operation_counter;
 
 void motor_def_init(void) {
 	motor_todo.enable = 0;
@@ -517,10 +535,12 @@ void motor_def_init(void) {
 	motor_todo.set_homing = 0;
 	motor_todo.start_ppm_operation = 0;
 	motor_todo.start_homing_operation = 0;
+	operation_counter = 0;
 
 	motor_ppm_params.acceleration = PROFILE_ACC;
 	motor_ppm_params.deceleration = PROFILE_DEC;
 	motor_ppm_params.speed = PROFILE_VEL;
+	motor_ppm_params.absolute = 1;
 
 }
 
@@ -581,6 +601,39 @@ void motor_config_homing(void) {
 	Write_object(MAXON_MODE_OF_OPERATION, tmp_data);
 }
 
+void update_todo(void) {
+	if(motor_todo_buf.enable) {
+		motor_todo.enable = 1;
+	}
+	if(motor_todo_buf.disable) {
+		motor_todo.disable = 1;
+	}
+	if(motor_todo_buf.config) {
+		motor_todo.config = 1;
+	}
+	if(motor_todo_buf.startup) {
+		motor_todo.startup = 1;
+	}
+	if(motor_todo_buf.shutdown) {
+		motor_todo.shutdown = 1;
+	}
+	if(motor_todo_buf.set_ppm) {
+		motor_todo.set_ppm = 1;
+	}
+	if(motor_todo_buf.set_homing) {
+		motor_todo.set_homing = 1;
+	}
+	if(motor_todo_buf.start_ppm_operation && motor_todo.start_ppm_operation == 0) {
+		motor_todo.start_ppm_operation = 1;
+	}
+	if(motor_todo_buf.start_homing_operation && motor_todo.start_homing_operation == 0) {
+		motor_todo.start_homing_operation = 1;
+	}
+	if(motor_todo_buf.start_operation && motor_todo.start_operation == 0) {
+		motor_todo.start_operation = 1;
+	}
+}
+
 void motor_mainloop(void * argument) {
 	 TickType_t lastWakeTime;
 		 const TickType_t period = pdMS_TO_TICKS(HEART_BEAT);
@@ -588,47 +641,100 @@ void motor_mainloop(void * argument) {
 		 lastWakeTime = xTaskGetTickCount();
 
 		for(;;) {
+			update_todo();
 			read_status_word(&motor_status);
 			if(motor_todo.enable) {
 				motor_enable();
-				motor_todo.enable--;
+				motor_todo.enable = 0;
 			}
 			if(motor_todo.disable) {
 				motor_disable();
-				motor_todo.disable--;
+				motor_todo.disable = 0;
 			}
 			if(motor_todo.config) {
 				motor_config_gen();
-				motor_todo.config--;
+				motor_todo.config = 0;
 			}
 			if(motor_todo.startup) {
 				motor_fault_rst();
 				motor_shutdown();
 				motor_switch_on();
-				motor_todo.startup--;
+				motor_todo.startup = 0;
 			}
 			if(motor_todo.shutdown) {
 				motor_disable_voltage();
 				motor_shutdown();
-				motor_todo.shutdown--;
+				motor_todo.shutdown = 0;
 			}
 			if(motor_todo.set_ppm) {
 				motor_config_ppm();
-				motor_todo.set_ppm--;
+				motor_todo.set_ppm = 0;
 			}
 			if(motor_todo.set_homing) {
 				motor_config_homing();
-				motor_todo.set_homing--;
+				motor_todo.set_homing = 0;
 			}
 			if(motor_todo.start_ppm_operation) {
+				//check that the motor is in PPM mode
+				int8_t mode;
+				motor_get_mode(&mode);
+				if(mode == MAXON_MODE_PPM) {
+					if(motor_ppm_params.absolute) {
+						motor_set_target_abs(motor_ppm_params.target);
+					} else {
+						motor_set_target_rel(motor_ppm_params.target);
+					}
 
-				//if ppm op finished
-				motor_todo.start_ppm_operation--;
+				}else{
+					//wrong mode error
+				}
+
+				if(SW_TARGET_REACHED(motor_status)) {
+					motor_todo.start_operation = 0;
+				}
 			}
 			if(motor_todo.start_homing_operation) {
 
 				//if homing op finished
-				motor_todo.start_homing_operation--;
+				motor_todo.start_homing_operation = 0;
+			}
+			if(motor_todo.start_operation) {
+				//check that the motor is in PPM mode
+				if(motor_todo.start_operation == 1) {
+					int8_t mode;
+					motor_get_mode(&mode);
+					if(mode == MAXON_MODE_PPM) {
+						motor_set_target_abs(motor_ppm_params.half_target);
+						motor_todo.start_operation = 2;
+					}else{
+						motor_todo.start_operation = 0;
+					}
+				}
+				if(motor_todo.start_operation == 2 && SW_TARGET_REACHED(motor_status)) {
+					operation_counter += HEART_BEAT;
+					if(operation_counter >= motor_ppm_params.half_wait) {
+						motor_todo.start_operation = 3;
+						operation_counter = 0;
+					}
+				}
+				if(motor_todo.start_operation == 3) {
+					motor_set_target_abs(motor_ppm_params.target);
+					motor_todo.start_operation = 4;
+				}
+				if(motor_todo.start_operation == 4 && SW_TARGET_REACHED(motor_status)) {
+					operation_counter += HEART_BEAT;
+					if(operation_counter >= motor_ppm_params.end_wait) {
+						motor_todo.start_operation = 5;
+						operation_counter = 0;
+					}
+				}
+				if(motor_todo.start_operation == 5) {
+					motor_set_target_abs(0);
+					motor_todo.start_operation = 6;
+				}
+				if(motor_todo.start_operation == 6 && SW_TARGET_REACHED(motor_status)) {
+					motor_todo.start_operation = 0;
+				}
 			}
 
 			//do something with the status
@@ -638,37 +744,61 @@ void motor_mainloop(void * argument) {
 		}
 }
 
-
+uint16_t motor_get_status(void) {
+	return motor_status;
+}
 
 
 void motor_def_enable() {
-	motor_todo.enable++;
+	motor_todo_buf.enable = 1;
 }
 void motor_def_disable() {
-	motor_todo.disable++;
+	motor_todo_buf.disable = 1;
 }
 void motor_def_config() {
-	motor_todo.config++;
+	motor_todo_buf.config = 1;
 }
 void motor_def_startup() {
-	motor_todo.startup++;
+	motor_todo_buf.startup = 1;
 }
 void motor_def_shutdown() {
-	motor_todo.shutdown++;
+	motor_todo_buf.shutdown = 1;
 }
 void motor_def_set_ppm() {
-	motor_todo.set_ppm++;
+	motor_todo_buf.set_ppm = 1;
 }
 void motor_def_set_homing() {
-	motor_todo.set_homing++;
+	motor_todo_buf.set_homing = 1;
 }
 void motor_def_start_ppm_operation() {
-	motor_todo.start_ppm_operation++;
+	motor_todo_buf.start_ppm_operation = 1;
 }
 void motor_def_start_homing_operation() {
-	motor_todo.start_homing_operation++;
+	motor_todo_buf.start_homing_operation = 1;
+}
+void motor_def_start_operation() {
+	motor_todo_buf.start_operation = 1;
 }
 
+void motor_register_speed(uint32_t speed) {
+	motor_ppm_params.speed = speed;
+}
+void motor_register_acceleration(uint32_t acc) {
+	motor_ppm_params.acceleration = acc;
+}
+void motor_register_deceleration(uint32_t dec) {
+	motor_ppm_params.deceleration = dec;
+}
+void motor_register_target(int32_t target) {
+	motor_ppm_params.target = target;
+}
+
+void motor_register_absolute() {
+	motor_ppm_params.absolute = 1;
+}
+void motor_register_relative() {
+	motor_ppm_params.absolute = 0;
+}
 
 
 

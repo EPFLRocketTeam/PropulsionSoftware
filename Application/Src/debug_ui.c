@@ -42,7 +42,9 @@ void ui_status(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_setup(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_enable(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_disable(uint16_t nb, int32_t * in, uint8_t * out);
-void ui_fault_reset(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_startup(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_shutdown(uint16_t nb, int32_t * in, uint8_t * out);
+
 void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out);
 
@@ -55,7 +57,6 @@ static DUI_ITEM_t ui_items[] = {
 		{"setup", 0, ui_setup},
 		{"enable", 0, ui_enable},
 		{"disable", 0, ui_disable},
-		{"reset", 0, ui_fault_reset},
 		{"move_abs", 1, ui_move_abs},
 		{"move_rel", 1, ui_move_rel}
 };
@@ -237,41 +238,43 @@ void ui_status(uint16_t nb, int32_t * in, uint8_t * out) {
 }
 
 void ui_setup(uint16_t nb, int32_t * in, uint8_t * out) {
-	motor_config_ppm();
-	motor_fault_rst();
-	motor_shutdown();
-	motor_switch_on();
+	motor_def_config();
 
-	sprintf((char *) out, "setup done\n");
+}
 
+void ui_startup(uint16_t nb, int32_t * in, uint8_t * out) {
+	motor_def_startup();
+}
+
+void ui_shutdown(uint16_t nb, int32_t * in, uint8_t * out) {
+	motor_def_shutdown();
 }
 
 void ui_enable(uint16_t nb, int32_t * in, uint8_t * out) {
-	motor_enable();
-	sprintf((char *) out, "enabled\n");
+	motor_def_enable();
 }
 
 void ui_disable(uint16_t nb, int32_t * in, uint8_t * out) {
-	motor_disable();
-	sprintf((char *) out, "disabled\n");
-}
-
-void ui_fault_reset(uint16_t nb, int32_t * in, uint8_t * out) {
-	motor_fault_rst();
-	sprintf((char *) out, "reset\n");
+	motor_def_disable();
 }
 
 
 void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out) {
 	if(nb > 0) {
-		motor_set_target_abs(in[0]);
+		motor_def_set_ppm();
+		motor_register_target(in[0]);
+		motor_register_absolute();
+		motor_def_start_ppm_operation();
 		sprintf((char *) out, "started\n");
 	}
 }
 
 void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out) {
 	if(nb > 0) {
-		motor_set_target_rel(in[0]);
+		motor_def_set_ppm();
+		motor_register_target(in[0]);
+		motor_register_relative();
+		motor_def_start_ppm_operation();
 		sprintf((char *) out, "started\n");
 	}
 }

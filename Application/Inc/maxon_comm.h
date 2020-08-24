@@ -49,7 +49,7 @@ void motor_fault_rst();
 void motor_set_rel();
 void motor_set_abs();
 void motor_new_pos();
-uint8_t read_status_word(uint16_t * data);
+int8_t read_status_word(uint16_t * data);
 void read_max_prof_vel(uint8_t * data);
 //END OF DIRECT EXEC FUNCTIONS
 
@@ -57,6 +57,8 @@ void read_max_prof_vel(uint8_t * data);
 
 //DEFFERED EXEC FUNCTIONS
 void motor_mainloop(void * argument);
+
+uint16_t motor_get_status(void);
 
 void motor_def_enable();
 void motor_def_disable();
@@ -67,10 +69,14 @@ void motor_def_set_ppm();
 void motor_def_set_homing();
 void motor_def_start_ppm_operation();
 void motor_def_start_homing_operation();
+void motor_def_start_operation();
 
 void motor_register_speed(uint32_t speed);
 void motor_register_acceleration(uint32_t acc);
+void motor_register_deceleration(uint32_t dec);
 void motor_register_target(int32_t target);
+void motor_register_absolute();
+void motor_register_relative();
 
 
 
