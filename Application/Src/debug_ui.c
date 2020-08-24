@@ -44,6 +44,7 @@ void ui_enable(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_disable(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_startup(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_shutdown(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_homing(uint16_t nb, int32_t * in, uint8_t * out);
 
 void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out);
@@ -57,8 +58,11 @@ static DUI_ITEM_t ui_items[] = {
 		{"setup", 0, ui_setup},
 		{"enable", 0, ui_enable},
 		{"disable", 0, ui_disable},
+		{"startup", 0, ui_startup},
+		{"shutdown", 0, ui_shutdown},
 		{"move_abs", 1, ui_move_abs},
-		{"move_rel", 1, ui_move_rel}
+		{"move_rel", 1, ui_move_rel},
+		{"homing", 0, ui_homing}
 };
 
 
@@ -74,7 +78,7 @@ int8_t	debug_ui_decode(uint8_t d, uint8_t * entry) {
 	if((d >= ' ') && (d <= '}')) {
 		entry[counter++] = d;
 		return -1;
-	} else if (d == CHAR_LF) {
+	} else if (d == CHAR_LF || d == CHAR_CR) {
 		entry[counter] = '\0';
 		counter = 0;
 		return 1;
@@ -223,23 +227,19 @@ void ui_echo(uint16_t nb, int32_t * in, uint8_t * out) {
 }
 
 void ui_status(uint16_t nb, int32_t * in, uint8_t * out) {
-	uint16_t status = 0;
-	if(read_status_word(&status) == -1) {
-		sprintf((char *) out, "comm error\n");
-		return;
-	}
+	uint16_t status = motor_get_status();
 	sprintf((char *) out, "status:\nready: %d\nswitched on: %d\nenabled: %d\n"
 						"fault: %d\nvoltage enabled: %d\nquickstop: %d\ntarget reached: %d\n"
-						"set ack/homing attained: %d\nlimit active: %d\n",
+						"set ack/homing attained: %d\nlimit active: %d\nerror: %x\nposition: %ld\n",
 						SW_READY_TO_SWITCH_ON(status), SW_SWITCHED_ON(status), SW_ENABLED(status),
 						SW_FAULT(status), SW_VOLTAGE_ENABLED(status), SW_QUICKSTOP(status),
-						SW_TARGET_REACHED(status), SW_SET_ACK(status), SW_LIMIT_ACTIVE(status));
+						SW_TARGET_REACHED(status), SW_SET_ACK(status), SW_LIMIT_ACTIVE(status),
+						motor_get_error(), motor_get_position());
 
 }
 
 void ui_setup(uint16_t nb, int32_t * in, uint8_t * out) {
 	motor_def_config();
-
 }
 
 void ui_startup(uint16_t nb, int32_t * in, uint8_t * out) {
@@ -277,6 +277,10 @@ void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_def_start_ppm_operation();
 		sprintf((char *) out, "started\n");
 	}
+}
+
+void ui_homing(uint16_t nb, int32_t * in, uint8_t * out) {
+	motor_def_start_homing_operation();
 }
 
 

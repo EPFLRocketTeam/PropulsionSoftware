@@ -63,7 +63,7 @@ const osThreadAttr_t PP_commMotor_attributes = {
 };
 
 
-uint32_t PP_commUserBuffer[ 128 ];
+uint32_t PP_commUserBuffer[ 1024 ];
 osStaticThreadDef_t PP_commUserControlBlock;
 const osThreadAttr_t PP_commUser_attributes = {
   .name = "PP_commUser",

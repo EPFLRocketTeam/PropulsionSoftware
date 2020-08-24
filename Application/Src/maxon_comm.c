@@ -321,33 +321,142 @@ void store_int32(int32_t value, uint8_t * data) {
 static uint8_t tmp_data[DATA_SIZE];
 static uint8_t tmp_data2[DATA_SIZE];
 
-#define MAX_POS			0
-#define MIN_POS			0
-#define MAX_PROFILE_VEL	50000
-#define MAX_MOTOR_SPEED	50000
-#define QUICK_STOP_DEC	10000
-#define MAX_ACC			5000000
 
 
+//MOTOR_SPECIFIC SETTINGS
+#define MAX_POS			0	//checked
+#define MIN_POS			0 	//checked
+#define MAX_PROFILE_VEL	8000 //check
+
+#define QUICK_STOP_DEC	20000 //check
+#define MAX_ACC			50000 //check
 
 //motor csts
-#define MOTOR_MAX_SPEED	10000
-#define MOTOR_NOM_CUR	7320
-#define MOTOR_MAX_CURRENT	10000
-#define MOTOR_THERMAL	32
-#define MOTOR_TORQUE    14 //CHECK UNITS
+#define MOTOR_MAX_SPEED	10000	//check
+#define MOTOR_NOM_CUR	7320	//checked
+#define MOTOR_MAX_CURRENT	10000	//checked
+#define MOTOR_THERMAL	327 //checked
+#define MOTOR_TORQUE    12419 //checked
+#define EL_RESISTANCE	139 //checked
+#define EL_INDUCTANCE	93	//checked
 
-#define GEAR_MAX_SPEED	8000
-#define GEAR_NUM		66
-#define GEAR_DEN		1
+#define GEAR_MAX_SPEED	8000 //check
+#define GEAR_NUM		66  //check
+#define GEAR_DEN		1 	//check
 
-#define NUM_POLE_PAIRS	4
+#define NUM_POLE_PAIRS	4 //checked
+
+#define ENC_NB_PULSES	1024 //check
+#define ENC_TYPE		0x0001 //check
+
+#define HALL_TYPE		0x0000 //check
+#define HALL_PATTERN	0x0005 //check
+
+//controllers
+#define CURRENT_P		143196 //check
+#define CURRENT_I		207753 //check
+#define POSITION_P		6377362 //check
+#define POSITION_I		23057309 //check
+#define POSITION_D		146992 //check
+#define POSITION_FFV	0 //check
+#define POSITION_FFA	1129 //check
+
+
+
+
+void motor_config_gen(void) {
+	store_uint32(MOTOR_MAX_SPEED, tmp_data);
+	Write_object(MAXON_MOTOR_MAX_SPEED, tmp_data);
+
+	store_uint32(MOTOR_NOM_CUR, tmp_data);
+	Write_object(MAXON_MOTOR_NOMINAL_CURRENT, tmp_data);
+
+	store_uint32(MOTOR_MAX_CURRENT, tmp_data);
+	Write_object(MAXON_MOTOR_CURRENT_LIMIT, tmp_data);
+
+
+
+
+	store_uint32(GEAR_MAX_SPEED, tmp_data);
+	Write_object(MAXON_GEAR_MAX_INPUT_SPEED, tmp_data);
+
+	store_uint32(GEAR_NUM, tmp_data);
+	Write_object(MAXON_GEAR_NUMERATOR, tmp_data);
+
+	store_uint32(GEAR_DEN, tmp_data);
+	Write_object(MAXON_GEAR_DENOMINATOR, tmp_data);
+
+	store_uint32(MAX_PROFILE_VEL, tmp_data);
+	Write_object(MAXON_MAX_PROFILE_VELOCITY, tmp_data);
+
+	store_uint32(MAX_ACC, tmp_data);
+	Write_object(MAXON_MAX_ACCELERATION, tmp_data);
+
+//THESE VALUES ARE SETUP WITH THE PC FOR NOW
+/*
+	store_int32(MAX_POS, tmp_data);
+	Write_object(MAXON_SOFTWARE_MIN_POSITION, tmp_data);
+
+	store_int32(MIN_POS, tmp_data);
+	Write_object(MAXON_SOFTWARE_MAX_POSITION, tmp_data);
+
+	store_uint16(MOTOR_THERMAL, tmp_data);
+	Write_object(MAXON_MOTOR_THERMAL_CST, tmp_data);
+
+	store_uint32(MOTOR_TORQUE, tmp_data);
+	Write_object(MAXON_MOTOR_TORQUE_CST, tmp_data);
+
+	store_uint8(NUM_POLE_PAIRS, tmp_data);
+	Write_object(MAXON_MOTOR_POLE_PAIRS, tmp_data);
+
+	store_uint32(EL_RESISTANCE, tmp_data);
+	Write_object(MAXON_ELECTRICAL_RESISTANCE, tmp_data);
+
+	store_uint16(EL_INDUCTANCE, tmp_data);
+	Write_object(MAXON_ELECTRICAL_INDUCTANCE, tmp_data);
+
+	store_uint32(ENC_NB_PULSES, tmp_data);
+	Write_object(MAXON_ENC1_NB_PULSES, tmp_data);
+
+	store_uint16(ENC_TYPE, tmp_data);
+	Write_object(MAXON_ENC1_TYPE, tmp_data);
+
+	store_uint16(HALL_TYPE, tmp_data);
+	Write_object(MAXON_HALL_TYPE, tmp_data);
+
+	store_uint32(CURRENT_P, tmp_data);
+	Write_object(MAXON_CUR_CTRL_P, tmp_data);
+
+	store_uint32(CURRENT_I, tmp_data);
+	Write_object(MAXON_CUR_CTRL_I, tmp_data);
+
+	store_uint32(POSITION_P, tmp_data);
+	Write_object(MAXON_PPM_CTRL_P, tmp_data);
+
+	store_uint32(POSITION_I, tmp_data);
+	Write_object(MAXON_PPM_CTRL_I, tmp_data);
+
+	store_uint32(POSITION_D, tmp_data);
+	Write_object(MAXON_PPM_CTRL_D, tmp_data);
+
+	store_uint32(POSITION_FFV, tmp_data);
+	Write_object(MAXON_PPM_CTRL_FFV, tmp_data);
+
+	store_uint32(POSITION_FFA, tmp_data);
+	Write_object(MAXON_PPM_CTRL_FFA, tmp_data);
+
+
+*/
+
+}
 
 
 #define PROFILE_ACC 	20000
 #define PROFILE_DEC 	20000
 #define PROFILE_VEL 	8000
 #define PROFILE_TYPE	0
+
+
 
 
 
@@ -378,6 +487,7 @@ void motor_set_target_abs(int32_t pos) {
 	store_int32(pos, tmp_data);
 	Write_object(MAXON_TARGET_POSITION, tmp_data);
 	motor_set_abs();
+	motor_imm();
 	motor_new_pos();
 
 }
@@ -386,6 +496,7 @@ void motor_set_target_rel(int32_t pos) {
 	store_int32(pos, tmp_data);
 	Write_object(MAXON_TARGET_POSITION, tmp_data);
 	motor_set_rel();
+	motor_imm();
 	motor_new_pos();
 
 }
@@ -400,14 +511,47 @@ int8_t read_status_word(uint16_t * data) {
 	return 0;
 }
 
+int8_t read_error_word(uint16_t * data) {
+	if(Read_object(MAXON_ERROR_WORD, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8);
+	return 0;
+}
+
+int8_t read_position(int32_t * data) {
+	if(Read_object(MAXON_ACTUAL_POSITION, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8) | (tmp_data[2]<<16) | (tmp_data[3]<<24);
+	return 0;
+}
+
+int8_t read_psu_voltage(uint16_t * data) {
+	if(Read_object(MAXON_PSU_VOLTAGE, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8);
+	return 0;
+}
 
 
+
+int8_t write_home_position(int32_t home) {
+	store_int32(home, tmp_data);
+	if(Write_object(MAXON_HOME_POSITION, tmp_data) == -1) {
+		return -1;
+	}
+	else{
+		return 0;
+	}
+}
 
 
 
 //motor control
 
-uint8_t write_to_controlword(uint16_t set, uint16_t clr) {
+int8_t write_to_controlword(uint16_t set, uint16_t clr) {
 	if(Read_object(MAXON_CONTROL_WORD, tmp_data2) == -1) {
 		return -1;
 	}
@@ -463,6 +607,10 @@ void motor_new_pos() {
 	write_to_controlword(MAXON_SET_NEW_POS, MAXON_CLR_NEW_POS);
 }
 
+void motor_imm() {
+	write_to_controlword(MAXON_SET_IMM, MAXON_CLR_IMM);
+}
+
 
 
 //START OF DEFFERED CONTROL FUNCTIONS
@@ -494,36 +642,15 @@ typedef struct {
 }MOTOR_PPM_PARAMS_t;
 
 
-//to be completed
-typedef struct {
-	//motor properties
-	uint32_t nominal_current;
-	uint32_t current_limit;
-	uint8_t nb_pole_pairs;
-	uint16_t thermal_time_cste;
-	uint32_t torque_constant;
-
-
-	//gear properties
-	uint32_t gear_reduction_numerator;
-	uint32_t gear_reduction_denominator;
-	uint32_t gear_max_input_speed;
-
-	//limits
-	uint32_t max_motor_speed;
-	int32_t min_position_limit;
-	int32_t max_position_limit;
-
-
-}MOTOR_GEN_PARAMS_t;
-
 
 static MOTOR_TODO_t motor_todo;
 static MOTOR_TODO_t motor_todo_buf;
-static MOTOR_GEN_PARAMS_t motor_gen_params;
 static MOTOR_PPM_PARAMS_t motor_ppm_params;
 static uint16_t motor_status;
+static uint16_t motor_error;
+static uint16_t psu_voltage;
 static uint32_t operation_counter;
+static int32_t current_position;
 
 void motor_def_init(void) {
 	motor_todo.enable = 0;
@@ -544,39 +671,7 @@ void motor_def_init(void) {
 
 }
 
-void motor_config_gen(void) {
-	store_uint32(motor_gen_params.max_motor_speed, tmp_data);
-	Write_object(MAXON_MOTOR_MAX_SPEED, tmp_data);
 
-	store_uint32(motor_gen_params.nominal_current, tmp_data);
-	Write_object(MAXON_MOTOR_NOMINAL_CURRENT, tmp_data);
-
-	store_uint32(motor_gen_params.current_limit, tmp_data);
-	Write_object(MAXON_MOTOR_CURRENT_LIMIT, tmp_data);
-
-	store_uint16(motor_gen_params.thermal_time_cste, tmp_data);
-	Write_object(MAXON_MOTOR_THERMAL_CST, tmp_data);
-
-
-	store_uint32(motor_gen_params.gear_max_input_speed, tmp_data);
-	Write_object(MAXON_GEAR_MAX_INPUT_SPEED, tmp_data);
-
-	store_uint32(motor_gen_params.gear_reduction_numerator, tmp_data);
-	Write_object(MAXON_GEAR_NUMERATOR, tmp_data);
-
-	store_uint32(motor_gen_params.gear_reduction_denominator, tmp_data);
-	Write_object(MAXON_GEAR_DENOMINATOR, tmp_data);
-
-	store_uint8(motor_gen_params.nb_pole_pairs, tmp_data);
-	Write_object(MAXON_MOTOR_POLE_PAIRS, tmp_data);
-
-	store_int32(motor_gen_params.min_position_limit, tmp_data);
-	Write_object(MAXON_SOFTWARE_MIN_POSITION, tmp_data);
-
-	store_int32(motor_gen_params.max_position_limit, tmp_data);
-	Write_object(MAXON_SOFTWARE_MAX_POSITION, tmp_data);
-
-}
 
 void motor_config_ppm(void) {
 	store_int8(MAXON_MODE_PPM, tmp_data);
@@ -604,33 +699,43 @@ void motor_config_homing(void) {
 void update_todo(void) {
 	if(motor_todo_buf.enable) {
 		motor_todo.enable = 1;
+		motor_todo_buf.enable = 0;
 	}
 	if(motor_todo_buf.disable) {
 		motor_todo.disable = 1;
+		motor_todo_buf.disable = 0;
 	}
 	if(motor_todo_buf.config) {
 		motor_todo.config = 1;
+		motor_todo_buf.config = 0;
 	}
 	if(motor_todo_buf.startup) {
 		motor_todo.startup = 1;
+		motor_todo_buf.startup = 0;
 	}
 	if(motor_todo_buf.shutdown) {
 		motor_todo.shutdown = 1;
+		motor_todo_buf.shutdown = 0;
 	}
 	if(motor_todo_buf.set_ppm) {
 		motor_todo.set_ppm = 1;
+		motor_todo_buf.set_ppm = 0;
 	}
 	if(motor_todo_buf.set_homing) {
 		motor_todo.set_homing = 1;
+		motor_todo_buf.set_homing = 0;
 	}
 	if(motor_todo_buf.start_ppm_operation && motor_todo.start_ppm_operation == 0) {
 		motor_todo.start_ppm_operation = 1;
+		motor_todo_buf.start_ppm_operation = 0;
 	}
 	if(motor_todo_buf.start_homing_operation && motor_todo.start_homing_operation == 0) {
 		motor_todo.start_homing_operation = 1;
+		motor_todo_buf.start_homing_operation = 0;
 	}
 	if(motor_todo_buf.start_operation && motor_todo.start_operation == 0) {
 		motor_todo.start_operation = 1;
+		motor_todo_buf.start_operation = 0;
 	}
 }
 
@@ -642,7 +747,10 @@ void motor_mainloop(void * argument) {
 
 		for(;;) {
 			update_todo();
+			read_error_word(&motor_error);
 			read_status_word(&motor_status);
+			read_psu_voltage(&psu_voltage);
+			read_position(&current_position);
 			if(motor_todo.enable) {
 				motor_enable();
 				motor_todo.enable = 0;
@@ -662,6 +770,7 @@ void motor_mainloop(void * argument) {
 				motor_todo.startup = 0;
 			}
 			if(motor_todo.shutdown) {
+				motor_disable();
 				motor_disable_voltage();
 				motor_shutdown();
 				motor_todo.shutdown = 0;
@@ -678,23 +787,27 @@ void motor_mainloop(void * argument) {
 				//check that the motor is in PPM mode
 				int8_t mode;
 				motor_get_mode(&mode);
-				if(mode == MAXON_MODE_PPM) {
+				if(SW_TARGET_REACHED(motor_status) && motor_todo.start_ppm_operation == 2) {
+					motor_todo.start_ppm_operation = 0;
+				}
+				if(mode == MAXON_MODE_PPM && motor_todo.start_ppm_operation == 1) {
 					if(motor_ppm_params.absolute) {
 						motor_set_target_abs(motor_ppm_params.target);
 					} else {
 						motor_set_target_rel(motor_ppm_params.target);
 					}
+					motor_todo.start_ppm_operation = 2;
 
 				}else{
 					//wrong mode error
+					motor_todo.start_ppm_operation = 0;
 				}
 
-				if(SW_TARGET_REACHED(motor_status)) {
-					motor_todo.start_operation = 0;
-				}
+
 			}
 			if(motor_todo.start_homing_operation) {
 
+				write_home_position(current_position);
 				//if homing op finished
 				motor_todo.start_homing_operation = 0;
 			}
@@ -746,6 +859,18 @@ void motor_mainloop(void * argument) {
 
 uint16_t motor_get_status(void) {
 	return motor_status;
+}
+
+uint16_t motor_get_psu_voltage(void) {
+	return psu_voltage;
+}
+
+uint16_t motor_get_error(void) {
+	return motor_error;
+}
+
+int32_t motor_get_position(void) {
+	return current_position;
 }
 
 
