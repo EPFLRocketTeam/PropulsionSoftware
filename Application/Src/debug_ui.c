@@ -45,11 +45,34 @@ void ui_disable(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_startup(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_shutdown(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_homing(uint16_t nb, int32_t * in, uint8_t * out);
-
+void ui_reg_ppm_profile(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_operation(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_abort(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out);
 
 
+
+const char help_text[] = 	"debug ui help:\n"
+							"help		: this page\n"
+							"echo num	: test function\n"
+							"status		: maxon motor status\n"
+							"setup		: maxon motor setup\n"
+							"enable		: enable motor\n"
+							"disable	: disable motor\n"
+							"startup	: start motor\n"
+							"shutdown	: shutdown motor\n"
+							"move_abs target\n"
+							"			: move to target\n"
+							"move_rel target\n"
+							"			: move +/- target\n"
+							"homing 	: start homing\n"
+							"ppm_profile speed acc dec\n"
+							"			: setup ppm profile\n"
+							"op_profile half wait1 full wait2\n"
+							"			: setup operation profile\n"
+							"operation	: start operation\n";
 
 static DUI_ITEM_t ui_items[] = {
 		{"help", 0, ui_help},
@@ -62,7 +85,11 @@ static DUI_ITEM_t ui_items[] = {
 		{"shutdown", 0, ui_shutdown},
 		{"move_abs", 1, ui_move_abs},
 		{"move_rel", 1, ui_move_rel},
-		{"homing", 0, ui_homing}
+		{"homing", 0, ui_homing},
+		{"ppm_profile", 3, ui_reg_ppm_profile},
+		{"op_profile", 4, ui_reg_op_profile},
+		{"operation", 0, ui_operation},
+		{"abort", 0, ui_abort}
 };
 
 
@@ -203,6 +230,7 @@ void debug_ui_receive(uint8_t recvBuffer) {
 					}
 				}
 				//invoke function
+				resp[0] = '\0'; //clear response
 				ui_items[i].func(args_read, args, resp);
 
 				HAL_UART_Transmit(&UI_UART, resp, str_len(resp, DUI_RESP_LEN), 500);
@@ -215,7 +243,7 @@ void debug_ui_receive(uint8_t recvBuffer) {
 
 //display help message
 void ui_help(uint16_t nb, int32_t * in, uint8_t * out) {
-	sprintf((char *) out, "commands:\nhelp\necho num\nstatus\n");
+	sprintf((char *) out, help_text);
 }
 
 void ui_echo(uint16_t nb, int32_t * in, uint8_t * out) {
@@ -258,11 +286,41 @@ void ui_disable(uint16_t nb, int32_t * in, uint8_t * out) {
 	motor_def_disable();
 }
 
+void ui_reg_ppm_profile(uint16_t nb, int32_t * in, uint8_t * out) {
+	if(nb >= 3) { //check that the accelerations are positive!
+		motor_register_speed(in[0]);
+		motor_register_acceleration(in[1]);
+		motor_register_deceleration(in[2]);
+		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", in[0], in[1], in[2]);
+	}else{
+		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", motor_get_speed(), motor_get_acceleration(), motor_get_deceleration());
+	}
+
+}
+void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out) {
+	if(nb >= 4) {
+		motor_register_half_target(DDEG2INC(in[0]));
+		motor_register_half_wait(in[1]);
+		motor_register_target(DDEG2INC(in[2]));
+		motor_register_end_wait(in[3]);
+		sprintf((char *) out, "half target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n", in[0], in[1], in[2], in[3]);
+	} else{
+		sprintf((char *) out, "half target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n",
+				INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
+	}
+}
+void ui_operation(uint16_t nb, int32_t * in, uint8_t * out) {
+	motor_def_start_operation();
+}
+
+void ui_abort(uint16_t nb, int32_t * in, uint8_t * out) {
+	motor_def_abort();
+}
 
 void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out) {
 	if(nb > 0) {
 		motor_def_set_ppm();
-		motor_register_target(in[0]);
+		motor_register_tmp_target(DDEG2INC(in[0]));
 		motor_register_absolute();
 		motor_def_start_ppm_operation();
 		sprintf((char *) out, "started\n");
@@ -272,7 +330,7 @@ void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out) {
 void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out) {
 	if(nb > 0) {
 		motor_def_set_ppm();
-		motor_register_target(in[0]);
+		motor_register_tmp_target(DDEG2INC(in[0]));
 		motor_register_relative();
 		motor_def_start_ppm_operation();
 		sprintf((char *) out, "started\n");
