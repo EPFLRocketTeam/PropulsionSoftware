@@ -51,6 +51,9 @@ void ui_operation(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_abort(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_short_stat(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out);
 
 
 
@@ -89,7 +92,10 @@ static DUI_ITEM_t ui_items[] = {
 		{"ppm_profile", 3, ui_reg_ppm_profile},
 		{"op_profile", 4, ui_reg_op_profile},
 		{"operation", 0, ui_operation},
-		{"abort", 0, ui_abort}
+		{"abort", 0, ui_abort},
+		{"short_stat", 0, ui_short_stat},
+		{"short_ppm", 0, ui_short_ppm},
+		{"short_op", 0, ui_short_op}
 };
 
 
@@ -339,6 +345,19 @@ void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out) {
 
 void ui_homing(uint16_t nb, int32_t * in, uint8_t * out) {
 	motor_def_start_homing_operation();
+}
+
+void ui_short_stat(uint16_t nb, int32_t * in, uint8_t * out) {
+	uint16_t status = motor_get_status();
+	sprintf((char *) out, "%d %d %d %d %x %ld %d\n",SW_SWITCHED_ON(status), SW_ENABLED(status), SW_FAULT(status), SW_TARGET_REACHED(status), motor_get_error(), INC2DDEG(motor_get_position()), motor_get_psu_voltage());
+}
+
+void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "%ld %ld %ld\n", motor_get_speed(), motor_get_acceleration(), motor_get_deceleration());
+}
+
+void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "%ld %ld %ld %ld\n", INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
 }
 
 

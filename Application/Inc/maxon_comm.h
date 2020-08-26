@@ -114,6 +114,7 @@ void motor_mainloop(void * argument);
 uint16_t motor_get_status(void);
 uint16_t motor_get_error(void);
 int32_t motor_get_position(void);
+uint16_t motor_get_psu_voltage(void) ;
 
 void motor_def_enable();
 void motor_def_disable();
