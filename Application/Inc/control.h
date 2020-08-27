@@ -13,7 +13,7 @@
 
 
 #define SOLENOID	GPIOB, GPIO_PIN_9
-//SOLENOID: PB9 | D1
+//SOLENOID: PB9 | D1 S2
 //returns the pin state after toggle
 uint8_t toggle_solenoid();
 
