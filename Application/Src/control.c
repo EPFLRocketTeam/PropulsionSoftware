@@ -73,6 +73,10 @@ void PP_controlFunc(void *argument) {
 	}
 }
 
+void toggle_solenoid() {
+
+}
+
 
 
 

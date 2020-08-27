@@ -15,6 +15,7 @@ def move_rel():
     print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
+        ser.readline()
 
 def move_abs():
     targ = tmp_target_entry.get()
@@ -22,6 +23,7 @@ def move_abs():
     print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
+        ser.readline()
 
 def set_home():
     out = 'homing\n'
@@ -183,7 +185,26 @@ def get_status():
             psu_cod.delete(0, tk.END)
             psu_cod.insert(0, str(int(data[6])/10.0))
             
-
+def get_sensors():
+    out = 'short_sensors\n'
+    print(out)
+    if ser.is_open:
+        ser.write(bytes(out, 'ascii'))
+        resp = ser.readline().decode('ascii')
+        data = resp.split()
+        print(data)
+        if(len(data) == 5):
+            pres1_entry.delete(0, tk.END)
+            pres1_entry.insert(0, data[0])
+            pres2_entry.delete(0, tk.END)
+            pres2_entry.insert(0, data[1])
+            temp1_entry.delete(0, tk.END)
+            temp1_entry.insert(0, data[2])
+            temp2_entry.delete(0, tk.END)
+            temp2_entry.insert(0, data[3])
+            temp3_entry.delete(0, tk.END)
+            temp3_entry.insert(0, data[4])
+            
 
 def connect():
     global ser
@@ -208,6 +229,7 @@ heart_beat=1000
 def main_update():
 
     get_status()
+    get_sensors()
     window.after(heart_beat, main_update)
 
 
@@ -231,24 +253,37 @@ window.title('propulsion client')
 
 
 motor = ttk.Labelframe(window, text="motor control")
-motor.grid(row=0, column=0, rowspan=2, sticky="NSEW")
+motor.grid(row=1, column=0, rowspan=2, sticky="NSEW")
 
 
 sensor = ttk.Labelframe(window, text="sensors")
-sensor.grid(row=0, column=1, sticky="NSEW")
+sensor.grid(row=1, column=1, sticky="NSEW")
 
 
 other = ttk.Labelframe(window, text="other")
-other.grid(row=1, column=1, sticky="NSEW")
+other.grid(row=2, column=1, sticky="NSEW")
 
 YPAD = 2
 BPAD = 5
 
-pos_adj = tk.Frame(motor)
+comm_box = ttk.Labelframe(window, text='connection')
+comm_box.grid(row=0, column=0, columnspan=2, sticky="NSEW")
+
+serial_label= tk.Label(comm_box, text='Serial port =')
+serial_label.grid(row=0, column=0, sticky="WE", pady=YPAD)
+
+serial_entry= tk.Entry(comm_box)
+serial_entry.insert(0, 'com7')
+serial_entry.grid(row=0, column=1, sticky="WE", pady=YPAD)
+
+serial_but= tk.Button(comm_box, text='Connect', command=connect)
+serial_but.grid(row=0, column=2, sticky="WE", pady=YPAD, padx=BPAD)
+
+pos_adj = ttk.Labelframe(motor, text='position adjustement')
 pos_adj.grid(row=0, column = 0, sticky='WE')
 
-tmp_mov_label = tk.Label(pos_adj, text="POSITION ADJUSTEMENT")
-tmp_mov_label.grid(row = 0, column = 0, columnspan=5, pady=YPAD)
+#tmp_mov_label = tk.Label(pos_adj, text="POSITION ADJUSTEMENT")
+#tmp_mov_label.grid(row = 0, column = 0, columnspan=5, pady=YPAD)
 
 tmp_target_label = tk.Label(pos_adj, text="target = ")
 tmp_target_label.grid(row=1, column=0, sticky="E", pady=YPAD)
@@ -281,11 +316,11 @@ set_hom_btn = tk.Button(pos_adj, text="Home", command=set_home)
 set_hom_btn.grid(row=3, column=3,  sticky="EW", pady=YPAD)
 
 
-prof_sett = tk.Frame(motor)
+prof_sett = ttk.Labelframe(motor, text='profile settings')
 prof_sett.grid(row = 2, column = 0, sticky='WE')
 
-prof_label = tk.Label(prof_sett, text="PROFILE SETTINGS")
-prof_label.grid(row = 2, column = 0, columnspan=5, pady=YPAD)
+#prof_label = tk.Label(prof_sett, text="PROFILE SETTINGS")
+#prof_label.grid(row = 2, column = 0, columnspan=5, pady=YPAD)
 
 prof_spd_label = tk.Label(prof_sett, text="profile speed = ")
 prof_spd_label.grid(row=3, column=0, sticky="E", pady=YPAD)
@@ -320,11 +355,11 @@ prof_get_btn.grid(row=5, column=3, sticky="W", pady=YPAD, padx=BPAD)
 prof_set_btn = tk.Button(prof_sett, text="Set", command=set_profile)
 prof_set_btn.grid(row=5, column=4, sticky="W", pady=YPAD, padx=BPAD)
 
-op_sett = tk.Frame(motor)
+op_sett = ttk.Labelframe(motor, text='operation settings')
 op_sett.grid(row=3, column=0, sticky='WE')
 
-op_label = tk.Label(op_sett, text="OPERATION SETTINGS")
-op_label.grid(row = 2, column = 0, columnspan=5, pady=YPAD)
+#op_label = tk.Label(op_sett, text="OPERATION SETTINGS")
+#op_label.grid(row = 2, column = 0, columnspan=5, pady=YPAD)
 
 op_half_label = tk.Label(op_sett, text="half angle = ")
 op_half_label.grid(row=3, column=0, sticky="E", pady=YPAD)
@@ -368,11 +403,11 @@ op_get_btn.grid(row=6, column=3, sticky="W", pady=YPAD, padx=BPAD)
 op_set_btn = tk.Button(op_sett, text="Set", command=set_operation)
 op_set_btn.grid(row=6, column=4, sticky="W", pady=YPAD, padx=BPAD)
 
-motor_stat = tk.Frame(motor)
+motor_stat = ttk.Labelframe(motor, text='motor status')
 motor_stat.grid(row=4, column=0, sticky="WE")
 
-stat_label = tk.Label(motor_stat, text="MOTOR STATUS")
-stat_label.grid(row=0, column=0, columnspan=5, pady=YPAD)
+#stat_label = tk.Label(motor_stat, text="MOTOR STATUS")
+#stat_label.grid(row=0, column=0, columnspan=5, pady=YPAD)
 
 stat_power = tk.Button(motor_stat, text="Power", bg='white', fg='black', command=startup)
 stat_power.grid(row=1, column=0, pady=YPAD)
@@ -404,11 +439,11 @@ psu2_cod = tk.Label(motor_stat, text="[V]")
 psu2_cod.grid(row=1, column = 8, sticky="E", pady=YPAD)
 
 
-mot_ctrl = tk.Frame(motor)
+mot_ctrl = ttk.Labelframe(motor, text='motor operation')
 mot_ctrl.grid(row=5, column=0, sticky="WE")
 
-mot_ctrl_label = tk.Label(mot_ctrl, text="MOTOR OPERATION")
-mot_ctrl_label.grid(row=0, column=0, columnspan=4, sticky="WE", pady=YPAD)
+#mot_ctrl_label = tk.Label(mot_ctrl, text="MOTOR OPERATION")
+#mot_ctrl_label.grid(row=0, column=0, columnspan=4, sticky="WE", pady=YPAD)
 
 saf_but = tk.Button(mot_ctrl, text="Safety", bg='orange', command=safety_toggle)
 saf_but.grid(row=1, column=0, sticky="WE", pady=YPAD, padx=BPAD)
@@ -422,17 +457,57 @@ homing_but.grid(row=1, column=3, sticky="WE", pady=YPAD, padx=BPAD)
 abort_but = tk.Button(mot_ctrl, text="ABORT", bg='red', command=abort)
 abort_but.grid(row=1, column=4, sticky="WE", pady=YPAD, padx=BPAD)
 
-motor_conn = tk.Frame(motor)
-motor_conn.grid(row=6, column=0)
+pres1_label = tk.Label(sensor, text='pressure 1 = ')
+pres1_label.grid(row=0, column=0, sticky="E", pady=YPAD)
 
-serial_label= tk.Label(motor_conn, text='Serial port =')
-serial_label.grid(row=0, column=0, sticky="WE", pady=YPAD)
+pres1_entry = tk.Entry(sensor, justify='right')
+pres1_entry.grid(row=0, column = 1, sticky="E", pady=YPAD)
+pres1_entry.bind("<Key>", lambda e: "break")
 
-serial_entry= tk.Entry(motor_conn)
-serial_entry.grid(row=0, column=1, sticky="WE", pady=YPAD)
+pres1_label2 = tk.Label(sensor, text='[RAW]')
+pres1_label2.grid(row=0, column=2, sticky="E", pady=YPAD)
 
-serial_but= tk.Button(motor_conn, text='Connect', command=connect)
-serial_but.grid(row=0, column=2, sticky="WE", pady=YPAD, padx=BPAD)
+pres2_label = tk.Label(sensor, text='pressure 2 = ')
+pres2_label.grid(row=1, column=0, sticky="E", pady=YPAD)
+
+pres2_entry = tk.Entry(sensor, justify='right')
+pres2_entry.grid(row=1, column = 1, sticky="E", pady=YPAD)
+pres2_entry.bind("<Key>", lambda e: "break")
+
+pres2_label2 = tk.Label(sensor, text='[RAW]')
+pres2_label2.grid(row=1, column=2, sticky="E", pady=YPAD)
+
+temp1_label = tk.Label(sensor, text='temperature 1 = ')
+temp1_label.grid(row=2, column=0, sticky="E", pady=YPAD)
+
+temp1_entry = tk.Entry(sensor, justify='right')
+temp1_entry.grid(row=2, column = 1, sticky="E", pady=YPAD)
+temp1_entry.bind("<Key>", lambda e: "break")
+
+temp1_label2 = tk.Label(sensor, text='[RAW]')
+temp1_label2.grid(row=2, column=2, sticky="E", pady=YPAD)
+
+temp2_label = tk.Label(sensor, text='temperature 2 = ')
+temp2_label.grid(row=3, column=0, sticky="E", pady=YPAD)
+
+temp2_entry = tk.Entry(sensor, justify='right')
+temp2_entry.grid(row=3, column = 1, sticky="E", pady=YPAD)
+temp2_entry.bind("<Key>", lambda e: "break")
+
+temp2_label2 = tk.Label(sensor, text='[RAW]')
+temp2_label2.grid(row=3, column=2, sticky="E", pady=YPAD)
+
+temp3_label = tk.Label(sensor, text='temperature 3 = ')
+temp3_label.grid(row=4, column=0, sticky="E", pady=YPAD)
+
+temp3_entry = tk.Entry(sensor, justify='right')
+temp3_entry.grid(row=4, column = 1, sticky="E", pady=YPAD)
+temp3_entry.bind("<Key>", lambda e: "break")
+
+temp3_label2 = tk.Label(sensor, text='[RAW]')
+temp3_label2.grid(row=4, column=2, sticky="E", pady=YPAD)
+
+
 
 
 main_update()

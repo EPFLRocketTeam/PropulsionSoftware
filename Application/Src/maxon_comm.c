@@ -771,8 +771,9 @@ void motor_mainloop(void * argument) {
 				if(emergency_abort == 1) {
 					motor_quickstop();
 					emergency_abort = 2;
+					status_counter = 0;
 				}
-				if(emergency_abort == 2 && SW_TARGET_REACHED(motor_status)) {
+				if(emergency_abort == 2 && status_counter > STATUS_THRESH) {
 					motor_unquickstop();
 					motor_config_ppm();
 					motor_fault_rst();
@@ -780,9 +781,14 @@ void motor_mainloop(void * argument) {
 					motor_switch_on();
 					motor_enable();
 					motor_set_target_abs(0);
-					emergency_abort = 0;
+					emergency_abort = 3;
+					status_counter = 0;
 				}
-				//torque stays on to hold the valve closed
+				if(emergency_abort == 3 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
+					emergency_abort = 0;
+					motor_disable();
+					motor_shutdown();
+				}
 			}
 			if(motor_todo.enable) {
 				motor_enable();
@@ -822,9 +828,9 @@ void motor_mainloop(void * argument) {
 				motor_enable();
 				if(motor_todo.start_ppm_operation == 1) {
 					if(motor_ppm_params.absolute) {
-						motor_set_target_abs(motor_ppm_params.target);
+						motor_set_target_abs(motor_ppm_params.tmp_target);
 					} else {
-						motor_set_target_rel(motor_ppm_params.target);
+						motor_set_target_rel(motor_ppm_params.tmp_target);
 					}
 					motor_todo.start_ppm_operation = 2;
 					status_counter = 0;

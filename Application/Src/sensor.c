@@ -61,7 +61,7 @@ void PP_sensorFunc(void *argument) {
 }
 
 
-uint16_t PP_getData(PP_SENSOR_t sensor) {
+uint16_t sensor_get_data(PP_SENSOR_t sensor) {
 	if (sensor < PP_NB_SENSOR) {
 		return PP_sensorData[sensor];
 	} else {

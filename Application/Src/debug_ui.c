@@ -20,6 +20,7 @@
 #include <string.h>
 #include <maxon_comm.h>
 #include <maxon_def.h>
+#include <sensor.h>
 
 
 #define CHAR_CR	0x0D
@@ -54,6 +55,8 @@ void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_stat(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out);
+
+void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out);
 
 
 
@@ -95,7 +98,8 @@ static DUI_ITEM_t ui_items[] = {
 		{"abort", 0, ui_abort},
 		{"short_stat", 0, ui_short_stat},
 		{"short_ppm", 0, ui_short_ppm},
-		{"short_op", 0, ui_short_op}
+		{"short_op", 0, ui_short_op},
+		{"short_sensors", 0, ui_short_sensors}
 };
 
 
@@ -329,7 +333,7 @@ void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_tmp_target(DDEG2INC(in[0]));
 		motor_register_absolute();
 		motor_def_start_ppm_operation();
-		sprintf((char *) out, "started\n");
+		sprintf((char *) out, "started %ld\n", DDEG2INC(in[0]));
 	}
 }
 
@@ -339,7 +343,7 @@ void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_tmp_target(DDEG2INC(in[0]));
 		motor_register_relative();
 		motor_def_start_ppm_operation();
-		sprintf((char *) out, "started\n");
+		sprintf((char *) out, "started %ld\n", DDEG2INC(in[0]));
 	}
 }
 
@@ -358,6 +362,11 @@ void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out) {
 
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out) {
 	sprintf((char *) out, "%ld %ld %ld %ld\n", INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
+}
+
+void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "%d %d %d %d %d\n", 	sensor_get_data(PP_PRESSURE_1), sensor_get_data(PP_PRESSURE_2), sensor_get_data(PP_TEMPERATURE_1),
+												sensor_get_data(PP_TEMPERATURE_2), sensor_get_data(PP_TEMPERATURE_3));
 }
 
 
