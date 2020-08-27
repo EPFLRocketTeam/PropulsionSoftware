@@ -3,6 +3,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import serial
 import math
+import platform
 
 #functions
 
@@ -278,17 +279,12 @@ def main_update():
 
 
 
-
-
-
-
-
-
-
-
-
-
 window = tk.Tk()
+
+if(platform.system() == 'Mac'):
+    s=ttk.Style()
+    print(s.theme_names())
+    s.theme_use('classic')
 
 window.geometry('900x500')
 window.title('propulsion control')
