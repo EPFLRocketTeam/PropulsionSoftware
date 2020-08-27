@@ -73,8 +73,9 @@ void PP_controlFunc(void *argument) {
 	}
 }
 
-void toggle_solenoid() {
-
+uint8_t toggle_solenoid() {
+	HAL_GPIO_TogglePin(SOLENOID);
+	return HAL_GPIO_ReadPin(SOLENOID);
 }
 
 

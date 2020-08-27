@@ -2,12 +2,14 @@ import os
 import tkinter as tk
 import tkinter.ttk as ttk
 import serial
+import math
 
 #functions
 
 safety = 1
 ser = serial.Serial()
 connected = 0
+heart_beat=500
 
 def move_rel():
     targ = tmp_target_entry.get()
@@ -133,7 +135,27 @@ def enable():
         print(out)
         if ser.is_open:
             ser.write(bytes(out, 'ascii'))
-        
+
+def toggle_solenoid():
+    out = 'solenoid\n'
+    print(out)
+    if ser.is_open:
+        ser.write(bytes(out, 'ascii'))
+        resp = ser.readline().decode('ascii')
+        data = resp.split()
+        print(data)
+        if(len(data) == 1):
+            if int(data[0]):
+                sol_but['bg'] = 'lightblue'
+                canvas.coords(solenoid_draw, solen_bbox(math.radians(90)))
+            else:
+                sol_but['bg'] = 'white'
+                canvas.coords(solenoid_draw, solen_bbox(math.radians(0)))
+                    
+
+
+
+    
 def startup():
     if stat_power['bg'] == 'lime':
         out = 'shutdown\n'
@@ -182,6 +204,7 @@ def get_status():
             err_cod.insert(0, data[4])
             cur_pos_display.delete(0, tk.END)
             cur_pos_display.insert(0, data[5])
+            canvas.coords(valve_draw, valve_bbox(math.radians(int(data[5])/10)))
             psu_cod.delete(0, tk.END)
             psu_cod.insert(0, str(int(data[6])/10.0))
             
@@ -215,15 +238,34 @@ def connect():
         serial_but['text']='Connect'
     else:
         com = serial_entry.get()
-        ser = serial.Serial(com, 115200)
+        ser = serial.Serial(com, 115200, timeout=500)      
         if ser.is_open:
             connected = 1
             serial_but['text']='Disconnect'
     
 
     
-heart_beat=1000
 
+
+
+def valve_bbox(angle):
+    center_x = o_top_x+o_rad
+    center_y = o_top_y+o_rad
+    bb_x1 = center_x + math.cos(angle)*o_rad
+    bb_x2 = center_x - math.cos(angle)*o_rad
+    bb_y1 = center_y + math.sin(angle)*o_rad
+    bb_y2 = center_y - math.sin(angle)*o_rad
+    return [bb_x1, bb_y1, bb_x2, bb_y2]
+
+def solen_bbox(angle):
+    center_x = sol_x
+    center_y = r_top_y-r_arc-sol_height-2
+    rad = 3
+    bb_x1 = center_x + math.cos(angle)*rad
+    bb_x2 = center_x - math.cos(angle)*rad
+    bb_y1 = center_y + math.sin(angle)*rad
+    bb_y2 = center_y - math.sin(angle)*rad
+    return [bb_x1, bb_y1, bb_x2, bb_y2]
 
 
 def main_update():
@@ -248,8 +290,8 @@ def main_update():
 
 window = tk.Tk()
 
-window.geometry('800x500')
-window.title('propulsion client')
+window.geometry('900x500')
+window.title('propulsion control')
 
 
 motor = ttk.Labelframe(window, text="motor control")
@@ -508,7 +550,81 @@ temp3_label2 = tk.Label(sensor, text='[RAW]')
 temp3_label2.grid(row=4, column=2, sticky="E", pady=YPAD)
 
 
+sol_but = tk.Button(other, text='Solenoid', bg='white', command=toggle_solenoid)
+sol_but.grid(row=0, column=0, pady=YPAD)
 
+
+#plumbing diagram
+canv = ttk.Labelframe(window, text='system')
+canv.grid(row=0, column=2, rowspan=3, sticky='NSEW')
+
+canvas = tk.Canvas(canv, width=220, height=400)
+
+r_top_x = 70
+r_top_y = 100
+r_width = 40
+r_height = 80
+r_arc = 10
+#reservoir
+canvas.create_line(r_top_x, r_top_y, r_top_x, r_top_y+r_height)
+canvas.create_line(r_top_x+r_width, r_top_y, r_top_x+r_width, r_top_y+r_height)
+canvas.create_arc(r_top_x, r_top_y-r_arc, r_top_x+r_width, r_top_y+r_arc, style=tk.ARC, start=0, extent = 180)
+canvas.create_arc(r_top_x, r_top_y+r_arc+r_height, r_top_x+r_width, r_top_y+r_height-r_arc, style=tk.ARC, start=-180, extent = 180)
+
+sol_height = 20
+sol_x = r_top_x+r_width/2
+canvas.create_line(sol_x, r_top_y-r_arc, sol_x, r_top_y-r_arc-sol_height)
+solenoid_draw = canvas.create_line(solen_bbox(math.radians(0)))
+canvas.create_line(sol_x, r_top_y-r_arc-sol_height-5, sol_x, r_top_y-r_arc-2*sol_height-5)
+
+
+l_top_x = r_top_x+r_width/2
+l_top_y = r_top_y+r_height+r_arc
+l_height = 20
+
+canvas.create_line(l_top_x, l_top_y, l_top_x, l_top_y+l_height)
+
+
+o_rad = 10
+o_top_x = l_top_x-o_rad
+o_top_y = l_top_y+l_height
+
+canvas.create_oval(o_top_x, o_top_y, o_top_x+2*o_rad, o_top_y+2*o_rad)
+
+
+valve_draw = canvas.create_line(valve_bbox(math.radians(0)), arrow=tk.FIRST)
+
+l2_top_x = l_top_x
+l2_top_y = o_top_y+2*o_rad
+l2_height = 20
+
+canvas.create_line(l2_top_x, l2_top_y, l2_top_x, l2_top_y+l2_height)
+
+s_width = 30
+s_height = 100
+s_top_x = l_top_x-s_width/2
+s_top_y = l2_top_y+l2_height
+
+canvas.create_line(s_top_x, s_top_y, s_top_x+s_width, s_top_y)
+canvas.create_line(s_top_x, s_top_y+s_height, s_top_x+s_width, s_top_y+s_height)
+
+canvas.create_line(s_top_x, s_top_y, s_top_x, s_top_y+s_height)
+canvas.create_line(s_top_x+s_width, s_top_y, s_top_x+s_width, s_top_y+s_height)
+
+b_width = 20
+b_height = 50
+b_top_x = s_top_x
+b_end_x = s_top_x+s_width
+b_top_y = s_top_y+s_height
+
+canvas.create_arc(b_top_x, b_top_y, b_top_x+b_width, b_top_y+b_height, style=tk.ARC, start=180, extent = -90)
+canvas.create_arc(b_end_x-b_width, b_top_y, b_end_x, b_top_y+b_height, style=tk.ARC, start=0, extent = 90)
+canvas.create_line(b_top_x, b_top_y+b_height/2, b_end_x, b_top_y+b_height/2)
+
+
+
+
+canvas.grid(row=0, column=0, sticky='NSEW')
 
 main_update()
 

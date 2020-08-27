@@ -21,6 +21,7 @@
 #include <maxon_comm.h>
 #include <maxon_def.h>
 #include <sensor.h>
+#include <control.h>
 
 
 #define CHAR_CR	0x0D
@@ -57,6 +58,7 @@ void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out);
 
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
 
 
 
@@ -99,7 +101,8 @@ static DUI_ITEM_t ui_items[] = {
 		{"short_stat", 0, ui_short_stat},
 		{"short_ppm", 0, ui_short_ppm},
 		{"short_op", 0, ui_short_op},
-		{"short_sensors", 0, ui_short_sensors}
+		{"short_sensors", 0, ui_short_sensors},
+		{"solenoid", 0, ui_solenoid}
 };
 
 
@@ -367,6 +370,10 @@ void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out) {
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out) {
 	sprintf((char *) out, "%d %d %d %d %d\n", 	sensor_get_data(PP_PRESSURE_1), sensor_get_data(PP_PRESSURE_2), sensor_get_data(PP_TEMPERATURE_1),
 												sensor_get_data(PP_TEMPERATURE_2), sensor_get_data(PP_TEMPERATURE_3));
+}
+
+void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "%d \n", toggle_solenoid());
 }
 
 

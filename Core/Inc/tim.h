@@ -39,9 +39,9 @@ extern TIM_HandleTypeDef htim8;
 
 void MX_TIM2_Init(void);
 void MX_TIM8_Init(void);
-                        
+
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-                    
+
 /* USER CODE BEGIN Prototypes */
 
 void setPWM(TIM_HandleTypeDef timer, uint32_t channel, uint16_t pulse);
