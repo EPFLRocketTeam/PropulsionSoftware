@@ -62,6 +62,8 @@
 #define POSITION_FFV	0 //check
 #define POSITION_FFA	1129 //check
 
+#define FOLLOW_WINDOW	1000000
+
 #define PROFILE_ACC 	20000
 #define PROFILE_DEC 	20000
 #define PROFILE_VEL 	8000
@@ -115,6 +117,7 @@ uint16_t motor_get_status(void);
 uint16_t motor_get_error(void);
 int32_t motor_get_position(void);
 uint16_t motor_get_psu_voltage(void) ;
+uint16_t motor_get_torque(void);
 
 void motor_def_enable();
 void motor_def_disable();
@@ -139,9 +142,9 @@ void motor_register_half_wait(uint32_t half_wait);
 void motor_register_absolute();
 void motor_register_relative();
 
-uint32_t motor_get_speed();
-uint32_t motor_get_acceleration();
-uint32_t motor_get_deceleration();
+uint32_t motor_get_ppm_speed();
+uint32_t motor_get_ppm_acceleration();
+uint32_t motor_get_ppm_deceleration();
 int32_t motor_get_target();
 int32_t motor_get_half_target();
 uint32_t motor_get_end_wait();

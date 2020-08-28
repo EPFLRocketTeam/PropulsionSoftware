@@ -406,6 +406,10 @@ void motor_config_gen(void) {
 	store_uint32(POSITION_FFA, tmp_data);
 	Write_object(MAXON_PPM_CTRL_FFA, tmp_data);
 
+	store_uint32(FOLLOW_WINDOW, tmp_data);
+	Write_object(MAXON_FOLLOW_ERROR_WINDOW, tmp_data);
+
+
 }
 
 
@@ -486,6 +490,21 @@ int8_t read_psu_voltage(uint16_t * data) {
 		return -1;
 	}
 	*data = tmp_data[0] | (tmp_data[1]<<8);
+	return 0;
+}
+
+int8_t read_torque(uint16_t * data) {
+	uint16_t mr_torque;
+
+	if(Read_object(MAXON_MOTOR_RATED_TORQUE, tmp_data) == -1) {
+			return -1;
+	}
+	mr_torque = tmp_data[0] | (tmp_data[1]<<8);
+
+	if(Read_object(MAXON_ACTUAL_TORQUE, tmp_data) == -1) {
+		return -1;
+	}
+	*data = (tmp_data[0] | (tmp_data[1]<<8))*mr_torque/(1000*1000);
 	return 0;
 }
 
@@ -633,6 +652,7 @@ static uint16_t motor_error;
 static uint16_t psu_voltage;
 static uint32_t operation_counter;
 static int32_t current_position;
+static uint16_t current_torque;
 static uint32_t status_counter;
 static uint8_t emergency_abort;
 
@@ -665,8 +685,8 @@ void motor_def_init(void) {
 	motor_ppm_params.speed = PROFILE_VEL;
 	motor_ppm_params.absolute = 1;
 
-	motor_ppm_params.target = DDEG2INC(900);
-	motor_ppm_params.half_target = DDEG2INC(250);
+	motor_ppm_params.target = DDEG2INC(-900);
+	motor_ppm_params.half_target = DDEG2INC(-350);
 	motor_ppm_params.half_wait = 1000;
 	motor_ppm_params.end_wait = 7000;
 
@@ -695,6 +715,9 @@ void motor_config_ppm(void) {
 void motor_config_homing(void) {
 	store_int8(MAXON_MODE_HOMING, tmp_data);
 	Write_object(MAXON_MODE_OF_OPERATION, tmp_data);
+
+	store_int32(0, tmp_data);
+	Write_object(MAXON_HOME_OFFSET, tmp_data);
 
 	store_int8(ACTUAL_POSITION, tmp_data);
 	Write_object(MAXON_HOMING_METHOD, tmp_data);
@@ -766,6 +789,7 @@ void motor_mainloop(void * argument) {
 			read_status_word(&motor_status);
 			read_psu_voltage(&psu_voltage);
 			read_position(&current_position);
+			read_torque(&current_torque);
 			status_counter += HEART_BEAT;
 			if(emergency_abort) {
 				if(emergency_abort == 1) {
@@ -842,11 +866,18 @@ void motor_mainloop(void * argument) {
 
 			}
 			if(motor_todo.start_homing_operation) {
-				motor_config_homing();
-				motor_enable();
-				motor_start();
+				if(motor_todo.start_homing_operation == 1) {
+					motor_config_homing();
+					motor_enable();
+					motor_start();
+					motor_todo.start_homing_operation = 2;
+					status_counter = 0;
+				}
 				//if homing op finished
-				motor_todo.start_homing_operation = 0;
+				if(SW_TARGET_REACHED(motor_status) && motor_todo.start_homing_operation == 2 && status_counter > STATUS_THRESH) {
+					motor_disable();
+					motor_todo.start_homing_operation = 0;
+				}
 			}
 			if(motor_todo.start_operation) {
 				//check that the motor is in PPM mode
@@ -1000,15 +1031,15 @@ void motor_register_half_wait(uint32_t half_wait) {
 	motor_ppm_params.half_wait = half_wait;
 }
 
-uint32_t motor_get_speed() {
+uint32_t motor_get_ppm_speed() {
 	return motor_ppm_params.speed;
 }
 
-uint32_t motor_get_acceleration() {
+uint32_t motor_get_ppm_acceleration() {
 	return motor_ppm_params.acceleration;
 }
 
-uint32_t motor_get_deceleration() {
+uint32_t motor_get_ppm_deceleration() {
 	return motor_ppm_params.deceleration;
 }
 
@@ -1026,6 +1057,11 @@ uint32_t motor_get_end_wait() {
 
 uint32_t motor_get_half_wait() {
 	return motor_ppm_params.half_wait;
+}
+
+
+uint16_t motor_get_torque() {
+	return current_torque;
 }
 
 

@@ -5,6 +5,7 @@ import serial
 import math
 import platform
 import os
+from PIL import Image, ImageTk
 
 #functions
 
@@ -185,7 +186,7 @@ def get_status():
         resp = ser.readline().decode('ascii')
         data = resp.split()
         print(data)
-        if(len(data) == 7):
+        if(len(data) == 8):
             if int(data[0]):
                 stat_power['highlightbackground'] = 'lime'
             else:
@@ -209,6 +210,8 @@ def get_status():
             canvas.coords(valve_draw, valve_bbox(math.radians(int(data[5])/10)))
             psu_cod.delete(0, tk.END)
             psu_cod.insert(0, str(int(data[6])/10.0))
+            torq_entry.delete(0, tk.END)
+            torq_entry.insert(0, str(int(data[7])/1000.0))
             
 def get_sensors():
     out = 'short_sensors\n'
@@ -557,6 +560,16 @@ temp3_entry.bind("<Key>", lambda e: "break")
 temp3_label2 = tk.Label(sensor, text='[RAW]')
 temp3_label2.grid(row=4, column=2, sticky="E", pady=YPAD)
 
+torq_label = tk.Label(sensor, text='torque = ')
+torq_label.grid(row=5, column=0, sticky="E", pady=YPAD)
+
+torq_entry = tk.Entry(sensor, justify='right')
+torq_entry.grid(row=5, column = 1, sticky="E", pady=YPAD)
+torq_entry.bind("<Key>", lambda e: "break")
+
+torq_label2 = tk.Label(sensor, text='[Nm]')
+torq_label2.grid(row=5, column=2, sticky="E", pady=YPAD)
+
 
 sol_but = tk.Button(other, text='Solenoid', highlightbackground='white', command=toggle_solenoid)
 sol_but.grid(row=0, column=0, pady=YPAD)
@@ -566,7 +579,7 @@ sol_but.grid(row=0, column=0, pady=YPAD)
 canv = ttk.Labelframe(window, text='system')
 canv.grid(row=0, column=2, rowspan=3, sticky='NSEW')
 
-canvas = tk.Canvas(canv, width=220, height=400)
+canvas = tk.Canvas(canv, width=220, height=500)
 
 r_top_x = 70
 r_top_y = 100
@@ -600,7 +613,7 @@ o_top_y = l_top_y+l_height
 canvas.create_oval(o_top_x, o_top_y, o_top_x+2*o_rad, o_top_y+2*o_rad)
 
 
-valve_draw = canvas.create_line(valve_bbox(math.radians(0)), arrow=tk.FIRST)
+valve_draw = canvas.create_line(valve_bbox(math.radians(0)), width=2)
 
 l2_top_x = l_top_x
 l2_top_y = o_top_y+2*o_rad
@@ -628,6 +641,20 @@ b_top_y = s_top_y+s_height
 canvas.create_arc(b_top_x, b_top_y, b_top_x+b_width, b_top_y+b_height, style=tk.ARC, start=180, extent = -90)
 canvas.create_arc(b_end_x-b_width, b_top_y, b_end_x, b_top_y+b_height, style=tk.ARC, start=0, extent = 90)
 canvas.create_line(b_top_x, b_top_y+b_height/2, b_end_x, b_top_y+b_height/2)
+
+f_width = 30
+f_height= 40
+f_top_x = b_top_x+f_width/2
+f_top_y = b_top_y+b_height/2+f_height/2
+
+
+image = tk.BitmapImage(file="flame.xbm")
+flam = canvas.create_image(f_top_x, f_top_y, image=image, state='hidden')
+try:
+    pass
+except:
+    print("image error")
+
 
 
 

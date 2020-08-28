@@ -184,7 +184,7 @@ def get_status():
         resp = ser.readline().decode('ascii')
         data = resp.split()
         print(data)
-        if(len(data) == 7):
+        if(len(data) == 8):
             if int(data[0]):
                 stat_power['bg'] = 'lime'
             else:
@@ -208,6 +208,8 @@ def get_status():
             canvas.coords(valve_draw, valve_bbox(math.radians(int(data[5])/10)))
             psu_cod.delete(0, tk.END)
             psu_cod.insert(0, str(int(data[6])/10.0))
+            torq_entry.delete(0, tk.END)
+            torq_entry.insert(0, str(int(data[7])/1000.0))
             
 def get_sensors():
     out = 'short_sensors\n'
@@ -262,10 +264,10 @@ def solen_bbox(angle):
     center_x = sol_x
     center_y = r_top_y-r_arc-sol_height-2
     rad = 3
-    bb_x1 = center_x + math.cos(angle)*rad
-    bb_x2 = center_x - math.cos(angle)*rad
-    bb_y1 = center_y + math.sin(angle)*rad
-    bb_y2 = center_y - math.sin(angle)*rad
+    bb_x1 = center_x - math.cos(angle)*rad
+    bb_x2 = center_x + math.cos(angle)*rad
+    bb_y1 = center_y - math.sin(angle)*rad
+    bb_y2 = center_y + math.sin(angle)*rad
     return [bb_x1, bb_y1, bb_x2, bb_y2]
 
 
@@ -545,6 +547,16 @@ temp3_entry.bind("<Key>", lambda e: "break")
 temp3_label2 = tk.Label(sensor, text='[RAW]')
 temp3_label2.grid(row=4, column=2, sticky="E", pady=YPAD)
 
+torq_label = tk.Label(sensor, text='torque = ')
+torq_label.grid(row=5, column=0, sticky="E", pady=YPAD)
+
+torq_entry = tk.Entry(sensor, justify='right')
+torq_entry.grid(row=5, column = 1, sticky="E", pady=YPAD)
+torq_entry.bind("<Key>", lambda e: "break")
+
+torq_label2 = tk.Label(sensor, text='[Nm]')
+torq_label2.grid(row=5, column=2, sticky="E", pady=YPAD)
+
 
 sol_but = tk.Button(other, text='Solenoid', bg='white', command=toggle_solenoid)
 sol_but.grid(row=0, column=0, pady=YPAD)
@@ -554,7 +566,7 @@ sol_but.grid(row=0, column=0, pady=YPAD)
 canv = ttk.Labelframe(window, text='system')
 canv.grid(row=0, column=2, rowspan=3, sticky='NSEW')
 
-canvas = tk.Canvas(canv, width=220, height=400)
+canvas = tk.Canvas(canv, width=220, height=500)
 
 r_top_x = 70
 r_top_y = 100
@@ -617,7 +629,10 @@ canvas.create_arc(b_top_x, b_top_y, b_top_x+b_width, b_top_y+b_height, style=tk.
 canvas.create_arc(b_end_x-b_width, b_top_y, b_end_x, b_top_y+b_height, style=tk.ARC, start=0, extent = 90)
 canvas.create_line(b_top_x, b_top_y+b_height/2, b_end_x, b_top_y+b_height/2)
 
-
+f_top_x = b_top_x
+f_top_y = b_top_y+b_height/2
+f_width = b_width
+f_height= 40
 
 
 canvas.grid(row=0, column=0, sticky='NSEW')

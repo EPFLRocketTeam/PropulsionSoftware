@@ -306,7 +306,7 @@ void ui_reg_ppm_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_deceleration(in[2]);
 		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", in[0], in[1], in[2]);
 	}else{
-		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", motor_get_speed(), motor_get_acceleration(), motor_get_deceleration());
+		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", motor_get_ppm_speed(), motor_get_ppm_acceleration(), motor_get_ppm_deceleration());
 	}
 
 }
@@ -356,11 +356,11 @@ void ui_homing(uint16_t nb, int32_t * in, uint8_t * out) {
 
 void ui_short_stat(uint16_t nb, int32_t * in, uint8_t * out) {
 	uint16_t status = motor_get_status();
-	sprintf((char *) out, "%d %d %d %d %x %ld %d\n",SW_SWITCHED_ON(status), SW_ENABLED(status), SW_FAULT(status), SW_TARGET_REACHED(status), motor_get_error(), INC2DDEG(motor_get_position()), motor_get_psu_voltage());
+	sprintf((char *) out, "%d %d %d %d %x %ld %d %d\n",SW_SWITCHED_ON(status), SW_ENABLED(status), SW_FAULT(status), SW_TARGET_REACHED(status), motor_get_error(), INC2DDEG(motor_get_position()), motor_get_psu_voltage(), motor_get_torque());
 }
 
 void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out) {
-	sprintf((char *) out, "%ld %ld %ld\n", motor_get_speed(), motor_get_acceleration(), motor_get_deceleration());
+	sprintf((char *) out, "%ld %ld %ld\n", motor_get_ppm_speed(), motor_get_ppm_acceleration(), motor_get_ppm_deceleration());
 }
 
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out) {
