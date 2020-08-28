@@ -4,6 +4,7 @@ import tkinter.ttk as ttk
 import serial
 import math
 import platform
+import os
 
 #functions
 
@@ -100,12 +101,12 @@ def safety_toggle():
         safety=0
         operation_but['state'] = 'active'
         homing_but['state'] = 'active'
-        saf_but['bg'] = 'lime'
+        saf_but['highlightbackground'] = 'lime'
     else:
         safety=1
         operation_but['state'] = 'disabled'
         homing_but['state'] = 'disabled'
-        saf_but['bg'] = 'orange'
+        saf_but['highlightbackground'] = 'orange'
 
 def operation():
     out = 'operation\n'
@@ -126,7 +127,7 @@ def abort():
         ser.write(bytes(out, 'ascii'))
 
 def enable():
-    if stat_enabled['bg'] == 'lime':
+    if stat_enabled['highlightbackground'] == 'lime':
         out = 'disable\n'
         print(out)
         if ser.is_open:
@@ -147,10 +148,10 @@ def toggle_solenoid():
         print(data)
         if(len(data) == 1):
             if int(data[0]):
-                sol_but['bg'] = 'lightblue'
+                sol_but['highlightbackground'] = 'lightblue'
                 canvas.coords(solenoid_draw, solen_bbox(math.radians(90)))
             else:
-                sol_but['bg'] = 'white'
+                sol_but['highlightbackground'] = 'white'
                 canvas.coords(solenoid_draw, solen_bbox(math.radians(0)))
                     
 
@@ -158,7 +159,7 @@ def toggle_solenoid():
 
     
 def startup():
-    if stat_power['bg'] == 'lime':
+    if stat_power['highlightbackground'] == 'lime':
         out = 'shutdown\n'
         print(out)
         if ser.is_open:
@@ -186,21 +187,21 @@ def get_status():
         print(data)
         if(len(data) == 7):
             if int(data[0]):
-                stat_power['bg'] = 'lime'
+                stat_power['highlightbackground'] = 'lime'
             else:
-                stat_power['bg'] = 'white'
+                stat_power['highlightbackground'] = 'white'
             if int(data[1]):
-                stat_enabled['bg'] = 'lime'
+                stat_enabled['highlightbackground'] = 'lime'
             else:
-                stat_enabled['bg'] = 'white'
+                stat_enabled['highlightbackground'] = 'white'
             if int(data[2]):
-                stat_fault['bg'] = 'red'
+                stat_fault['highlightbackground'] = 'red'
             else:
-                stat_fault['bg'] = 'white'
+                stat_fault['highlightbackground'] = 'white'
             if int(data[3]):
-                stat_targ['bg'] = 'lime'
+                stat_targ['highlightbackground'] = 'lime'
             else:
-                stat_targ['bg'] = 'white'
+                stat_targ['highlightbackground'] = 'white'
             err_cod.delete(0, tk.END)
             err_cod.insert(0, data[4])
             cur_pos_display.delete(0, tk.END)
@@ -284,9 +285,9 @@ window = tk.Tk()
 if(platform.system() == 'Darwin'):
     s=ttk.Style()
     print(s.theme_names())
-    s.theme_use('aqua')
+    s.theme_use('classic')
 
-window.geometry('900x500')
+window.geometry('1180x530')
 window.title('propulsion control')
 
 
@@ -310,8 +311,18 @@ comm_box.grid(row=0, column=0, columnspan=2, sticky="NSEW")
 serial_label= tk.Label(comm_box, text='Serial port =')
 serial_label.grid(row=0, column=0, sticky="WE", pady=YPAD)
 
+#guess name
+dirs = os.listdir('/dev')
+guess = 'nothing'
+for d in dirs:
+    print(d[0:11])
+    if d[0:11] == "cu.usbmodem":
+        guess=d
+        break
+
+
 serial_entry= tk.Entry(comm_box)
-serial_entry.insert(0, 'com7')
+serial_entry.insert(0, '/dev/'+d)
 serial_entry.grid(row=0, column=1, sticky="WE", pady=YPAD)
 
 serial_but= tk.Button(comm_box, text='Connect', command=connect)
@@ -447,16 +458,16 @@ motor_stat.grid(row=4, column=0, sticky="WE")
 #stat_label = tk.Label(motor_stat, text="MOTOR STATUS")
 #stat_label.grid(row=0, column=0, columnspan=5, pady=YPAD)
 
-stat_power = tk.Button(motor_stat, text="Power", bg='white', fg='black', command=startup)
+stat_power = tk.Button(motor_stat, text="Power", highlightbackground='white', fg='black', command=startup)
 stat_power.grid(row=1, column=0, pady=YPAD)
 
-stat_enabled = tk.Button(motor_stat, text="Enabled", bg='white', fg='black', command=enable)
+stat_enabled = tk.Button(motor_stat, text="Enabled", highlightbackground='white', fg='black', command=enable)
 stat_enabled.grid(row=1, column=1, pady=YPAD)
 
-stat_fault = tk.Button(motor_stat, text="Fault", bg='white', fg='black', command=fstartup)
+stat_fault = tk.Button(motor_stat, text="Fault", highlightbackground='white', fg='black', command=fstartup)
 stat_fault.grid(row=1, column=2, pady=YPAD)
 
-stat_targ = tk.Button(motor_stat, text="Target reached", bg='white', fg='black')
+stat_targ = tk.Button(motor_stat, text="Target reached", highlightbackground='white', fg='black')
 stat_targ.grid(row=1, column=3, pady=YPAD)
 
 err_label = tk.Label(motor_stat, text="Error = ")
@@ -483,7 +494,7 @@ mot_ctrl.grid(row=5, column=0, sticky="WE")
 #mot_ctrl_label = tk.Label(mot_ctrl, text="MOTOR OPERATION")
 #mot_ctrl_label.grid(row=0, column=0, columnspan=4, sticky="WE", pady=YPAD)
 
-saf_but = tk.Button(mot_ctrl, text="Safety", bg='orange', command=safety_toggle)
+saf_but = tk.Button(mot_ctrl, text="Safety", highlightbackground='orange', command=safety_toggle)
 saf_but.grid(row=1, column=0, sticky="WE", pady=YPAD, padx=BPAD)
 
 operation_but = tk.Button(mot_ctrl, text="Operation", state='disabled', command=operation)
@@ -492,7 +503,7 @@ operation_but.grid(row=1, column=2, sticky="WE", pady=YPAD, padx=BPAD)
 homing_but = tk.Button(mot_ctrl, text="Homing", state='disabled', command=homing)
 homing_but.grid(row=1, column=3, sticky="WE", pady=YPAD, padx=BPAD)
 
-abort_but = tk.Button(mot_ctrl, text="ABORT", bg='red', command=abort)
+abort_but = tk.Button(mot_ctrl, text="ABORT", highlightbackground='red', command=abort)
 abort_but.grid(row=1, column=4, sticky="WE", pady=YPAD, padx=BPAD)
 
 pres1_label = tk.Label(sensor, text='pressure 1 = ')
@@ -546,7 +557,7 @@ temp3_label2 = tk.Label(sensor, text='[RAW]')
 temp3_label2.grid(row=4, column=2, sticky="E", pady=YPAD)
 
 
-sol_but = tk.Button(other, text='Solenoid', bg='white', command=toggle_solenoid)
+sol_but = tk.Button(other, text='Solenoid', highlightbackground='white', command=toggle_solenoid)
 sol_but.grid(row=0, column=0, pady=YPAD)
 
 
