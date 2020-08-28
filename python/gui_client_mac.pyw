@@ -240,7 +240,8 @@ def connect():
         serial_but['text']='Connect'
     else:
         com = serial_entry.get()
-        ser = serial.Serial(com, 115200, timeout=500)      
+        ser = serial.Serial(com, 115200)   
+        print(ser)   
         if ser.is_open:
             connected = 1
             serial_but['text']='Disconnect'
