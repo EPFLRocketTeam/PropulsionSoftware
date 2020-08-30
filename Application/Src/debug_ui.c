@@ -58,8 +58,8 @@ void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
-void ui_get_obj(uint16_t nb, int32_t * in, uint8_t * out);
-void ui_set_obj(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_get_object(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out);
 
 
 
@@ -379,11 +379,11 @@ void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {
 	sprintf((char *) out, "%d \n", toggle_solenoid());
 }
 
-void ui_get_obj(uint16_t nb, int32_t * in, uint8_t * out) {
+void ui_get_object(uint16_t nb, int32_t * in, uint8_t * out) {
 
 }
 
-void ui_set_obj(uint16_t nb, int32_t * in, uint8_t * out) {
+void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out) {
 
 }
 
