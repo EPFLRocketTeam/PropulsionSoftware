@@ -283,12 +283,7 @@ def main_update():
 
 window = tk.Tk()
 
-if(platform.system() == 'Darwin'):
-    s=ttk.Style()
-    print(s.theme_names())
-    s.theme_use('aqua')
-
-window.geometry('900x500')
+window.geometry('900x600')
 window.title('propulsion control')
 
 
