@@ -54,13 +54,13 @@
 #define HALL_PATTERN	0x0005 //check
 
 //controllers
-#define CURRENT_P		143196 //check
-#define CURRENT_I		207753 //check
-#define POSITION_P		6377362 //check
-#define POSITION_I		23057309 //check
-#define POSITION_D		146992 //check
-#define POSITION_FFV	0 //check
-#define POSITION_FFA	1129 //check
+#define CURRENT_P		140106 //check
+#define CURRENT_I		203253 //check
+#define POSITION_P		1703746 //check
+#define POSITION_I		8397288 //check
+#define POSITION_D		25239 //check
+#define POSITION_FFV	3568 //check
+#define POSITION_FFA	162 //check
 
 #define FOLLOW_WINDOW	1000000
 
