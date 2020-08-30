@@ -56,9 +56,10 @@ void ui_move_rel(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_stat(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out);
-
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_get_obj(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_set_obj(uint16_t nb, int32_t * in, uint8_t * out);
 
 
 
@@ -102,7 +103,9 @@ static DUI_ITEM_t ui_items[] = {
 		{"short_ppm", 0, ui_short_ppm},
 		{"short_op", 0, ui_short_op},
 		{"short_sensors", 0, ui_short_sensors},
-		{"solenoid", 0, ui_solenoid}
+		{"solenoid", 0, ui_solenoid},
+		{"get_object", 2, ui_get_object},
+		{"set_object", 3, ui_set_object}
 };
 
 
@@ -375,5 +378,17 @@ void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out) {
 void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {
 	sprintf((char *) out, "%d \n", toggle_solenoid());
 }
+
+void ui_get_obj(uint16_t nb, int32_t * in, uint8_t * out) {
+
+}
+
+void ui_set_obj(uint16_t nb, int32_t * in, uint8_t * out) {
+
+}
+
+
+
+
 
 

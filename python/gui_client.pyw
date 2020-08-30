@@ -154,8 +154,11 @@ def toggle_solenoid():
                 canvas.coords(solenoid_draw, solen_bbox(math.radians(0)))
                     
 
+def get_obj():
+	pass
 
-
+def set_obj():
+	pass
     
 def startup():
     if stat_power['bg'] == 'lime':
@@ -473,9 +476,29 @@ psu_cod.bind("<Key>", lambda e: "break")
 psu2_cod = tk.Label(motor_stat, text="[V]")
 psu2_cod.grid(row=1, column = 8, sticky="E", pady=YPAD)
 
+obj = ttk.Labelframe(motor, text="object access")
+obj.grid(row=5, column = 0, sticky="WE")
+
+obj_index = tk.Entry(obj, width=10, justify="right")
+obj_index.grid(row=0, column = 0, sticky="E", pady=YPAD)
+
+obj_subindex = tk.Entry(obj, width=5, justify="right")
+obj_subindex.grid(row=0, column = 1, sticky="E", pady=YPAD)
+
+obj_label = tk.Label(obj, text=" : ")
+obj_label.grid(row=0, column = 2, sticky="E", pady=YPAD)
+
+obj_subindex = tk.Entry(obj, width=20, justify="right")
+obj_subindex.grid(row=0, column = 3, sticky="E", pady=YPAD)
+
+obj_get = tk.Button(obj, text="Get", command=get_obj)
+obj_get.grid(row=0, column = 4, sticky="W", pady=YPAD, padx=BPAD)
+
+obj_set = tk.Button(obj, text="Set", command=set_obj)
+obj_set.grid(row=0, column = 5, sticky="W", pady=YPAD, padx=BPAD)
 
 mot_ctrl = ttk.Labelframe(motor, text='motor operation')
-mot_ctrl.grid(row=5, column=0, sticky="WE")
+mot_ctrl.grid(row=6, column=0, sticky="WE")
 
 #mot_ctrl_label = tk.Label(mot_ctrl, text="MOTOR OPERATION")
 #mot_ctrl_label.grid(row=0, column=0, columnspan=4, sticky="WE", pady=YPAD)
