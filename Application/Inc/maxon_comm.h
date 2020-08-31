@@ -139,6 +139,7 @@ void motor_register_target(int32_t target);
 void motor_register_half_target(int32_t half_target);
 void motor_register_end_wait(uint32_t end_wait);
 void motor_register_half_wait(uint32_t half_wait);
+void motor_register_pre_wait(uint32_t pre_wait);
 void motor_register_absolute();
 void motor_register_relative();
 
@@ -149,6 +150,11 @@ int32_t motor_get_target();
 int32_t motor_get_half_target();
 uint32_t motor_get_end_wait();
 uint32_t motor_get_half_wait();
+uint32_t motor_get_pre_wait();
+uint32_t motor_get_custom_object();
+void motor_register_custom_index(uint32_t index);
+void motor_register_custom_subindex(uint8_t subindex);
+void motor_register_custom_write(uint8_t data);
 
 
 

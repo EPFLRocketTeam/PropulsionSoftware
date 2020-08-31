@@ -628,6 +628,7 @@ typedef struct {
 	uint8_t start_ppm_operation;
 	uint8_t start_homing_operation;
 	uint8_t start_operation;
+	uint8_t write_obj;
 }MOTOR_TODO_t;
 
 typedef struct {
@@ -639,6 +640,7 @@ typedef struct {
 	int32_t half_target;
 	uint32_t half_wait; //ms
 	uint32_t end_wait; //ms
+	uint32_t pre_wait; //ms
 	uint8_t absolute;
 }MOTOR_PPM_PARAMS_t;
 
@@ -655,6 +657,10 @@ static int32_t current_position;
 static uint16_t current_torque;
 static uint32_t status_counter;
 static uint8_t emergency_abort;
+static uint32_t custom_read;
+static uint32_t custom_write;
+static uint32_t custom_index;
+static uint8_t custom_subindex;
 
 void motor_def_init(void) {
 	motor_todo.enable = 0;
@@ -667,6 +673,7 @@ void motor_def_init(void) {
 	motor_todo.start_ppm_operation = 0;
 	motor_todo.start_homing_operation = 0;
 	motor_todo.start_operation = 0;
+	motor_todo.write_obj = 0;
 	motor_todo_buf.enable = 0;
 	motor_todo_buf.disable = 0;
 	motor_todo_buf.config = 0;
@@ -677,6 +684,7 @@ void motor_def_init(void) {
 	motor_todo_buf.start_ppm_operation = 0;
 	motor_todo_buf.start_homing_operation = 0;
 	motor_todo_buf.start_operation = 0;
+	motor_todo_buf.write_obj = 0;
 	operation_counter = 0;
 	emergency_abort = 0;
 
@@ -689,7 +697,19 @@ void motor_def_init(void) {
 	motor_ppm_params.half_target = DDEG2INC(-350);
 	motor_ppm_params.half_wait = 1000;
 	motor_ppm_params.end_wait = 7000;
+	motor_ppm_params.pre_wait = 3000;
 
+}
+
+
+void motor_write_custom_object() {
+	store_uint32(custom_write, tmp_data);
+	Write_object(custom_index, custom_subindex, tmp_data);
+}
+
+void motor_read_custom_object() {
+	Read_object(custom_index, custom_subindex, tmp_data);
+	custom_read = tmp_data[0] | (tmp_data[1]<<8) | (tmp_data[2]<<16) | (tmp_data[3]<<24);
 }
 
 
@@ -764,6 +784,10 @@ void update_todo(void) {
 		motor_todo.start_operation = 1;
 		motor_todo_buf.start_operation = 0;
 	}
+	if(motor_todo_buf.write_obj) {
+		motor_todo.write_obj = 1;
+		motor_todo_buf.write_obj = 0;
+	}
 }
 
 
@@ -790,6 +814,7 @@ void motor_mainloop(void * argument) {
 			read_psu_voltage(&psu_voltage);
 			read_position(&current_position);
 			read_torque(&current_torque);
+			motor_read_custom_object();
 			status_counter += HEART_BEAT;
 			if(emergency_abort) {
 				if(emergency_abort == 1) {
@@ -813,6 +838,10 @@ void motor_mainloop(void * argument) {
 					motor_disable();
 					motor_shutdown();
 				}
+			}
+			if(motor_todo.write_obj) {
+				motor_write_custom_object();
+				motor_todo.write_obj = 0;
 			}
 			if(motor_todo.enable) {
 				motor_enable();
@@ -884,37 +913,46 @@ void motor_mainloop(void * argument) {
 				motor_config_ppm();
 				motor_enable();
 				if(motor_todo.start_operation == 1) {
-					motor_set_target_abs(motor_ppm_params.half_target);
-					motor_todo.start_operation = 2;
 					status_counter = 0;
 					operation_counter = 0;
+					motor_todo.start_operation = 2;
 				}
-				if(motor_todo.start_operation == 2 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
+
+				if(motor_todo.start_operation == 2) {
+					operation_counter += HEART_BEAT;
+					if(operation_counter >= motor_ppm_params.pre_wait) {
+						motor_set_target_abs(motor_ppm_params.half_target);
+						motor_todo.start_operation = 3;
+						status_counter = 0;
+						operation_counter = 0;
+					}
+				}
+				if(motor_todo.start_operation == 3 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
 					operation_counter += HEART_BEAT;
 					if(operation_counter >= motor_ppm_params.half_wait) {
-						motor_todo.start_operation = 3;
+						motor_todo.start_operation = 4;
 						operation_counter = 0;
 						status_counter = 0;
 					}
 				}
-				if(motor_todo.start_operation == 3) {
+				if(motor_todo.start_operation == 4) {
 					motor_set_target_abs(motor_ppm_params.target);
-					motor_todo.start_operation = 4;
+					motor_todo.start_operation = 5;
 				}
-				if(motor_todo.start_operation == 4 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
+				if(motor_todo.start_operation == 5 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
 					operation_counter += HEART_BEAT;
 					if(operation_counter >= motor_ppm_params.end_wait) {
-						motor_todo.start_operation = 5;
+						motor_todo.start_operation = 6;
 						operation_counter = 0;
 						status_counter = 0;
 					}
 				}
-				if(motor_todo.start_operation == 5) {
+				if(motor_todo.start_operation == 6) {
 					motor_set_target_abs(0);
-					motor_todo.start_operation = 6;
+					motor_todo.start_operation = 7;
 					status_counter = 0;
 				}
-				if(motor_todo.start_operation == 6 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
+				if(motor_todo.start_operation == 7 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
 					motor_todo.start_operation = 0;
 					motor_disable();
 				}
@@ -1031,6 +1069,10 @@ void motor_register_half_wait(uint32_t half_wait) {
 	motor_ppm_params.half_wait = half_wait;
 }
 
+void motor_register_pre_wait(uint32_t pre_wait) {
+	motor_ppm_params.pre_wait = pre_wait;
+}
+
 uint32_t motor_get_ppm_speed() {
 	return motor_ppm_params.speed;
 }
@@ -1059,9 +1101,29 @@ uint32_t motor_get_half_wait() {
 	return motor_ppm_params.half_wait;
 }
 
+uint32_t motor_get_pre_wait() {
+	return motor_ppm_params.pre_wait;
+}
+
 
 uint16_t motor_get_torque() {
 	return current_torque;
+}
+
+uint32_t motor_get_custom_object() {
+	return custom_read;
+}
+
+void motor_register_custom_index(uint32_t index) {
+	custom_index = index;
+}
+
+void motor_register_custom_subindex(uint8_t subindex) {
+	custom_subindex = subindex;
+}
+
+void motor_register_custom_write(uint8_t data) {
+	custom_write = data;
 }
 
 

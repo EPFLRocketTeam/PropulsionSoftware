@@ -314,15 +314,16 @@ void ui_reg_ppm_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 
 }
 void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out) {
-	if(nb >= 4) {
-		motor_register_half_target(DDEG2INC(in[0]));
-		motor_register_half_wait(in[1]);
-		motor_register_target(DDEG2INC(in[2]));
-		motor_register_end_wait(in[3]);
-		sprintf((char *) out, "half target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n", in[0], in[1], in[2], in[3]);
+	if(nb >= 5) {
+		motor_register_pre_wait(in[0]);
+		motor_register_half_target(DDEG2INC(in[1]));
+		motor_register_half_wait(in[2]);
+		motor_register_target(DDEG2INC(in[3]));
+		motor_register_end_wait(in[4]);
+		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n", in[0], in[1], in[2], in[3], in[4]);
 	} else{
-		sprintf((char *) out, "half target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n",
-				INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
+		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n",
+				motor_get_pre_wait(), INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
 	}
 }
 void ui_operation(uint16_t nb, int32_t * in, uint8_t * out) {
@@ -359,7 +360,9 @@ void ui_homing(uint16_t nb, int32_t * in, uint8_t * out) {
 
 void ui_short_stat(uint16_t nb, int32_t * in, uint8_t * out) {
 	uint16_t status = motor_get_status();
-	sprintf((char *) out, "%d %d %d %d %x %ld %d %d\n",SW_SWITCHED_ON(status), SW_ENABLED(status), SW_FAULT(status), SW_TARGET_REACHED(status), motor_get_error(), INC2DDEG(motor_get_position()), motor_get_psu_voltage(), motor_get_torque());
+	sprintf((char *) out, "%d %d %d %d %x %ld %d %d %lx\n",SW_SWITCHED_ON(status), SW_ENABLED(status), SW_FAULT(status),
+			SW_TARGET_REACHED(status), motor_get_error(), INC2DDEG(motor_get_position()),
+			motor_get_psu_voltage(), motor_get_torque(), motor_get_custom_object());
 }
 
 void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out) {
@@ -367,7 +370,7 @@ void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out) {
 }
 
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out) {
-	sprintf((char *) out, "%ld %ld %ld %ld\n", INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
+	sprintf((char *) out, "%ld %ld %ld %ld %ld\n", motor_get_pre_wait(), INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
 }
 
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out) {
@@ -380,11 +383,18 @@ void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {
 }
 
 void ui_get_object(uint16_t nb, int32_t * in, uint8_t * out) {
-
+	if(nb >= 2) {
+		motor_register_custom_index(in[0]);
+		motor_register_custom_subindex(in[1]);
+	}
 }
 
 void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out) {
-
+	if(nb >= 3) {
+		motor_register_custom_index(in[0]);
+		motor_register_custom_subindex(in[1]);
+		motor_register_custom_write(in[2]);
+	}
 }
 
 

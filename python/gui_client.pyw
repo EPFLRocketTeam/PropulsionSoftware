@@ -47,14 +47,16 @@ def set_profile():
         ser.readline()
 
 def set_operation():
+    pre = op_wait0_entry.get()
     half = op_half_entry.get()
     wait1 = op_wait1_entry.get()
     full = op_full_entry.get()
     wait2 = op_wait2_entry.get()
-    out = 'op_profile {} {} {} {}\n'.format(half, wait1, full, wait2)
+    out = 'op_profile {} {} {} {} {}\n'.format(pre, half, wait1, full, wait2)
     print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
+        ser.readline()
         ser.readline()
         ser.readline()
         ser.readline()
@@ -84,15 +86,17 @@ def get_operation():
         resp = ser.readline().decode('ascii')
         data = resp.split()
         print(data)
-        if(len(data) == 4):
+        if(len(data) == 5):
+            op_wait0_entry.delete(0, tk.END)
+            p_wait0_entry.insert(0, data[0])
             op_half_entry.delete(0, tk.END)
-            op_half_entry.insert(0, data[0])
+            op_half_entry.insert(0, data[1])
             op_wait1_entry.delete(0, tk.END)
-            op_wait1_entry.insert(0, data[1])
+            op_wait1_entry.insert(0, data[2])
             op_full_entry.delete(0, tk.END)
-            op_full_entry.insert(0, data[2])
+            op_full_entry.insert(0, data[3])
             op_wait2_entry.delete(0, tk.END)
-            op_wait2_entry.insert(0, data[3])
+            op_wait2_entry.insert(0, data[4])
 
 def safety_toggle():
     global safety
@@ -155,10 +159,22 @@ def toggle_solenoid():
                     
 
 def get_obj():
-	pass
+	index = int(obj_index.get(), 0)
+	subindex = int(obj_subindex.get(), 0)
+	out = 'get_object {} {}\n'.format(index, subindex)
+	print(out)
+	if ser.is_open:
+		ser.write(bytes(out, 'ascii'))
 
 def set_obj():
-	pass
+	index = int(obj_index.get(), 0)
+	subindex = int(obj_subindex.get(), 0)
+	data = int(obj_in.get(), 0)
+	out = 'set_object {} {} {}\n'.format(index, subindex, data)
+	print(out)
+	if ser.is_open:
+		ser.write(bytes(out, 'ascii'))
+
     
 def startup():
     if stat_power['bg'] == 'lime':
@@ -187,7 +203,7 @@ def get_status():
         resp = ser.readline().decode('ascii')
         data = resp.split()
         print(data)
-        if(len(data) == 8):
+        if(len(data) == 9):
             if int(data[0]):
                 stat_power['bg'] = 'lime'
             else:
@@ -213,6 +229,8 @@ def get_status():
             psu_cod.insert(0, str(int(data[6])/10.0))
             torq_entry.delete(0, tk.END)
             torq_entry.insert(0, str(int(data[7])/1000.0))
+            obj_out.delete(0, tk.END)
+            obj_out.insert(0, data[8])
             
 def get_sensors():
     out = 'short_sensors\n'
@@ -244,7 +262,7 @@ def connect():
         serial_but['text']='Connect'
     else:
         com = serial_entry.get()
-        ser = serial.Serial(com, 115200, timeout=500)      
+        ser = serial.Serial(com, 115200, timeout=1)      
         if ser.is_open:
             connected = 1
             serial_but['text']='Disconnect'
@@ -399,6 +417,9 @@ op_sett.grid(row=3, column=0, sticky='WE')
 #op_label = tk.Label(op_sett, text="OPERATION SETTINGS")
 #op_label.grid(row = 2, column = 0, columnspan=5, pady=YPAD)
 
+op_wait0_label = tk.Label(op_sett, text="pre wait = ")
+op_wait0_label.grid(row=2, column=0, sticky="E", pady=YPAD)
+
 op_half_label = tk.Label(op_sett, text="half angle = ")
 op_half_label.grid(row=3, column=0, sticky="E", pady=YPAD)
 
@@ -411,6 +432,9 @@ op_full_label.grid(row=5, column=0, sticky="E", pady=YPAD)
 op_wait2_label = tk.Label(op_sett, text="full wait = ")
 op_wait2_label.grid(row=6, column=0, sticky="E", pady=YPAD)
 
+op_wait0_entry = tk.Entry(op_sett, justify='right')
+op_wait0_entry.grid(row=2, column=1, sticky="E", pady=YPAD)
+
 op_half_entry = tk.Entry(op_sett, justify='right')
 op_half_entry.grid(row=3, column=1, sticky="E", pady=YPAD)
 
@@ -422,6 +446,9 @@ op_full_entry.grid(row=5, column=1, sticky="E", pady=YPAD)
 
 op_wait2_entry = tk.Entry(op_sett, justify='right')
 op_wait2_entry.grid(row=6, column=1, sticky="E", pady=YPAD)
+
+op_wait0_label2 = tk.Label(op_sett, text="[ms]")
+op_wait0_label2.grid(row=2, column=2, sticky="W", pady=YPAD)
 
 op_half_label2 = tk.Label(op_sett, text="[0.1 deg]")
 op_half_label2.grid(row=3, column=2, sticky="W", pady=YPAD)
@@ -488,14 +515,18 @@ obj_subindex.grid(row=0, column = 1, sticky="E", pady=YPAD)
 obj_label = tk.Label(obj, text=" : ")
 obj_label.grid(row=0, column = 2, sticky="E", pady=YPAD)
 
-obj_subindex = tk.Entry(obj, width=20, justify="right")
-obj_subindex.grid(row=0, column = 3, sticky="E", pady=YPAD)
+obj_in = tk.Entry(obj, width=10, justify="right")
+obj_in.grid(row=0, column = 3, sticky="E", pady=YPAD)
 
 obj_get = tk.Button(obj, text="Get", command=get_obj)
 obj_get.grid(row=0, column = 4, sticky="W", pady=YPAD, padx=BPAD)
 
 obj_set = tk.Button(obj, text="Set", command=set_obj)
 obj_set.grid(row=0, column = 5, sticky="W", pady=YPAD, padx=BPAD)
+
+obj_out = tk.Entry(obj, width=10, justify="right")
+obj_out.grid(row=0, column = 6, sticky="E", pady=YPAD)
+obj_out.bind("<Key>", lambda e: "break")
 
 mot_ctrl = ttk.Labelframe(motor, text='motor operation')
 mot_ctrl.grid(row=6, column=0, sticky="WE")
