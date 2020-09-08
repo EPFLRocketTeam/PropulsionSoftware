@@ -119,41 +119,216 @@ int32_t motor_get_position(void);
 uint16_t motor_get_psu_voltage(void) ;
 uint16_t motor_get_torque(void);
 
+/*
+ * @brief	enable motor (deffered version)
+ */
 void motor_def_enable();
+
+/*
+ * @brief	disable motor (deffered version)
+ */
 void motor_def_disable();
+
+/*
+ * @brief	configure motor (deffered version)
+ */
 void motor_def_config();
+
+/*
+ * @brief	startup motor (deffered version)
+ */
 void motor_def_startup();
+
+/*
+ * @brief	shutdown motor (deffered version)
+ */
 void motor_def_shutdown();
+
+/*
+ * @brief	set and setup ppm mode (deffered version)
+ */
 void motor_def_set_ppm();
+
+/*
+ * @brief	set and setup homing mode (deffered version)
+ */
 void motor_def_set_homing();
+
+/*
+ * @brief	start ppm operation (deffered version)
+ */
 void motor_def_start_ppm_operation();
+
+/*
+ * @brief	start motor homing (deffered version)
+ */
 void motor_def_start_homing_operation();
+
+/*
+ * @brief	start motor operation (deffered version)
+ */
 void motor_def_start_operation();
+
+/*
+ * @brief	start abort procedure (deffered version)
+ */
 void motor_def_abort(void);
 
+/*
+ * @biref			register ppm speed
+ *
+ * @param speed 	the new speed
+ */
 void motor_register_speed(uint32_t speed);
+
+/*
+ * @biref			register ppm acceleration
+ *
+ * @param acc 		the new acceleration
+ */
 void motor_register_acceleration(uint32_t acc);
+
+/*
+ * @biref			register ppm deceleration
+ *
+ * @param dec 		the new deceleration
+ */
 void motor_register_deceleration(uint32_t dec);
+
+/*
+ * @biref			register ppm target
+ *
+ * @param target 	the new target
+ */
 void motor_register_tmp_target(int32_t target);
+
+/*
+ * @biref			register operation target
+ *
+ * @param target 	the new target
+ */
 void motor_register_target(int32_t target);
+
+/*
+ * @biref			register operation half target
+ *
+ * @param half_target 	the new half target
+ */
 void motor_register_half_target(int32_t half_target);
+
+/*
+ * @biref			register operation end wait
+ *
+ * @param end_wait 	the new end wait
+ */
 void motor_register_end_wait(uint32_t end_wait);
+
+/*
+ * @biref			register operation half wait
+ *
+ * @param half_wait 	the new half wait
+ */
 void motor_register_half_wait(uint32_t half_wait);
+
+/*
+ * @biref			register operation pre wait
+ *
+ * @param pre_wait 	the new pre wait
+ */
 void motor_register_pre_wait(uint32_t pre_wait);
+
+/*
+ * @biref			set ppm mode absolute
+ */
 void motor_register_absolute();
+
+/*
+ * @biref			set ppm mode relative
+ */
 void motor_register_relative();
 
+/*
+ * @brief			get ppm speed
+ *
+ * @return			current ppm speed
+ */
 uint32_t motor_get_ppm_speed();
+
+/*
+ * @brief			get ppm acceleration
+ *
+ * @return			current ppm acceleration
+ */
 uint32_t motor_get_ppm_acceleration();
+
+/*
+ * @brief			get ppm deceleration
+ *
+ * @return			current ppm deceleration
+ */
 uint32_t motor_get_ppm_deceleration();
+
+/*
+ * @brief			get operation target
+ *
+ * @return			current operation target
+ */
 int32_t motor_get_target();
+
+/*
+ * @brief			get operation half target
+ *
+ * @return			current operation half target
+ */
 int32_t motor_get_half_target();
+
+/*
+ * @brief			get operation end wait
+ *
+ * @return			current operation end wait
+ */
 uint32_t motor_get_end_wait();
+
+/*
+ * @brief			get operation half wait
+ *
+ * @return			current operation half wait
+ */
 uint32_t motor_get_half_wait();
+
+/*
+ * @brief			get operation pre wait
+ *
+ * @return			current operation pre wait
+ */
 uint32_t motor_get_pre_wait();
+
+/*
+ * @brief			get custom object value
+ *
+ * @return			current custom object value
+ */
 uint32_t motor_get_custom_object();
+
+/*
+ * @brief			register custom object index
+ *
+ * @param index		custom object index
+ */
 void motor_register_custom_index(uint32_t index);
+
+/*
+ * @brief			register custom object subindex
+ *
+ * @param subindex		custom object subindex
+ */
 void motor_register_custom_subindex(uint8_t subindex);
+
+/*
+ * @brief			register custom object data
+ *
+ * @param data		custom object data
+ */
 void motor_register_custom_write(uint8_t data);
 
 

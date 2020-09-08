@@ -6,6 +6,7 @@
 
 
 static uint16_t crcDataArray[MAX_FRAME_LEN];
+static uint16_t crcDataArrayRecv[MAX_FRAME_LEN];
 
 static uint8_t recieved_data[MAX_FRAME_LEN*2];
 static uint8_t recieved_opcode = 0, recieved_length = 0;
@@ -21,6 +22,14 @@ static SemaphoreHandle_t recep_end_sem = NULL;
 static StaticSemaphore_t recep_end_semBuffer;
 static SemaphoreHandle_t driver_busy_sem = NULL;
 static StaticSemaphore_t driver_busy_semBuffer;
+
+
+typedef enum {
+	MDE_SUCCESS,
+	MDE_TIMEOUT,
+	MDE_ERROR
+
+}MAXON_DRIVER_ERROR_t;
 
 
 
@@ -197,7 +206,14 @@ void maxon_comm_receive(uint8_t recvBuffer) {
 	int32_t res = Decode_frame(recvBuffer, &recieved_opcode, recieved_data, &recieved_crc);
 	if(res != -1) {
 		recieved_length = res;
-		xSemaphoreGive(recep_end_sem);
+		crcDataArrayRecv[0] = (recieved_length<<8) | recieved_opcode;
+		for(uint16_t i = 0; i < recieved_length; i++) {
+			crcDataArrayRecv[i+1] = (recieved_data[2*i+1]<<8) |  recieved_data[2*i];
+		}
+		crcDataArrayRecv[recieved_length+1] = 0;
+		if(recieved_crc == CalcFieldCRC(crcDataArrayRecv, recieved_length+2)){
+			xSemaphoreGive(recep_end_sem);
+		}
 	}
 }
 
