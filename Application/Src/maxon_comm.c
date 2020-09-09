@@ -501,6 +501,14 @@ int8_t read_position(int32_t * data) {
 	return 0;
 }
 
+int8_t read_speed(int32_t * data) {
+	if(Read_object(MAXON_ACTUAL_SPEED, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8) | (tmp_data[2]<<16) | (tmp_data[3]<<24);
+	return 0;
+}
+
 int8_t read_psu_voltage(uint16_t * data) {
 	if(Read_object(MAXON_PSU_VOLTAGE, tmp_data) == -1) {
 		return -1;
@@ -677,6 +685,7 @@ static uint32_t custom_read;
 static uint32_t custom_write;
 static uint32_t custom_index;
 static uint8_t custom_subindex;
+static int32_t current_speed;
 
 void motor_def_init(void) {
 	motor_todo.enable = 0;
@@ -830,6 +839,7 @@ void motor_mainloop(void * argument) {
 			read_psu_voltage(&psu_voltage);
 			read_position(&current_position);
 			read_torque(&current_torque);
+			read_speed(&current_speed);
 			motor_read_custom_object();
 			status_counter += HEART_BEAT;
 			if(emergency_abort) {
@@ -838,7 +848,7 @@ void motor_mainloop(void * argument) {
 					emergency_abort = 2;
 					status_counter = 0;
 				}
-				if(emergency_abort == 2 && status_counter > STATUS_THRESH) {
+				if(emergency_abort == 2 && current_speed == 0 && status_counter > STATUS_THRESH) {
 					motor_unquickstop();
 					motor_config_ppm();
 					motor_fault_rst();
@@ -1029,6 +1039,10 @@ void motor_def_start_operation() {
 	motor_todo_buf.start_operation = 1;
 }
 
+void motor_def_custom_write() {
+	motor_todo_buf.write_obj = 1;
+}
+
 void motor_def_abort(void) {
 	emergency_abort = 1;
 	motor_todo.enable = 0;
@@ -1041,6 +1055,7 @@ void motor_def_abort(void) {
 	motor_todo.start_ppm_operation = 0;
 	motor_todo.start_homing_operation = 0;
 	motor_todo.start_operation = 0;
+	motor_todo.write_obj = 0;
 	motor_todo_buf.enable = 0;
 	motor_todo_buf.disable = 0;
 	motor_todo_buf.config = 0;
@@ -1051,6 +1066,7 @@ void motor_def_abort(void) {
 	motor_todo_buf.start_ppm_operation = 0;
 	motor_todo_buf.start_homing_operation = 0;
 	motor_todo_buf.start_operation = 0;
+	motor_todo_buf.write_obj = 0;
 }
 
 void motor_register_speed(uint32_t speed) {

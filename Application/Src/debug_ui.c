@@ -394,6 +394,7 @@ void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_custom_index(in[0]);
 		motor_register_custom_subindex(in[1]);
 		motor_register_custom_write(in[2]);
+		motor_def_custom_write();
 	}
 }
 

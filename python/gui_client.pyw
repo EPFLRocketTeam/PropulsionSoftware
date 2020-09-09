@@ -88,7 +88,7 @@ def get_operation():
         print(data)
         if(len(data) == 5):
             op_wait0_entry.delete(0, tk.END)
-            p_wait0_entry.insert(0, data[0])
+            op_wait0_entry.insert(0, data[0])
             op_half_entry.delete(0, tk.END)
             op_half_entry.insert(0, data[1])
             op_wait1_entry.delete(0, tk.END)
@@ -230,7 +230,7 @@ def get_status():
             torq_entry.delete(0, tk.END)
             torq_entry.insert(0, str(int(data[7])/1000.0))
             obj_out.delete(0, tk.END)
-            obj_out.insert(0, data[8])
+            obj_out.insert(0, '0x'+data[8])
             
 def get_sensors():
     out = 'short_sensors\n'

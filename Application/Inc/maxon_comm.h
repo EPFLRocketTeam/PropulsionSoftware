@@ -174,6 +174,8 @@ void motor_def_start_operation();
  */
 void motor_def_abort(void);
 
+void motor_def_custom_write();
+
 /*
  * @biref			register ppm speed
  *
