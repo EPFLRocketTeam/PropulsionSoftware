@@ -7,6 +7,8 @@ import platform
 
 #functions
 
+COM_PORT ='com14'
+
 safety = 1
 ser = serial.Serial()
 connected = 0
@@ -193,7 +195,13 @@ def fstartup():
     print(out)
     if ser.is_open:
       ser.write(bytes(out, 'ascii'))
-    
+   
+
+def twos_complement(hexstr,bits):
+    value = int(hexstr,16)
+    if value & (1 << (bits-1)):
+        value -= 1 << bits
+    return value 
 
 def get_status():
     out = 'short_stat\n'
@@ -231,6 +239,8 @@ def get_status():
             torq_entry.insert(0, str(int(data[7])/1000.0))
             obj_out.delete(0, tk.END)
             obj_out.insert(0, '0x'+data[8])
+            obj_out_int.delete(0, tk.END)
+            obj_out_int.insert(0, str(twos_complement(data[8], 32)))
             
 def get_sensors():
     out = 'short_sensors\n'
@@ -329,7 +339,7 @@ serial_label= tk.Label(comm_box, text='Serial port =')
 serial_label.grid(row=0, column=0, sticky="WE", pady=YPAD)
 
 serial_entry= tk.Entry(comm_box)
-serial_entry.insert(0, 'com7')
+serial_entry.insert(0, COM_PORT)
 serial_entry.grid(row=0, column=1, sticky="WE", pady=YPAD)
 
 serial_but= tk.Button(comm_box, text='Connect', command=connect)
@@ -528,6 +538,10 @@ obj_out = tk.Entry(obj, width=10, justify="right")
 obj_out.grid(row=0, column = 6, sticky="E", pady=YPAD)
 obj_out.bind("<Key>", lambda e: "break")
 
+obj_out_int = tk.Entry(obj, width=10, justify="right")
+obj_out_int.grid(row=0, column = 7, sticky="E", pady=YPAD)
+obj_out_int.bind("<Key>", lambda e: "break")
+
 mot_ctrl = ttk.Labelframe(motor, text='motor operation')
 mot_ctrl.grid(row=6, column=0, sticky="WE")
 
@@ -649,7 +663,7 @@ o_top_y = l_top_y+l_height
 canvas.create_oval(o_top_x, o_top_y, o_top_x+2*o_rad, o_top_y+2*o_rad)
 
 
-valve_draw = canvas.create_line(valve_bbox(math.radians(0)), arrow=tk.FIRST)
+valve_draw = canvas.create_line(valve_bbox(math.radians(0)))
 
 l2_top_x = l_top_x
 l2_top_y = o_top_y+2*o_rad
