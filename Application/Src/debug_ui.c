@@ -374,8 +374,8 @@ void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out) {
 }
 
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out) {
-	sprintf((char *) out, "%d %d %d %d %d\n", 	sensor_get_data(PP_PRESSURE_1), sensor_get_data(PP_PRESSURE_2), sensor_get_data(PP_TEMPERATURE_1),
-												sensor_get_data(PP_TEMPERATURE_2), sensor_get_data(PP_TEMPERATURE_3));
+	sprintf((char *) out, "%d %d %d %d %d %lu\n", 	sensor_get_data(PP_PRESSURE_1), sensor_get_data(PP_PRESSURE_2), sensor_get_data(PP_TEMPERATURE_1),
+												sensor_get_data(PP_TEMPERATURE_2), sensor_get_data(PP_TEMPERATURE_3), sensor_get_time());
 }
 
 void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {

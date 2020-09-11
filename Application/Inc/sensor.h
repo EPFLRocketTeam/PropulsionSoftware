@@ -9,6 +9,8 @@
 
 #include <main.h>
 
+#define SAMPLING_TIME 10 //ms
+
 typedef enum { //MODIFY IN IOC
 	PP_PRESSURE_1, 		// PC0 | A0 S2
 	PP_PRESSURE_2, 		// PA2 | A1 S2
@@ -24,6 +26,7 @@ void PP_sensorInit(void);
 void PP_sensorFunc(void *argument);
 
 uint16_t sensor_get_data(PP_SENSOR_t sensor);
+uint32_t sensor_get_time(void);
 
 
 

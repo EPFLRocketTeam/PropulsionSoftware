@@ -5,6 +5,25 @@ import serial
 import math
 import platform
 
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+# Implement the default Matplotlib key bindings.
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+import matplotlib.animation as animation
+from matplotlib import style
+import matplotlib
+
+font = {'family' : 'normal',
+        'weight' : 'normal',
+        'size'   : 7}
+
+matplotlib.rc('font', **font)
+
+import numpy as np
+
+
 #functions
 
 COM_PORT ='com14'
@@ -13,6 +32,19 @@ safety = 1
 ser = serial.Serial()
 connected = 0
 heart_beat=500
+
+#data_to_save
+
+max_samples = 50
+samples = 0
+temp1_data = []
+temp2_data = []
+temp3_data = []
+pres1_data = []
+pres2_data = []
+time_data = []
+time_current = 0
+
 
 def move_rel():
     targ = tmp_target_entry.get()
@@ -243,6 +275,8 @@ def get_status():
             obj_out_int.insert(0, str(twos_complement(data[8], 32)))
             
 def get_sensors():
+    global samples
+    global time_current
     out = 'short_sensors\n'
     print(out)
     if ser.is_open:
@@ -250,7 +284,7 @@ def get_sensors():
         resp = ser.readline().decode('ascii')
         data = resp.split()
         print(data)
-        if(len(data) == 5):
+        if(len(data) == 6):
             pres1_entry.delete(0, tk.END)
             pres1_entry.insert(0, data[0])
             pres2_entry.delete(0, tk.END)
@@ -261,7 +295,24 @@ def get_sensors():
             temp2_entry.insert(0, data[3])
             temp3_entry.delete(0, tk.END)
             temp3_entry.insert(0, data[4])
-            
+
+            pres1_data.append(int(data[0]))
+            pres2_data.append(int(data[1]))
+            temp1_data.append(int(data[2]))
+            temp2_data.append(int(data[3]))
+            temp3_data.append(int(data[4]))
+            time_data.append(int(data[5]))
+            time_current = int(data[5])
+            samples += 1
+
+            if samples >= max_samples:
+                pres1_data.pop(0)
+                pres2_data.pop(0)
+                temp1_data.pop(0)
+                temp2_data.pop(0)
+                temp3_data.pop(0)
+                time_data.pop(0) 
+                samples -= 1
 
 def connect():
     global ser
@@ -307,6 +358,8 @@ def main_update():
     get_status()
     get_sensors()
     window.after(heart_beat, main_update)
+
+
 
 
 
@@ -620,6 +673,38 @@ torq_entry.bind("<Key>", lambda e: "break")
 torq_label2 = tk.Label(sensor, text='[Nm]')
 torq_label2.grid(row=5, column=2, sticky="E", pady=YPAD)
 
+#matplotlib graph stuff
+
+
+
+fig = Figure(figsize=(3, 3), dpi=100)
+ax1 = fig.add_axes([0.2, 0.57, 0.75, 0.4])
+ax2 = fig.add_axes([0.2, 0.15, 0.75, 0.4])
+ax1.set_xticks([])
+ax1.set_ylabel("Pressure [RAW]")
+ax2.set_ylabel("Temperature [RAW]")
+ax2.set_xlabel("Time [ms]")
+
+
+def data_update(i):
+    ax1.clear()
+    ax2.clear()
+    ax1.set_xticks([])
+    ax1.set_ylabel("Pressure [RAW]")
+    ax2.set_ylabel("Temperature [RAW]")
+    ax2.set_xlabel("Time [ms]")
+    ax1.set_xlim(-heart_beat*max_samples-100, 100)
+    ax2.set_xlim(-heart_beat*max_samples-100, 100)
+    ax1.plot(np.array(time_data)-time_current, pres1_data, label='1')
+    ax1.plot(np.array(time_data)-time_current, pres2_data, label='2')
+    ax2.plot(np.array(time_data)-time_current, temp1_data, label='1')
+    ax2.plot(np.array(time_data)-time_current, temp2_data, label='2')
+    ax2.plot(np.array(time_data)-time_current, temp3_data, label='3')
+
+plot_canvas = FigureCanvasTkAgg(fig, master=sensor)  # A tk.DrawingArea.
+plot_canvas.draw()
+plot_canvas.get_tk_widget().grid(row=6, column=0, columnspan=3, sticky="E", pady=YPAD)
+ani = animation.FuncAnimation(fig, data_update, interval=500)
 
 sol_but = tk.Button(other, text='Solenoid', bg='white', command=toggle_solenoid)
 sol_but.grid(row=0, column=0, pady=YPAD)

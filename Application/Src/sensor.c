@@ -12,13 +12,15 @@
 #include "dma.h"
 #include <threads.h>
 #include "gpio.h"
+#include <control.h>
 
 static uint16_t PP_sensorData[PP_NB_SENSOR];
 static uint16_t adcBuffer[PP_NB_SENSOR];
+static uint32_t time;
 //static uint32_t last_measure_time;
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
-
+	time += SAMPLING_TIME;
 	for(int i = 0; i < PP_NB_SENSOR; i++) {
 		PP_sensorData[i] = adcBuffer[i];
 	}
@@ -28,9 +30,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 //SETUP THE SENSOR VALUES IN CUBE_MX  -> they need to be on the S2 because s1 is used for maxon_comm.
 void PP_sensorInit(void) {
 
-	//the sampling rate is 50Hz to be setup in  prop_soft.ioc
+	//the sampling rate is 100Hz to be setup in  prop_soft.ioc
 	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuffer, PP_NB_SENSOR);
+	time = 0;
 }
 
 
@@ -46,10 +49,6 @@ void PP_sensorFunc(void *argument) {
 
 	for(;;) {
 
-		for(int i = 0; i < PP_NB_SENSOR; i++) {
-		    PP_sensorData[i] = adcBuffer[i];
-		}
-
 
 
 
@@ -57,6 +56,11 @@ void PP_sensorFunc(void *argument) {
 
 	}
 
+}
+
+
+uint32_t sensor_get_time(void) {
+	return time;
 }
 
 
