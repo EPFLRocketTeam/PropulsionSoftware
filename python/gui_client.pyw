@@ -235,6 +235,13 @@ def twos_complement(hexstr,bits):
         value -= 1 << bits
     return value 
 
+def angle_half_mod(angle):
+    while angle >= 180:
+        angle -= 180
+    while angle < -180:
+        angle += 180
+    return angle
+
 def get_status():
     out = 'short_stat\n'
     print(out)
@@ -265,6 +272,17 @@ def get_status():
             cur_pos_display.delete(0, tk.END)
             cur_pos_display.insert(0, data[5])
             canvas.coords(valve_draw, valve_bbox(math.radians(int(data[5])/10)))
+            if abs(angle_half_mod(int(data[5])/10)) > 28:
+                canvas.itemconfig(s_flame, state='normal')
+            else:
+                canvas.itemconfig(s_flame, state='hidden')
+
+
+            if abs(angle_half_mod(int(data[5])/10)) > 55:
+                canvas.itemconfig(b_flame, state='normal')
+            else:
+                canvas.itemconfig(b_flame, state='hidden')
+
             psu_cod.delete(0, tk.END)
             psu_cod.insert(0, str(int(data[6])/10.0))
             torq_entry.delete(0, tk.END)
@@ -273,6 +291,7 @@ def get_status():
             obj_out.insert(0, '0x'+data[8])
             obj_out_int.delete(0, tk.END)
             obj_out_int.insert(0, str(twos_complement(data[8], 32)))
+
             
 def get_sensors():
     global samples
@@ -367,8 +386,8 @@ def main_update():
 
 window = tk.Tk()
 
-window.geometry('900x600')
-window.title('propulsion control')
+window.geometry('940x580')
+window.title('Propulsion Control')
 
 
 motor = ttk.Labelframe(window, text="motor control")
@@ -777,10 +796,14 @@ canvas.create_arc(b_top_x, b_top_y, b_top_x+b_width, b_top_y+b_height, style=tk.
 canvas.create_arc(b_end_x-b_width, b_top_y, b_end_x, b_top_y+b_height, style=tk.ARC, start=0, extent = 90)
 canvas.create_line(b_top_x, b_top_y+b_height/2, b_end_x, b_top_y+b_height/2)
 
-f_top_x = b_top_x
-f_top_y = b_top_y+b_height/2
+f_top_x = b_top_x+6
+f_top_y = b_top_y+b_height/2+5
 f_width = b_width
 f_height= 40
+b_flame_bm = tk.BitmapImage(file="b_flame.xbm", foreground='red')
+b_flame = canvas.create_image(f_top_x, f_top_y, image=b_flame_bm, anchor=tk.NW, state='hidden')
+s_flame_bm = tk.BitmapImage(file="s_flame.xbm", foreground='orange')
+s_flame = canvas.create_image(f_top_x, f_top_y, image=s_flame_bm, anchor=tk.NW, state='hidden')
 
 
 canvas.grid(row=0, column=0, sticky='NSEW')
