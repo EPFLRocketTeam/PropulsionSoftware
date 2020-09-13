@@ -96,7 +96,7 @@ static DUI_ITEM_t ui_items[] = {
 		{"move_rel", 1, ui_move_rel},
 		{"homing", 0, ui_homing},
 		{"ppm_profile", 3, ui_reg_ppm_profile},
-		{"op_profile", 4, ui_reg_op_profile},
+		{"op_profile", 5, ui_reg_op_profile},
 		{"operation", 0, ui_operation},
 		{"abort", 0, ui_abort},
 		{"short_stat", 0, ui_short_stat},

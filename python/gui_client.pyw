@@ -236,9 +236,9 @@ def twos_complement(hexstr,bits):
     return value 
 
 def angle_half_mod(angle):
-    while angle >= 180:
+    while angle >= 90:
         angle -= 180
-    while angle < -180:
+    while angle < -90:
         angle += 180
     return angle
 
@@ -314,6 +314,12 @@ def get_sensors():
             temp2_entry.insert(0, data[3])
             temp3_entry.delete(0, tk.END)
             temp3_entry.insert(0, data[4])
+
+            canvas.itemconfig(temp1_disp, text=data[2]+' [raw]')
+            canvas.itemconfig(temp2_disp, text=data[3]+' [raw]')
+            canvas.itemconfig(temp3_disp, text=data[4]+' [raw]')
+            canvas.itemconfig(pres1_disp, text=data[0]+' [raw]')
+            canvas.itemconfig(pres2_disp, text=data[1]+' [raw]')
 
             pres1_data.append(int(data[0]))
             pres2_data.append(int(data[1]))
@@ -797,13 +803,33 @@ canvas.create_arc(b_end_x-b_width, b_top_y, b_end_x, b_top_y+b_height, style=tk.
 canvas.create_line(b_top_x, b_top_y+b_height/2, b_end_x, b_top_y+b_height/2)
 
 f_top_x = b_top_x+6
-f_top_y = b_top_y+b_height/2+5
+f_top_y = b_top_y+b_height/2+2
 f_width = b_width
 f_height= 40
 b_flame_bm = tk.BitmapImage(file="b_flame.xbm", foreground='red')
 b_flame = canvas.create_image(f_top_x, f_top_y, image=b_flame_bm, anchor=tk.NW, state='hidden')
 s_flame_bm = tk.BitmapImage(file="s_flame.xbm", foreground='orange')
 s_flame = canvas.create_image(f_top_x, f_top_y, image=s_flame_bm, anchor=tk.NW, state='hidden')
+
+#data on the schematic
+t1_top_x = r_top_x+r_width+10
+t1_top_y = r_top_y+5
+ln_height = 15
+
+temp1_disp = canvas.create_text(t1_top_x, t1_top_y, text='temp 1', anchor=tk.NW)
+temp2_disp = canvas.create_text(t1_top_x, t1_top_y+ln_height, text='temp 2', anchor=tk.NW)
+temp3_disp = canvas.create_text(t1_top_x, t1_top_y+2*ln_height, text='temp 3', anchor=tk.NW)
+
+p1_top_x = r_top_x+r_width+10
+p1_top_y = r_top_y+r_height+5
+
+pres1_disp = canvas.create_text(p1_top_x, p1_top_y, text='pres 1', anchor=tk.NW)
+
+p2_top_x = r_top_x+r_width+10
+p2_top_y = s_top_y-15
+
+pres2_disp = canvas.create_text(p2_top_x, p2_top_y, text='pres 2', anchor=tk.NW)
+
 
 
 canvas.grid(row=0, column=0, sticky='NSEW')
