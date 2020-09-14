@@ -23,6 +23,10 @@
 #include <sensor.h>
 #include <control.h>
 
+
+
+#define TEST_BOARD 1
+
 #if TEST_BOARD == 1
 
 #include <can_comm.h>
