@@ -12,6 +12,7 @@
 #include "cmsis_os.h"
 #include <stdlib.h>
 #include <maxon_comm.h>
+#include <can_comm.h>
 
 #define HEART_BEAT	100 //ms
 
@@ -36,16 +37,18 @@ void PP_init_control(void) {
 }
 
 
-PP_STATUS_t PP_start_setup(void) {
+PP_STATUS_t start_setup(void) {
+	motor_def_config();
 	return PP_SUCCESS;
 }
 
 
-PP_STATUS_t PP_start_operation(void) {
+PP_STATUS_t start_operation(void) {
+	motor_def_start_operation();
 	return PP_SUCCESS;
 }
 
-
+static CAN_msg control_msg;
 
 
 void PP_controlFunc(void *argument) {
@@ -56,17 +59,41 @@ void PP_controlFunc(void *argument) {
 
 	 lastWakeTime = xTaskGetTickCount();
 
+	 PP_setLed(0, 0, 5);
 
 	for(;;) {
 
-		//do stuff
+		//poll CAN communication
+		control_msg = can_readBuffer();
 
-
-		if(get_busy_state()) {
+		if(control_msg.id == DATA_ID_START_OPERATION) {
 			PP_setLed(0, 5, 0);
-		} else {
-			PP_setLed(0, 5, 5);
+			start_operation();
 		}
+		if(control_msg.id == DATA_ID_START_FUELING) {
+			PP_setLed(5, 5, 0);
+
+		}
+		if(control_msg.id == DATA_ID_STOP_FUELING) {
+			PP_setLed(0, 5, 0);
+
+		}
+		if(control_msg.id == DATA_ID_START_HOMING) {
+			PP_setLed(0, 5, 5);
+
+		}
+		if(control_msg.id == DATA_ID_ABORT) {
+			PP_setLed(5, 0, 3);
+
+		}
+
+
+
+//		if(get_busy_state()) {
+//			PP_setLed(0, 5, 0);
+//		} else {
+//			PP_setLed(0, 5, 5);
+//		}
 
 	    vTaskDelayUntil( &lastWakeTime, period );
 

@@ -18,6 +18,7 @@
 #include <led.h>
 #include <debug_ui.h>
 #include <error.h>
+#include <can_comm.h>
 
 
 #define USE_SEM		1  //TASK notify marche pas alors on utilise les semaphores
@@ -113,6 +114,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 
 void PP_commInit(void) {
+	//rxtx comm init
 	rxBufferM = 0;
 	rxBufferU = 0;
 	HAL_UART_Receive_DMA(&MOTOR_UART, &rxBufferM, 1);
@@ -123,6 +125,10 @@ void PP_commInit(void) {
 #endif
 	rx_buffer_init(&motor_rx_buffer);
 	rx_buffer_init(&user_rx_buffer);
+
+	//can comm init
+	CAN_Config(CAN_ID_PROPULSION_BOARD);
+
 }
 
 

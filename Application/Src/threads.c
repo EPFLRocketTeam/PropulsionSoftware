@@ -97,8 +97,7 @@ const osThreadAttr_t motor_comm_attributes = {
 void PP_initThreads(void) {
 
 
-	//control thread init
-	PP_controlHandle = osThreadNew(PP_controlFunc, NULL, &PP_control_attributes);
+
 	//sensor init
 	PP_sensorInit();
 	//plus besoin d'un thread pour les capteurs vu que tout est géré par tim2 et adc+dma
@@ -112,7 +111,8 @@ void PP_initThreads(void) {
 	PP_commMotorHandle = osThreadNew(PP_commMotorFunc, NULL, &PP_commMotor_attributes);
 	PP_commUserHandle = osThreadNew(PP_commUserFunc, NULL, &PP_commUser_attributes);
 
-
+	//control thread init
+	PP_controlHandle = osThreadNew(PP_controlFunc, NULL, &PP_control_attributes);
 
 
 

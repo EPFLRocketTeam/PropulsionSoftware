@@ -21,6 +21,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "can.h"
 #include "dma.h"
 #include "tim.h"
 #include "usart.h"
@@ -99,6 +100,7 @@ int main(void)
   MX_TIM2_Init();
   MX_USART6_UART_Init();
   MX_USART3_UART_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_2);
