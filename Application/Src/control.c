@@ -66,26 +66,28 @@ void PP_controlFunc(void *argument) {
 		//poll CAN communication
 		while(can_msgPending()) {
 			control_msg = can_readBuffer();
+			if(control_msg.id_CAN == CAN_ID_PROPULSION_BOARD) {
 
-			if(control_msg.id == DATA_ID_START_OPERATION) {
-				PP_setLed(0, 5, 0);
-				start_operation();
-			}
-			if(control_msg.id == DATA_ID_START_FUELING) {
-				PP_setLed(5, 5, 0);
+				if(control_msg.id == DATA_ID_START_OPERATION) {
+					PP_setLed(0, 5, 0);
+					start_operation();
+				}
+				if(control_msg.id == DATA_ID_START_FUELING) {
+					PP_setLed(5, 5, 0);
 
-			}
-			if(control_msg.id == DATA_ID_STOP_FUELING) {
-				PP_setLed(0, 5, 0);
+				}
+				if(control_msg.id == DATA_ID_STOP_FUELING) {
+					PP_setLed(0, 5, 0);
 
-			}
-			if(control_msg.id == DATA_ID_START_HOMING) {
-				PP_setLed(0, 5, 5);
+				}
+				if(control_msg.id == DATA_ID_START_HOMING) {
+					PP_setLed(0, 5, 5);
 
-			}
-			if(control_msg.id == DATA_ID_ABORT) {
-				PP_setLed(5, 0, 3);
+				}
+				if(control_msg.id == DATA_ID_ABORT) {
+					PP_setLed(5, 0, 3);
 
+				}
 			}
 		}
 
