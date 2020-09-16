@@ -25,7 +25,7 @@
 
 
 
-#define TEST_BOARD 1
+#define TEST_BOARD 0
 
 #if TEST_BOARD == 1
 

@@ -11,8 +11,6 @@
 #include <main.h>
 #include <error.h>
 
-#define TESTING_BOARD 1
-
 
 #define SOLENOID	GPIOB, GPIO_PIN_9
 //SOLENOID: PB9 | D1 S2
