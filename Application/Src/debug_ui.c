@@ -338,15 +338,19 @@ void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 }
 void ui_operation(uint16_t nb, int32_t * in, uint8_t * out) {
 	motor_def_start_operation();
+
 #if TEST_BOARD == 1
-
 	can_setFrame(0, DATA_ID_START_OPERATION, 0);
-
 #endif
 }
 
 void ui_abort(uint16_t nb, int32_t * in, uint8_t * out) {
 	motor_def_abort();
+
+#if TEST_BOARD == 1
+	can_setFrame(0, DATA_ID_ABORT, 0);
+#endif
+
 }
 
 void ui_move_abs(uint16_t nb, int32_t * in, uint8_t * out) {
