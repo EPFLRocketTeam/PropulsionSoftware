@@ -1156,7 +1156,13 @@ void motor_register_relative() {
 	motor_ppm_params.absolute = 0;
 }
 
+MOTOR_PPM_PARAMS_t motor_get_ppm_params(void) {
+	return motor_ppm_params;
+}
 
+void motor_set_ppm_params(MOTOR_PPM_PARAMS_t params) {
+	motor_ppm_params = params;
+}
 
 
 

@@ -317,6 +317,7 @@ void ui_reg_ppm_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_speed(in[0]);
 		motor_register_acceleration(in[1]);
 		motor_register_deceleration(in[2]);
+		save_persistent();
 		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", in[0], in[1], in[2]);
 	}else{
 		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", motor_get_ppm_speed(), motor_get_ppm_acceleration(), motor_get_ppm_deceleration());
@@ -330,6 +331,7 @@ void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_half_wait(in[2]);
 		motor_register_target(DDEG2INC(in[3]));
 		motor_register_end_wait(in[4]);
+		save_persistent();
 		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n", in[0], in[1], in[2], in[3], in[4]);
 	} else{
 		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n",

@@ -48,6 +48,9 @@ PP_STATUS_t start_operation(void) {
 	return PP_SUCCESS;
 }
 
+
+
+
 static CAN_msg control_msg;
 
 
@@ -60,6 +63,7 @@ void PP_controlFunc(void *argument) {
 	 lastWakeTime = xTaskGetTickCount();
 
 	 PP_setLed(0, 0, 5);
+	 recover_persistent();
 
 	 //before startup, some persistent data is read from the flash memory
 

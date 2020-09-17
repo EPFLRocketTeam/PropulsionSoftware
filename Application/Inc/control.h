@@ -21,6 +21,8 @@ uint8_t toggle_solenoid();
 PP_STATUS_t start_setup(void);
 PP_STATUS_t start_operation(void);
 
+void save_persistent(void);
+
 
 void PP_controlFunc(void *argument);
 

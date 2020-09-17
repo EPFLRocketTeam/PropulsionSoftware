@@ -20,6 +20,15 @@ typedef enum { //MODIFY IN IOC
 	PP_NB_SENSOR
 }PP_SENSOR_t;
 
+typedef struct {
+	int16_t temp_1;
+	int16_t temp_2;
+	int16_t temp_3;
+	uint16_t press_1;
+	uint16_t press_2;
+	uint32_t time;
+}SENSOR_DATA_t;
+
 
 void PP_sensorInit(void);
 

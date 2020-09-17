@@ -346,6 +346,9 @@ void motor_register_custom_subindex(uint8_t subindex);
  */
 void motor_register_custom_write(uint8_t data);
 
+MOTOR_PPM_PARAMS_t motor_get_ppm_params(void);
+void motor_set_ppm_params(MOTOR_PPM_PARAMS_t params);
+
 
 
 //END OF DEFFERED EXEC FUNCTIONS
