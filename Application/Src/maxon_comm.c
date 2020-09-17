@@ -655,18 +655,6 @@ typedef struct {
 	uint8_t write_obj;
 }MOTOR_TODO_t;
 
-typedef struct {
-	uint32_t acceleration;
-	uint32_t deceleration;
-	uint32_t speed;
-	int32_t tmp_target;
-	int32_t target;
-	int32_t half_target;
-	uint32_t half_wait; //ms
-	uint32_t end_wait; //ms
-	uint32_t pre_wait; //ms
-	uint8_t absolute;
-}MOTOR_PPM_PARAMS_t;
 
 
 

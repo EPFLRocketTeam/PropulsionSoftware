@@ -75,6 +75,19 @@
 #define DDEG2INC(deg)	(int32_t) ((int64_t) deg*4*ENC_NB_PULSES*GEAR_NUM/GEAR_DEN/3600)
 #define INC2DDEG(inc)	(int32_t) ((int64_t) inc*3600*GEAR_DEN/GEAR_NUM/4/ENC_NB_PULSES)
 
+typedef struct {
+	uint32_t acceleration;
+	uint32_t deceleration;
+	uint32_t speed;
+	int32_t tmp_target;
+	int32_t target;
+	int32_t half_target;
+	uint32_t half_wait; //ms
+	uint32_t end_wait; //ms
+	uint32_t pre_wait; //ms
+	uint8_t absolute;
+}MOTOR_PPM_PARAMS_t;
+
 
 //MISC INTERNAL FUNCTIONS
 uint16_t CalcFieldCRC(uint16_t* pDataArray, uint16_t ArrayLength);

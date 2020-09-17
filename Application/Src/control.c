@@ -61,6 +61,8 @@ void PP_controlFunc(void *argument) {
 
 	 PP_setLed(0, 0, 5);
 
+	 //before startup, some persistent data is read from the flash memory
+
 	for(;;) {
 
 		//poll CAN communication
@@ -98,6 +100,12 @@ void PP_controlFunc(void *argument) {
 //		} else {
 //			PP_setLed(0, 5, 5);
 //		}
+
+		//sensor data will be recorded from the fueling start to some time after the valve closure.
+
+		//RECORD DATA ON FLASH
+		//when connected to the python the data can be downloaded via RX-TX
+
 
 	    vTaskDelayUntil( &lastWakeTime, period );
 

@@ -9,7 +9,7 @@
 
 #include <main.h>
 
-#define SAMPLING_TIME 10 //ms
+#define SAMPLING_TIME 20 //ms
 
 typedef enum { //MODIFY IN IOC
 	PP_PRESSURE_1, 		// PC0 | A0 S2
