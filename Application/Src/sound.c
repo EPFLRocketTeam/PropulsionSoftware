@@ -95,9 +95,9 @@ void play_sound(TIM_HandleTypeDef * timer, uint32_t channel, TONE_t * tune, uint
 	uint16_t i = 0;
 	for(i = 0; i < len; i++) {
 		setFREQ(timer, channel, tune[i].note);
-		HAL_Delay(tune[i].time);
+		osDelay(tune[i].time);
 		setFREQ(timer, channel, 0);
-		HAL_Delay(100);
+		osDelay(100);
 	}
 }
 
@@ -109,7 +109,7 @@ uint16_t get_size(void) {
 	return sizeof(music)/sizeof(TONE_t);
 }
 
-void setPWM(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t pulse) {
+void setPWM_s(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t pulse) {
 
 	TIM_OC_InitTypeDef sConfigOC;
 	sConfigOC.OCMode = TIM_OCMODE_PWM1;
@@ -137,5 +137,12 @@ void setFREQ(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t freq) {
 	HAL_TIM_PWM_ConfigChannel(timer, &sConfigOC, channel);
 
 	HAL_TIM_PWM_Start(timer, channel);
+}
+
+
+void PP_soundFunc(void *argument) {
+	for(;;) {
+		play_sound(&htim2, TIM_CHANNEL_1, music, sizeof(music)/sizeof(TONE_t));
+	}
 }
 

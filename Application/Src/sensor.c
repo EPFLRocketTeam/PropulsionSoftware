@@ -31,7 +31,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 void PP_sensorInit(void) {
 
 	//the sampling rate is 100Hz to be setup in  prop_soft.ioc
-	HAL_TIM_Base_Start_IT(&htim2);
+	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuffer, PP_NB_SENSOR);
 	time = 0;
 }

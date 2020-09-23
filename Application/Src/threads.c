@@ -14,6 +14,7 @@
 #include <led.h>
 #include <comm.h>
 #include <maxon_comm.h>
+#include <sound.h>
 
 
 typedef StaticTask_t osStaticThreadDef_t;
@@ -86,6 +87,18 @@ const osThreadAttr_t motor_comm_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 
+osThreadId_t soundHandle;
+uint32_t soundBuffer[ 128 ];
+osStaticThreadDef_t soundControlBlock;
+const osThreadAttr_t sound_attributes = {
+  .name = "sound",
+  .stack_mem = &soundBuffer[0],
+  .stack_size = sizeof(soundBuffer),
+  .cb_mem = &soundControlBlock,
+  .cb_size = sizeof(soundControlBlock),
+  .priority = (osPriority_t) osPriorityLow,
+};
+
 
 
 
@@ -114,7 +127,7 @@ void PP_initThreads(void) {
 	//control thread init
 	PP_controlHandle = osThreadNew(PP_controlFunc, NULL, &PP_control_attributes);
 
-
+	soundHandle = osThreadNew(PP_soundFunc, NULL, &sound_attributes);
 
 }
 
