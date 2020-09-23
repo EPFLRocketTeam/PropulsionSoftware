@@ -1,6 +1,8 @@
 
 
 #include <sound.h>
+#include <tim.h>
+#include "cmsis_os.h"
 
 
 

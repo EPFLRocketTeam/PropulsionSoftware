@@ -13,17 +13,41 @@
 #include <threads.h>
 #include "gpio.h"
 #include <control.h>
+#include <lut.h>
 
 static uint16_t PP_sensorData[PP_NB_SENSOR];
+
 static uint16_t adcBuffer[PP_NB_SENSOR];
 static uint32_t time;
+static SENSOR_DATA_t current_data;
 //static uint32_t last_measure_time;
+
+
+
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	time += SAMPLING_TIME;
 	for(int i = 0; i < PP_NB_SENSOR; i++) {
 		PP_sensorData[i] = adcBuffer[i];
 	}
+	current_data.press_1 = adcBuffer[0];
+	current_data.press_2 = adcBuffer[1];
+	if(adcBuffer[2] >= TEMP_MIN && adcBuffer[2] < TEMP_MAX) {
+		current_data.temp_1 = temp_LUT[adcBuffer[2]-TEMP_MIN];
+	} else {
+		current_data.temp_1 = 0xffff;
+	}
+	if(adcBuffer[3] >= TEMP_MIN && adcBuffer[3] < TEMP_MAX) {
+		current_data.temp_2 = temp_LUT[adcBuffer[3]-TEMP_MIN];
+	} else {
+		current_data.temp_2 = 0xffff;
+	}
+	if(adcBuffer[4] >= TEMP_MIN && adcBuffer[4] < TEMP_MAX) {
+		current_data.temp_3 = temp_LUT[adcBuffer[4]-TEMP_MIN];
+	} else {
+		current_data.temp_3 = 0xffff;
+	}
+	current_data.time = time;
 }
 
 
@@ -70,4 +94,8 @@ uint16_t sensor_get_data(PP_SENSOR_t sensor) {
 	} else {
 		return -1;
 	}
+}
+
+SENSOR_DATA_t sensor_get_data_struct(void) {
+	return current_data;
 }

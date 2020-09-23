@@ -35,6 +35,7 @@ void PP_sensorInit(void);
 void PP_sensorFunc(void *argument);
 
 uint16_t sensor_get_data(PP_SENSOR_t sensor);
+SENSOR_DATA_t sensor_get_data_struct(void);
 uint32_t sensor_get_time(void);
 
 
