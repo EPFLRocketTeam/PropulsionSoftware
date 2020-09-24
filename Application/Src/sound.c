@@ -96,9 +96,9 @@ static TONE_t music[] = {
 void play_sound(TIM_HandleTypeDef * timer, uint32_t channel, TONE_t * tune, uint16_t len) {
 	uint16_t i = 0;
 	for(i = 0; i < len; i++) {
-		setFREQ(timer, channel, tune[i].note);
+		setFREQ_OPT(tune[i].note);
 		osDelay(tune[i].time);
-		setFREQ(timer, channel, 0);
+		setFREQ_OPT(0);
 		osDelay(100);
 	}
 }
@@ -111,16 +111,6 @@ uint16_t get_size(void) {
 	return sizeof(music)/sizeof(TONE_t);
 }
 
-void setPWM_s(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t pulse) {
-
-	TIM_OC_InitTypeDef sConfigOC;
-	sConfigOC.OCMode = TIM_OCMODE_PWM1;
-	sConfigOC.Pulse = (uint64_t) timer->Init.Period*pulse/1000;              // set the pulse duration
-	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-	HAL_TIM_PWM_ConfigChannel(timer, &sConfigOC, channel);
-	HAL_TIM_PWM_Start(timer, channel);   // start pwm generation
-}
 
 #define CLOCK	(50E6/50)
 void setFREQ(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t freq) {
@@ -130,19 +120,32 @@ void setFREQ(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t freq) {
 	}
 	TIM_OC_InitTypeDef sConfigOC;
 	sConfigOC.OCMode = TIM_OCMODE_PWM1;
-	sConfigOC.Pulse = (uint64_t) (CLOCK/freq/10-1)*5/10;              // set the pulse duration
+	sConfigOC.Pulse =  ((uint64_t)(CLOCK/freq*10-1)>>1);
 	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
 	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
 	if(freq == 0) {
 		sConfigOC.Pulse = 0;
 	}
 	HAL_TIM_PWM_ConfigChannel(timer, &sConfigOC, channel);
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+}
 
-	HAL_TIM_PWM_Start(timer, channel);
+void setFREQ_OPT(uint16_t freq) {
+	if(freq == 0) {
+		TIM2->CCR1 = 0;
+	} else {
+		TIM2->ARR = ((uint32_t)(CLOCK/freq*10)-1);
+		TIM2->CCR1 = ((uint32_t)(CLOCK/freq*10-1)>>1);
+	}
+}
+
+void init_sound(void) {
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 }
 
 
 void PP_soundFunc(void *argument) {
+	init_sound();
 	for(;;) {
 		play_sound(&htim2, TIM_CHANNEL_1, music, sizeof(music)/sizeof(TONE_t));
 	}

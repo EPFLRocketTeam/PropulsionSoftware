@@ -16,8 +16,8 @@ uint16_t get_size(void);
 
 
 void play_sound(TIM_HandleTypeDef * timer, uint32_t channel, TONE_t * tune, uint16_t len);
-void setPWM_s(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t pulse);
 void setFREQ(TIM_HandleTypeDef * timer, uint32_t channel, uint16_t freq);
+void setFREQ_OPT(uint16_t freq);
 
 void PP_soundFunc(void *argument);
 

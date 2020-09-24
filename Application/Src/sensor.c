@@ -22,32 +22,50 @@ static uint32_t time;
 static SENSOR_DATA_t current_data;
 //static uint32_t last_measure_time;
 
+static SAMPLING_DATA_t sampling = {0};
 
+static uint16_t counter = 0;
 
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
-	time += SAMPLING_TIME;
+
 	for(int i = 0; i < PP_NB_SENSOR; i++) {
 		PP_sensorData[i] = adcBuffer[i];
 	}
-	current_data.press_1 = adcBuffer[0];
-	current_data.press_2 = adcBuffer[1];
+	sampling.press_1 += adcBuffer[0];
+	sampling.press_2 += adcBuffer[1];
 	if(adcBuffer[2] >= TEMP_MIN && adcBuffer[2] < TEMP_MAX) {
-		current_data.temp_1 = temp_LUT[adcBuffer[2]-TEMP_MIN];
+		sampling.temp_1 += temp_LUT[adcBuffer[2]-TEMP_MIN];
 	} else {
-		current_data.temp_1 = 0xffff;
+		sampling.temp_1 = 0x1000;
 	}
 	if(adcBuffer[3] >= TEMP_MIN && adcBuffer[3] < TEMP_MAX) {
-		current_data.temp_2 = temp_LUT[adcBuffer[3]-TEMP_MIN];
+		sampling.temp_2 += temp_LUT[adcBuffer[3]-TEMP_MIN];
 	} else {
-		current_data.temp_2 = 0xffff;
+		sampling.temp_2 = 0x1000;
 	}
 	if(adcBuffer[4] >= TEMP_MIN && adcBuffer[4] < TEMP_MAX) {
-		current_data.temp_3 = temp_LUT[adcBuffer[4]-TEMP_MIN];
+		sampling.temp_3 += temp_LUT[adcBuffer[4]-TEMP_MIN];
 	} else {
-		current_data.temp_3 = 0xffff;
+		sampling.temp_3 = 0x1000;
 	}
-	current_data.time = time;
+	counter++;
+	if(counter == NB_SAMPLES) {
+		time += SAMPLING_TIME;
+		current_data.temp_1 = sampling.temp_1>>6;
+		current_data.temp_2 = sampling.temp_2>>6;
+		current_data.temp_3 = sampling.temp_3>>6;
+		current_data.press_1 = sampling.press_1>>6;
+		current_data.press_2 = sampling.press_2>>6;
+		current_data.time = time;
+		counter = 0;
+		sampling.temp_1 = 0;
+		sampling.temp_2 = 0;
+		sampling.temp_3 = 0;
+		sampling.press_1 = 0;
+		sampling.press_2 = 0;
+
+	}
 }
 
 
