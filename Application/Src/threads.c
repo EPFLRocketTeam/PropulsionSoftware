@@ -100,6 +100,19 @@ const osThreadAttr_t sound_attributes = {
 };
 
 
+osThreadId_t PP_canSendHandle;
+uint32_t PP_canSendBuffer[ 128 ];
+osStaticThreadDef_t PP_canSendControlBlock;
+const osThreadAttr_t PP_canSend_attributes = {
+  .name = "PP_canSend",
+  .stack_mem = &PP_canSendBuffer[0],
+  .stack_size = sizeof(PP_canSendBuffer),
+  .cb_mem = &PP_canSendControlBlock,
+  .cb_size = sizeof(PP_canSendControlBlock),
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+
 
 
 
@@ -126,6 +139,7 @@ void PP_initThreads(void) {
 
 	//control thread init
 	PP_controlHandle = osThreadNew(PP_controlFunc, NULL, &PP_control_attributes);
+	PP_canSendHandle =osThreadNew(PP_canSendFunc, NULL, &PP_canSend_attributes);
 
 	soundHandle = osThreadNew(PP_soundFunc, NULL, &sound_attributes);
 

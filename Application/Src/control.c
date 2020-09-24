@@ -63,9 +63,6 @@ void PP_controlFunc(void *argument) {
 	 lastWakeTime = xTaskGetTickCount();
 
 	 PP_setLed(0, 0, 5);
-	 recover_persistent();
-
-	 //before startup, some persistent data is read from the flash memory
 
 	for(;;) {
 
@@ -74,23 +71,23 @@ void PP_controlFunc(void *argument) {
 			control_msg = can_readBuffer();
 			if(control_msg.id_CAN == CAN_ID_PROPULSION_BOARD) {
 
-				if(control_msg.id == DATA_ID_START_OPERATION) {
+				if(control_msg.id == DATA_ID_START_OPERATION && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
 					PP_setLed(0, 5, 0);
 					start_operation();
 				}
-				if(control_msg.id == DATA_ID_START_FUELING) {
+				if(control_msg.id == DATA_ID_OPEN_SOLENOID && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
 					PP_setLed(5, 5, 0);
 
 				}
-				if(control_msg.id == DATA_ID_STOP_FUELING) {
+				if(control_msg.id == DATA_ID_CLOSE_SOLENOID && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
 					PP_setLed(0, 5, 0);
 
 				}
-				if(control_msg.id == DATA_ID_START_HOMING) {
+				if(control_msg.id == DATA_ID_START_HOMING && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
 					PP_setLed(0, 5, 5);
 
 				}
-				if(control_msg.id == DATA_ID_ABORT) {
+				if(control_msg.id == DATA_ID_ABORT && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
 					PP_setLed(5, 0, 3);
 
 				}

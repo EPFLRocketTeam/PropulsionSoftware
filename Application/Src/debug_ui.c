@@ -22,6 +22,7 @@
 #include <maxon_def.h>
 #include <sensor.h>
 #include <control.h>
+#include <storage.h>
 
 
 
@@ -70,6 +71,8 @@ void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_get_object(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_test_write(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_test_read(uint16_t nb, int32_t * in, uint8_t * out);
 
 
 
@@ -115,7 +118,9 @@ static DUI_ITEM_t ui_items[] = {
 		{"short_sensors", 0, ui_short_sensors},
 		{"solenoid", 0, ui_solenoid},
 		{"get_object", 2, ui_get_object},
-		{"set_object", 3, ui_set_object}
+		{"set_object", 3, ui_set_object},
+		{"write", 1, ui_test_write},
+		{"read", 0, ui_test_read}
 };
 
 
@@ -317,7 +322,6 @@ void ui_reg_ppm_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_speed(in[0]);
 		motor_register_acceleration(in[1]);
 		motor_register_deceleration(in[2]);
-		save_persistent();
 		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", in[0], in[1], in[2]);
 	}else{
 		sprintf((char *) out, "speed: %ld [rmp]\nacc: %ld [rmp/s]\ndec: %ld [rpm/s]\n", motor_get_ppm_speed(), motor_get_ppm_acceleration(), motor_get_ppm_deceleration());
@@ -331,7 +335,6 @@ void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_half_wait(in[2]);
 		motor_register_target(DDEG2INC(in[3]));
 		motor_register_end_wait(in[4]);
-		save_persistent();
 		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n", in[0], in[1], in[2], in[3], in[4]);
 	} else{
 		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n",
@@ -418,6 +421,17 @@ void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out) {
 		motor_register_custom_write(in[2]);
 		motor_def_custom_write();
 	}
+}
+
+void ui_test_write(uint16_t nb, int32_t * in, uint8_t * out) {
+	if(nb >= 1) {
+		test_write(in[0]);
+	}
+	sprintf((char *) out, "done: %ld \n", test_read());
+}
+
+void ui_test_read(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "read: %ld \n", test_read());
 }
 
 

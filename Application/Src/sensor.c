@@ -14,6 +14,7 @@
 #include "gpio.h"
 #include <control.h>
 #include <lut.h>
+#include <comm.h>
 
 static uint16_t PP_sensorData[PP_NB_SENSOR];
 
@@ -25,6 +26,8 @@ static SENSOR_DATA_t current_data;
 static SAMPLING_DATA_t sampling = {0};
 
 static uint16_t counter = 0;
+
+
 
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
@@ -64,6 +67,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 		sampling.temp_3 = 0;
 		sampling.press_1 = 0;
 		sampling.press_2 = 0;
+		static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+		xSemaphoreGiveFromISR( get_can_sem(), &xHigherPriorityTaskWoken );
+		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 
 	}
 }
@@ -76,29 +82,13 @@ void PP_sensorInit(void) {
 	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuffer, PP_NB_SENSOR);
 	time = 0;
+
+
 }
 
 
 
-void PP_sensorFunc(void *argument) {
 
-	 TickType_t lastWakeTime;
-	 const TickType_t period = pdMS_TO_TICKS(50);
-
-
-	 lastWakeTime = xTaskGetTickCount();
-
-
-	for(;;) {
-
-
-
-
-	    vTaskDelayUntil( &lastWakeTime, period );
-
-	}
-
-}
 
 
 uint32_t sensor_get_time(void) {

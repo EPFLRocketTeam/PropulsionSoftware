@@ -13,6 +13,9 @@
 #define ADC_FREQ		3200 //Hz
 #define NB_SAMPLES		64
 
+
+#define SEND_RATE	20
+
 typedef enum { //MODIFY IN IOC
 	PP_PRESSURE_1, 		// PC0 | A0 S2
 	PP_PRESSURE_2, 		// PA2 | A1 S2

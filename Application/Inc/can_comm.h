@@ -65,13 +65,24 @@ typedef struct
 #define DATA_ID_MAIN_IGNITION_STATE 59
 #define DATA_ID_SEC_IGNITION_STATE 60
 
+
+
 //Propulsion Data
-#define DATA_ID_MOTOR_PRESSURE 55
+#define DATA_COMMAND_CHECK_VALUE	0xC0FFEE
+
 #define DATA_ID_START_OPERATION	80
-#define DATA_ID_START_FUELING	81
-#define DATA_ID_STOP_FUELING	82
+#define DATA_ID_OPEN_SOLENOID	81
+#define DATA_ID_CLOSE_SOLENOID	82
 #define DATA_ID_START_HOMING	83
 #define DATA_ID_ABORT			84
+
+#define DATA_ID_PRESS_1			85
+#define DATA_ID_PRESS_2			86
+#define DATA_ID_TEMP_1			87
+#define DATA_ID_TEMP_2			88
+#define DATA_ID_TEMP_3			89
+#define DATA_ID_STATUS			90
+#define DATA_ID_MOT_POS			91
 
 
 // Define all the board ID's (lower means higher priority for CAN protocol)

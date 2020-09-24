@@ -12,9 +12,7 @@
 #include <maxon_comm.h>
 #include <sensor.h>
 
-typedef struct {
-	MOTOR_PPM_PARAMS_t persistent_ppm_params;
-}PERSISTENT_DATA_t;
+
 
 typedef struct {
 	SENSOR_DATA_t sensor_data;
@@ -22,22 +20,20 @@ typedef struct {
 }SAMPLE_DATA_t;
 
 
-#define PERSISTENT_ADDRESS	0
-#define SAMPLE_ADDRESS(i) 	(sizeof(PERSISTENT_DATA_t) + PERSISTENT_ADDRESS + i*sizeof(SAMPLE_DATA_t))
+
+#define MAX_SAMPLES	8192
+
+#define SAMPLE_BASE_ADDRESS	0
+#define SAMPLE_ADDRESS(i) 	(SAMPLE_BASE_ADDRESS + i*sizeof(SAMPLE_DATA_t))
 
 
-void write_persistent(PERSISTENT_DATA_t * data);
-
-void read_persistent(PERSISTENT_DATA_t * data);
 
 void write_sample(SAMPLE_DATA_t * sample);
 
 void read_sample(SAMPLE_DATA_t * sample, uint32_t id);
 
-void recover_persistent(void);
-
-void save_persistent(void);
-
+int32_t test_read(void);
+void test_write(int32_t data);
 
 
 #endif

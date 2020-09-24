@@ -80,7 +80,15 @@ static StaticSemaphore_t uartM_semBuffer;
 
 static SemaphoreHandle_t uartU_sem = NULL;
 static StaticSemaphore_t uartU_semBuffer;
+
 #endif
+
+static SemaphoreHandle_t ready2send_sem = NULL;
+static StaticSemaphore_t ready2send_semBuffer;
+
+SemaphoreHandle_t get_can_sem(void) {
+	return ready2send_sem;
+}
 
 
 //investigate SEMAPHORE FROM ISR!!!
@@ -123,6 +131,8 @@ void PP_commInit(void) {
 	uartM_sem = xSemaphoreCreateBinaryStatic( &uartM_semBuffer );
 	uartU_sem = xSemaphoreCreateBinaryStatic( &uartU_semBuffer );
 #endif
+	ready2send_sem = xSemaphoreCreateBinaryStatic( &ready2send_semBuffer );
+
 	rx_buffer_init(&motor_rx_buffer);
 	rx_buffer_init(&user_rx_buffer);
 
@@ -163,4 +173,25 @@ void PP_commUserFunc(void *argument) {
 			}
 		}
 	}
+}
+
+
+void PP_canSendFunc(void *argument) {
+	for(;;) {
+		if( xSemaphoreTake( ready2send_sem, LONG_TIME ) == pdTRUE ) {
+
+			SENSOR_DATA_t data = sensor_get_data_struct();
+			can_setFrame((uint32_t) data.press_1, DATA_ID_PRESS_1, data.time);
+			can_setFrame((uint32_t) data.press_2, DATA_ID_PRESS_2, data.time);
+			can_setFrame((uint32_t) data.temp_1, DATA_ID_TEMP_1, data.time);
+			can_setFrame((uint32_t) data.temp_2, DATA_ID_TEMP_2, data.time);
+			can_setFrame((uint32_t) data.temp_3, DATA_ID_TEMP_3, data.time);
+			can_setFrame((uint32_t) 0, DATA_ID_STATUS, data.time);
+			can_setFrame((uint32_t) motor_get_position(), DATA_ID_MOT_POS, data.time);
+
+
+
+		}
+	}
+
 }
