@@ -20,6 +20,7 @@ uint8_t toggle_solenoid();
 
 PP_STATUS_t start_setup(void);
 PP_STATUS_t start_operation(void);
+uint16_t get_global_status();
 
 void save_persistent(void);
 

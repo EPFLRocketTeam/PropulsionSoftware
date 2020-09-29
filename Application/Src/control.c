@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <maxon_comm.h>
 #include <can_comm.h>
+#include <storage.h>
 
 #define HEART_BEAT	100 //ms
 
@@ -48,6 +49,20 @@ PP_STATUS_t start_operation(void) {
 	return PP_SUCCESS;
 }
 
+PP_STATUS_t start_homing(void) {
+	motor_def_start_homing_operation();
+	return PP_SUCCESS;
+}
+
+PP_STATUS_t abort(void) {
+	motor_def_abort();
+	return PP_SUCCESS;
+}
+
+uint16_t get_global_status() {
+	return 0x00;
+}
+
 
 
 
@@ -76,18 +91,22 @@ void PP_controlFunc(void *argument) {
 					start_operation();
 				}
 				if(control_msg.id == DATA_ID_OPEN_SOLENOID && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
+					open_solenoid();
 					PP_setLed(5, 5, 0);
 
 				}
 				if(control_msg.id == DATA_ID_CLOSE_SOLENOID && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
+					close_solenoid();
 					PP_setLed(0, 5, 0);
 
 				}
 				if(control_msg.id == DATA_ID_START_HOMING && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
+					start_homing();
 					PP_setLed(0, 5, 5);
 
 				}
 				if(control_msg.id == DATA_ID_ABORT && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
+					abort();
 					PP_setLed(5, 0, 3);
 
 				}
@@ -115,6 +134,16 @@ void PP_controlFunc(void *argument) {
 
 uint8_t toggle_solenoid() {
 	HAL_GPIO_TogglePin(SOLENOID);
+	return HAL_GPIO_ReadPin(SOLENOID);
+}
+
+uint8_t open_solenoid() {
+	HAL_GPIO_WritePin(SOLENOID, 1);
+	return HAL_GPIO_ReadPin(SOLENOID);
+}
+
+uint8_t close_solenoid() {
+	HAL_GPIO_WritePin(SOLENOID, 0);
 	return HAL_GPIO_ReadPin(SOLENOID);
 }
 

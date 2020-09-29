@@ -9,33 +9,53 @@
 #include <main.h>
 #include <storage.h>
 #include <flash.h>
+#include <rocket_fs.h>
 #include <maxon_comm.h>
 
-//static const int32_t saved_data;
-//static const SAMPLE_DATA_t samples[MAX_SAMPLES];
+//#define UNSTABLE
+#ifdef UNSTABLE
 
-static uint32_t sample_count = 0;
+static FileSystem fs = { 0 };
+
+static File * test;
 
 
-void write_sample(SAMPLE_DATA_t * sample) {
-	sample->sample = sample_count;
-	flash_write(SAMPLE_ADDRESS(sample_count), (uint8_t *) sample, sizeof(SAMPLE_DATA_t));
-	sample_count++;
-}
 
-void read_sample(SAMPLE_DATA_t * sample, uint32_t id) {
-	flash_read(SAMPLE_ADDRESS(id), (uint8_t *) sample, sizeof(SAMPLE_DATA_t));
+void storage_init() {
+	flash_init();
+
+	rocket_fs_device(&fs, "NOR Flash", 4096 * 4096, 4096);
+	rocket_fs_bind(&fs, &flash_read, &flash_write, &flash_erase_subsector);
+	rocket_fs_mount(&fs);
+
+	test = rocket_fs_newfile(&fs, "test", RAW);
 }
 
 
 void test_write(int32_t data) {
-	flash_write(0, &data, 4);
+
+	Stream stream;
+	rocket_fs_stream(&stream, &fs, test, OVERWRITE);
+	stream.write32(data);
+	stream.close();
 }
 
 int32_t test_read(void) {
-	int32_t data;
-	flash_read(0, &data, 4);
-	return 0;
+
+	Stream stream;
+	static int32_t buffer;
+	rocket_fs_stream(&stream, &fs, test, OVERWRITE);
+	stream.read32(&buffer);
+	stream.close();
+	return buffer;
 }
 
+#else
 
+void test_write(int32_t data) {
+
+}
+int32_t test_read(void) {
+	return 0;
+}
+#endif

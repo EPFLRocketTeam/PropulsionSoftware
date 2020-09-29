@@ -27,6 +27,7 @@ typedef struct {
 #define SAMPLE_ADDRESS(i) 	(SAMPLE_BASE_ADDRESS + i*sizeof(SAMPLE_DATA_t))
 
 
+void storage_init();
 
 void write_sample(SAMPLE_DATA_t * sample);
 
