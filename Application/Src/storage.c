@@ -29,11 +29,12 @@ void read_sample(SAMPLE_DATA_t * sample, uint32_t id) {
 
 
 void test_write(int32_t data) {
-
+	flash_write(0, &data, 4);
 }
 
 int32_t test_read(void) {
-
+	int32_t data;
+	flash_read(0, &data, 4);
 	return 0;
 }
 
