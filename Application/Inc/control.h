@@ -16,6 +16,8 @@
 //SOLENOID: PB9 | D1 S2
 //returns the pin state after toggle
 uint8_t toggle_solenoid();
+uint8_t open_solenoid();
+uint8_t close_solenoid();
 
 
 PP_STATUS_t start_setup(void);

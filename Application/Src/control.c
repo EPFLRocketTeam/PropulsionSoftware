@@ -54,7 +54,7 @@ PP_STATUS_t start_homing(void) {
 	return PP_SUCCESS;
 }
 
-PP_STATUS_t abort(void) {
+PP_STATUS_t start_abort(void) {
 	motor_def_abort();
 	return PP_SUCCESS;
 }
@@ -106,7 +106,7 @@ void PP_controlFunc(void *argument) {
 
 				}
 				if(control_msg.id == DATA_ID_ABORT && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
-					abort();
+					start_abort();
 					PP_setLed(5, 0, 3);
 
 				}

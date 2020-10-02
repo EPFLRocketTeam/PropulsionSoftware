@@ -24,7 +24,7 @@ typedef StaticTask_t osStaticThreadDef_t;
 //control thread
 
 osThreadId_t PP_controlHandle;
-uint32_t PP_controlBuffer[ 128 ];
+uint32_t PP_controlBuffer[ 1024 ];
 osStaticThreadDef_t PP_controlControlBlock;
 const osThreadAttr_t PP_control_attributes = {
   .name = "PP_control",
@@ -52,7 +52,7 @@ const osThreadAttr_t PP_sensor_attributes = {
 
 
 
-uint32_t PP_commMotorBuffer[ 128 ];
+uint32_t PP_commMotorBuffer[ 1024 ];
 osStaticThreadDef_t PP_commMotorControlBlock;
 const osThreadAttr_t PP_commMotor_attributes = {
   .name = "PP_commMotor",
@@ -76,7 +76,7 @@ const osThreadAttr_t PP_commUser_attributes = {
 };
 
 osThreadId_t motor_commHandle;
-uint32_t motor_commBuffer[ 128 ];
+uint32_t motor_commBuffer[ 1024 ];
 osStaticThreadDef_t motor_commControlBlock;
 const osThreadAttr_t motor_comm_attributes = {
   .name = "motor_comm",
@@ -88,7 +88,7 @@ const osThreadAttr_t motor_comm_attributes = {
 };
 
 osThreadId_t soundHandle;
-uint32_t soundBuffer[ 128 ];
+uint32_t soundBuffer[ 1024 ];
 osStaticThreadDef_t soundControlBlock;
 const osThreadAttr_t sound_attributes = {
   .name = "sound",
@@ -101,7 +101,7 @@ const osThreadAttr_t sound_attributes = {
 
 
 osThreadId_t PP_canSendHandle;
-uint32_t PP_canSendBuffer[ 128 ];
+uint32_t PP_canSendBuffer[ 1024 ];
 osStaticThreadDef_t PP_canSendControlBlock;
 const osThreadAttr_t PP_canSend_attributes = {
   .name = "PP_canSend",

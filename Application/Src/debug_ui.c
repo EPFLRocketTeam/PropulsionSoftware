@@ -297,7 +297,7 @@ void ui_status(uint16_t nb, int32_t * in, uint8_t * out) {
 						SW_READY_TO_SWITCH_ON(status), SW_SWITCHED_ON(status), SW_ENABLED(status),
 						SW_FAULT(status), SW_VOLTAGE_ENABLED(status), SW_QUICKSTOP(status),
 						SW_TARGET_REACHED(status), SW_SET_ACK(status), SW_LIMIT_ACTIVE(status),
-						motor_get_error(), motor_get_position());
+						motor_get_error(), motor_get_pos());
 
 }
 
@@ -388,9 +388,11 @@ void ui_homing(uint16_t nb, int32_t * in, uint8_t * out) {
 
 void ui_short_stat(uint16_t nb, int32_t * in, uint8_t * out) {
 	uint16_t status = motor_get_status();
-	sprintf((char *) out, "%d %d %d %d %x %ld %d %d %lx\n",SW_SWITCHED_ON(status), SW_ENABLED(status), SW_FAULT(status),
-			SW_TARGET_REACHED(status), motor_get_error(), INC2DDEG(motor_get_position()),
-			motor_get_psu_voltage(), motor_get_torque(), motor_get_custom_object());
+	sprintf((char *) out, "%d %d %d %d %x %ld %d %d %lx %ld %ld %ld %ld %ld %lu\n",SW_SWITCHED_ON(status), SW_ENABLED(status), SW_FAULT(status),
+			SW_TARGET_REACHED(status), motor_get_error(), INC2DDEG(motor_get_pos()),
+			motor_get_psu_voltage(), motor_get_torque(), motor_get_custom_object(),
+			motor_get_pos(), motor_get_pos_cmd(), motor_get_curr(), motor_get_curr_cmd(),
+			motor_get_vel(), motor_get_time());
 }
 
 void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out) {

@@ -128,9 +128,14 @@ void motor_mainloop(void * argument);
 
 uint16_t motor_get_status(void);
 uint16_t motor_get_error(void);
-int32_t motor_get_position(void);
+int32_t motor_get_pos(void);
 uint16_t motor_get_psu_voltage(void) ;
 uint16_t motor_get_torque(void);
+int32_t motor_get_pos_cmd(void);
+int32_t motor_get_vel(void);
+int32_t motor_get_curr(void);
+int32_t motor_get_curr_cmd(void);
+uint32_t motor_get_time(void);
 
 /*
  * @brief	enable motor (deffered version)

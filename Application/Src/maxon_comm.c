@@ -502,7 +502,23 @@ int8_t read_position(int32_t * data) {
 }
 
 int8_t read_speed(int32_t * data) {
-	if(Read_object(MAXON_ACTUAL_SPEED, tmp_data) == -1) {
+	if(Read_object(MAXON_ACTUAL_VELOCITY, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8) | (tmp_data[2]<<16) | (tmp_data[3]<<24);
+	return 0;
+}
+
+int8_t read_curr(int32_t * data) {
+	if(Read_object(MAXON_DEMAND_CURRENT, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8) | (tmp_data[2]<<16) | (tmp_data[3]<<24);
+	return 0;
+}
+
+int8_t read_curr_cmd(int32_t * data) {
+	if(Read_object(MAXON_DEMAND_CURRENT, tmp_data) == -1) {
 		return -1;
 	}
 	*data = tmp_data[0] | (tmp_data[1]<<8) | (tmp_data[2]<<16) | (tmp_data[3]<<24);
@@ -529,6 +545,16 @@ int8_t read_torque(uint16_t * data) {
 		return -1;
 	}
 	*data = (tmp_data[0] | (tmp_data[1]<<8))*mr_torque/(1000*1000);
+	return 0;
+}
+
+
+int8_t read_pos_cmd(int32_t * data) {
+
+	if(Read_object(MAXON_DEMAND_POSITION, tmp_data) == -1) {
+		return -1;
+	}
+	*data = tmp_data[0] | (tmp_data[1]<<8) | (tmp_data[2]<<16) | (tmp_data[3]<<24);
 	return 0;
 }
 
@@ -639,7 +665,7 @@ void motor_imm() {
 
 //START OF DEFFERED CONTROL FUNCTIONS
 
-#define HEART_BEAT	100
+#define HEART_BEAT	50
 
 typedef struct {
 	uint8_t enable;
@@ -665,7 +691,7 @@ static uint16_t motor_status;
 static uint16_t motor_error;
 static uint16_t psu_voltage;
 static uint32_t operation_counter;
-static int32_t current_position;
+static int32_t current_pos;
 static uint16_t current_torque;
 static uint32_t status_counter;
 static uint8_t emergency_abort;
@@ -674,6 +700,10 @@ static uint32_t custom_write;
 static uint32_t custom_index;
 static uint8_t custom_subindex;
 static int32_t current_speed;
+static int32_t current_pos_cmd;
+static int32_t current_curr_cmd;
+static int32_t current_curr;
+static uint32_t current_time;
 
 void motor_def_init(void) {
 	motor_todo.enable = 0;
@@ -805,7 +835,7 @@ void update_todo(void) {
 }
 
 
-#define STATUS_THRESH 200
+#define STATUS_THRESH 100
 #define CLOSE_TO_Z	200
 #define ABS(a)	(a>=0?a:-a)
 
@@ -820,17 +850,22 @@ void motor_mainloop(void * argument) {
 		 motor_disable();
 		 motor_shutdown();
 		 motor_switch_on();
+		 current_time = 0;
 
 		for(;;) {
 			update_todo();
 			read_error_word(&motor_error);
 			read_status_word(&motor_status);
 			read_psu_voltage(&psu_voltage);
-			read_position(&current_position);
+			read_position(&current_pos);
+			read_pos_cmd(&current_pos_cmd);
 			read_torque(&current_torque);
 			read_speed(&current_speed);
+			read_curr(&current_curr);
+			read_curr_cmd(&current_curr_cmd);
 			motor_read_custom_object();
 			status_counter += HEART_BEAT;
+			current_time = xTaskGetTickCount() * 1000 / configTICK_RATE_HZ; //ticks to ms
 			if(emergency_abort) {
 				if(emergency_abort == 1) {
 					motor_quickstop();
@@ -992,8 +1027,28 @@ uint16_t motor_get_error(void) {
 	return motor_error;
 }
 
-int32_t motor_get_position(void) {
-	return current_position;
+int32_t motor_get_pos(void) {
+	return current_pos;
+}
+
+int32_t motor_get_pos_cmd(void) {
+	return current_pos_cmd;
+}
+
+int32_t motor_get_vel(void) {
+	return current_speed;
+}
+
+int32_t motor_get_curr(void) {
+	return current_curr;
+}
+
+int32_t motor_get_curr_cmd(void) {
+	return current_curr_cmd;
+}
+
+uint32_t motor_get_time(void) {
+	return current_time;
 }
 
 

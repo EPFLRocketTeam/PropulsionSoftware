@@ -187,7 +187,7 @@ void PP_canSendFunc(void *argument) {
 			can_setFrame((uint32_t) data.temp_2, DATA_ID_TEMP_2, data.time);
 			can_setFrame((uint32_t) data.temp_3, DATA_ID_TEMP_3, data.time);
 			can_setFrame((uint32_t) get_global_status(), DATA_ID_STATUS, data.time);
-			can_setFrame((uint32_t) motor_get_position(), DATA_ID_MOT_POS, data.time);
+			can_setFrame((uint32_t) motor_get_pos(), DATA_ID_MOT_POS, data.time);
 
 
 

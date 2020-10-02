@@ -26,12 +26,12 @@ import numpy as np
 
 #functions
 
-COM_PORT ='com14'
+COM_PORT ='/dev/cu.usbmodem144303'
 
 safety = 1
 ser = serial.Serial()
 connected = 0
-heart_beat=20
+heart_beat=50
 
 recording = 0
 rec_file = None
@@ -40,7 +40,7 @@ rec_file = None
 
 max_samples = 500
 samples = 0
-data_labels = ['temp_1 [°C]', 'temp_2 [°C]', 'temp_3 [°C]', 'pres_1 [RAW]', 'pres_2 [RAW]', 'sensor_time [ms]', 'motor_pos [0.1 deg]', 'motor_psu [V]', 'motor_torque [mN]', 'motor_current [mA]', 'motor_pos_cmd [0.1 deg]', 'motor_time [ms]']
+data_labels = ['temp_1 [°C]', 'temp_2 [°C]', 'temp_3 [°C]', 'pres_1 [RAW]', 'pres_2 [RAW]', 'sensor_time [ms]', 'motor_pos [0.1 deg]', 'motor_psu [V]', 'motor_torque [mN]', 'motor_position [inc]', 'motor_position_demand [inc]', 'motor_current [mA]', 'motor_current_demand [mA]','motor_velocity [inc/s]', 'motor_time [ms]']
 data_data = [0]*len(data_labels)
 data_sampled = 0
 temp1_data = []
@@ -76,9 +76,10 @@ def start_record():
 
 
 def record_sample(data):
-	if recording and data_sampled:
-		write_csv(rec_file, data)
-		data_sampled = 0
+    global data_sampled
+    if recording and data_sampled:
+        write_csv(rec_file, data)
+        data_sampled = 0
 
 
 def move_rel():
@@ -324,8 +325,8 @@ def get_status():
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
-        #print(data)
-        if(len(data) == 9):
+        print(data)
+        if(len(data) == 15):
             if int(data[0]):
                 stat_power['bg'] = 'lime'
             else:
@@ -369,9 +370,12 @@ def get_status():
             data_data[6] = data[5] #motor_pos
             data_data[7] = str(int(data[6])/10.0) #motor_psu
             data_data[8] = str(int(data[7])/1000.0) #motor_torq
-            data_data[9] = '0' #motor_current
-            data_data[10] = '0' #motor_cmd
-            data_data[11] = '0' #motor_time
+            data_data[9] = data[9] #pos
+            data_data[10] = data[10] #pos cmd
+            data_data[11] = data[11] #curr
+            data_data[12] = data[12] #curr cmd
+            data_data[13] = data[13] #vel
+            data_data[14] = data[14] #time
             data_sampled = 1
 
 
@@ -841,7 +845,7 @@ start_rec.grid(row=0, column=3, pady=YPAD)
 canv = ttk.Labelframe(window, text='system')
 canv.grid(row=0, column=2, rowspan=3, sticky='NSEW')
 
-canvas = tk.Canvas(canv, width=220, height=heart_beat)
+canvas = tk.Canvas(canv, width=220, height=600)
 
 r_top_x = 70
 r_top_y = 100

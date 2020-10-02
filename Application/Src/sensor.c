@@ -40,17 +40,17 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	if(adcBuffer[2] >= TEMP_MIN && adcBuffer[2] < TEMP_MAX) {
 		sampling.temp_1 += temp_LUT[adcBuffer[2]-TEMP_MIN];
 	} else {
-		sampling.temp_1 = 0x1000;
+		sampling.temp_1 += 0x8000;
 	}
 	if(adcBuffer[3] >= TEMP_MIN && adcBuffer[3] < TEMP_MAX) {
 		sampling.temp_2 += temp_LUT[adcBuffer[3]-TEMP_MIN];
 	} else {
-		sampling.temp_2 = 0x1000;
+		sampling.temp_2 += 0x8000;
 	}
 	if(adcBuffer[4] >= TEMP_MIN && adcBuffer[4] < TEMP_MAX) {
 		sampling.temp_3 += temp_LUT[adcBuffer[4]-TEMP_MIN];
 	} else {
-		sampling.temp_3 = 0x1000;
+		sampling.temp_3 += 0x8000;
 	}
 	counter++;
 	if(counter == NB_SAMPLES) {
@@ -60,7 +60,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 		current_data.temp_3 = sampling.temp_3>>6;
 		current_data.press_1 = sampling.press_1>>6;
 		current_data.press_2 = sampling.press_2>>6;
-		current_data.time = time;
+		current_data.time = xTaskGetTickCountFromISR() * 1000 / configTICK_RATE_HZ;
 		counter = 0;
 		sampling.temp_1 = 0;
 		sampling.temp_2 = 0;
