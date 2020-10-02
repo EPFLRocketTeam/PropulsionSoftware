@@ -31,12 +31,18 @@ COM_PORT ='com14'
 safety = 1
 ser = serial.Serial()
 connected = 0
-heart_beat=500
+heart_beat=20
+
+recording = 0
+rec_file = None
 
 #data_to_save
 
-max_samples = 50
+max_samples = 500
 samples = 0
+data_labels = ['temp_1 [°C]', 'temp_2 [°C]', 'temp_3 [°C]', 'pres_1 [RAW]', 'pres_2 [RAW]', 'sensor_time [ms]', 'motor_pos [0.1 deg]', 'motor_psu [V]', 'motor_torque [mN]', 'motor_current [mA]', 'motor_pos_cmd [0.1 deg]', 'motor_time [ms]']
+data_data = [0]*len(data_labels)
+data_sampled = 0
 temp1_data = []
 temp2_data = []
 temp3_data = []
@@ -45,11 +51,40 @@ pres2_data = []
 time_data = []
 time_current = 0
 
+def write_csv(file, data):
+	for i, d in enumerate(data):
+		file.write(str(d))
+		if i == len(data)-1:
+			file.write('\n')
+		else:
+			file.write(';')
+
+def start_record():
+	global recording
+	global rec_file
+	if recording:
+		recording=0
+		rec_file.close()
+	else:
+		recording=1
+		fn = fil_rec.get()
+		if(fn == ''):
+			rec_file = open('default.csv', 'w')
+		else:
+			rec_file = open(fn, 'w')
+		write_csv(rec_file, data_labels)
+
+
+def record_sample(data):
+	if recording and data_sampled:
+		write_csv(rec_file, data)
+		data_sampled = 0
+
 
 def move_rel():
     targ = tmp_target_entry.get()
     out = 'move_rel {}\n'.format(targ)
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
@@ -57,14 +92,14 @@ def move_rel():
 def move_abs():
     targ = tmp_target_entry.get()
     out = 'move_abs {}\n'.format(targ)
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
 
 def set_home():
     out = 'homing\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
 
@@ -73,7 +108,7 @@ def set_profile():
     acc = prof_acc_entry.get()
     dec = prof_dec_entry.get()
     out = 'ppm_profile {} {} {}\n'.format(vel, acc, dec)
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
@@ -87,7 +122,7 @@ def set_operation():
     full = op_full_entry.get()
     wait2 = op_wait2_entry.get()
     out = 'op_profile {} {} {} {} {}\n'.format(pre, half, wait1, full, wait2)
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
@@ -98,12 +133,12 @@ def set_operation():
 
 def get_profile():
     out = 'short_ppm\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
-        print(data)
+        #print(data)
         if(len(data) == 3):
             prof_spd_entry.delete(0, tk.END)
             prof_spd_entry.insert(0, data[0])
@@ -114,12 +149,12 @@ def get_profile():
 
 def get_operation():
     out = 'short_op\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
-        print(data)
+        #print(data)
         if(len(data) == 5):
             op_wait0_entry.delete(0, tk.END)
             op_wait0_entry.insert(0, data[0])
@@ -147,48 +182,87 @@ def safety_toggle():
 
 def operation():
     out = 'operation\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
 
 def homing():
     out = 'homing\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
 
 def abort():
     out = 'abort\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
 
 def enable():
     if stat_enabled['bg'] == 'lime':
         out = 'disable\n'
-        print(out)
+        #print(out)
         if ser.is_open:
             ser.write(bytes(out, 'ascii'))
     else:
         out = 'enable\n'
-        print(out)
+        #print(out)
         if ser.is_open:
             ser.write(bytes(out, 'ascii'))
 
-def toggle_solenoid():
-    out = 'solenoid\n'
-    print(out)
+
+
+
+
+
+def open_solenoid():
+    out = 'open_sol\n'
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
-        print(data)
+        #print(data)
         if(len(data) == 1):
             if int(data[0]):
-                sol_but['bg'] = 'lightblue'
+                #sol_but['bg'] = 'lightblue'
                 canvas.coords(solenoid_draw, solen_bbox(math.radians(90)))
             else:
-                sol_but['bg'] = 'white'
+                #sol_but['bg'] = 'white'
+                canvas.coords(solenoid_draw, solen_bbox(math.radians(0)))
+
+def close_solenoid():
+    out = 'close_sol\n'
+    #print(out)
+    if ser.is_open:
+        ser.write(bytes(out, 'ascii'))
+        resp = ser.readline().decode('ascii')
+        data = resp.split()
+        #print(data)
+        if(len(data) == 1):
+            if int(data[0]):
+                #sol_but['bg'] = 'lightblue'
+                canvas.coords(solenoid_draw, solen_bbox(math.radians(90)))
+            else:
+                #sol_but['bg'] = 'white'
+                canvas.coords(solenoid_draw, solen_bbox(math.radians(0)))
+
+
+
+def toggle_solenoid():
+    out = 'solenoid\n'
+    #print(out)
+    if ser.is_open:
+        ser.write(bytes(out, 'ascii'))
+        resp = ser.readline().decode('ascii')
+        data = resp.split()
+        #print(data)
+        if(len(data) == 1):
+            if int(data[0]):
+                #sol_but['bg'] = 'lightblue'
+                canvas.coords(solenoid_draw, solen_bbox(math.radians(90)))
+            else:
+                #sol_but['bg'] = 'white'
                 canvas.coords(solenoid_draw, solen_bbox(math.radians(0)))
                     
 
@@ -196,7 +270,7 @@ def get_obj():
 	index = int(obj_index.get(), 0)
 	subindex = int(obj_subindex.get(), 0)
 	out = 'get_object {} {}\n'.format(index, subindex)
-	print(out)
+	#print(out)
 	if ser.is_open:
 		ser.write(bytes(out, 'ascii'))
 
@@ -205,7 +279,7 @@ def set_obj():
 	subindex = int(obj_subindex.get(), 0)
 	data = int(obj_in.get(), 0)
 	out = 'set_object {} {} {}\n'.format(index, subindex, data)
-	print(out)
+	#print(out)
 	if ser.is_open:
 		ser.write(bytes(out, 'ascii'))
 
@@ -213,18 +287,18 @@ def set_obj():
 def startup():
     if stat_power['bg'] == 'lime':
         out = 'shutdown\n'
-        print(out)
+        #print(out)
         if ser.is_open:
             ser.write(bytes(out, 'ascii'))
     else:
         out = 'startup\n'
-        print(out)
+        #print(out)
         if ser.is_open:
             ser.write(bytes(out, 'ascii'))
 
 def fstartup():
     out = 'startup\n'
-    print(out)
+    #print(out)
     if ser.is_open:
       ser.write(bytes(out, 'ascii'))
    
@@ -243,13 +317,14 @@ def angle_half_mod(angle):
     return angle
 
 def get_status():
+    global data_sampled
     out = 'short_stat\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
-        print(data)
+        #print(data)
         if(len(data) == 9):
             if int(data[0]):
                 stat_power['bg'] = 'lime'
@@ -291,18 +366,27 @@ def get_status():
             obj_out.insert(0, '0x'+data[8])
             obj_out_int.delete(0, tk.END)
             obj_out_int.insert(0, str(twos_complement(data[8], 32)))
+            data_data[6] = data[5] #motor_pos
+            data_data[7] = str(int(data[6])/10.0) #motor_psu
+            data_data[8] = str(int(data[7])/1000.0) #motor_torq
+            data_data[9] = '0' #motor_current
+            data_data[10] = '0' #motor_cmd
+            data_data[11] = '0' #motor_time
+            data_sampled = 1
+
 
             
 def get_sensors():
     global samples
     global time_current
+    global data_sampled
     out = 'short_sensors\n'
-    print(out)
+    #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
-        print(data)
+        #print(data)
         if(len(data) == 6):
             pres1_entry.delete(0, tk.END)
             pres1_entry.insert(0, data[0])
@@ -327,6 +411,13 @@ def get_sensors():
             temp2_data.append(int(data[3])/10.0)
             temp3_data.append(int(data[4])/10.0)
             time_data.append(int(data[5]))
+            data_data[0] = temp1_data[-1]
+            data_data[1] = temp2_data[-1]
+            data_data[2] = temp3_data[-1]
+            data_data[3] = pres1_data[-1]
+            data_data[4] = pres2_data[-1]
+            data_data[5] = time_data[-1]
+            data_sampled = 1
             time_current = int(data[5])
             samples += 1
 
@@ -382,6 +473,7 @@ def main_update():
 
     get_status()
     get_sensors()
+    record_sample(data_data)
     window.after(heart_beat, main_update)
 
 
@@ -726,20 +818,30 @@ def data_update(i):
     ax2.plot(np.array(time_data)-time_current, temp2_data, label='2')
     ax2.plot(np.array(time_data)-time_current, temp3_data, label='3')
 
+
 plot_canvas = FigureCanvasTkAgg(fig, master=sensor)  # A tk.DrawingArea.
 plot_canvas.draw()
 plot_canvas.get_tk_widget().grid(row=6, column=0, columnspan=3, sticky="E", pady=YPAD)
-ani = animation.FuncAnimation(fig, data_update, interval=500)
+ani = animation.FuncAnimation(fig, data_update, interval=200)
 
-sol_but = tk.Button(other, text='Solenoid', bg='white', command=toggle_solenoid)
-sol_but.grid(row=0, column=0, pady=YPAD)
+sol_opn = tk.Button(other, text='Open solenoid', bg='white', command=open_solenoid)
+sol_opn.grid(row=0, column=0, pady=YPAD)
+
+sol_cls = tk.Button(other, text='Close solenoid', bg='white', command=close_solenoid)
+sol_cls.grid(row=0, column=1, pady=YPAD)
+
+fil_rec = tk.Entry(other)
+fil_rec.grid(row=0, column=2, pady=YPAD)
+
+start_rec = tk.Button(other, text='Record', bg='white', command=start_record)
+start_rec.grid(row=0, column=3, pady=YPAD)
 
 
 #plumbing diagram
 canv = ttk.Labelframe(window, text='system')
 canv.grid(row=0, column=2, rowspan=3, sticky='NSEW')
 
-canvas = tk.Canvas(canv, width=220, height=500)
+canvas = tk.Canvas(canv, width=220, height=heart_beat)
 
 r_top_x = 70
 r_top_y = 100

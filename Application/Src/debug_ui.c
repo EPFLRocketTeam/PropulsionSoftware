@@ -69,6 +69,8 @@ void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_open_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_close_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_get_object(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_test_write(uint16_t nb, int32_t * in, uint8_t * out);
@@ -120,7 +122,9 @@ static DUI_ITEM_t ui_items[] = {
 		{"get_object", 2, ui_get_object},
 		{"set_object", 3, ui_set_object},
 		{"write", 1, ui_test_write},
-		{"read", 0, ui_test_read}
+		{"read", 0, ui_test_read},
+		{"open_sol", 0, ui_open_solenoid},
+		{"close_sol", 0, ui_close_solenoid}
 };
 
 
@@ -406,6 +410,15 @@ void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out) {
 void ui_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {
 	sprintf((char *) out, "%d \n", toggle_solenoid());
 }
+
+void ui_open_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "%d \n", open_solenoid());
+}
+
+void ui_close_solenoid(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "%d \n", close_solenoid());
+}
+
 
 void ui_get_object(uint16_t nb, int32_t * in, uint8_t * out) {
 	if(nb >= 2) {
