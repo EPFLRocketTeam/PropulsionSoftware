@@ -58,7 +58,7 @@ rec_file = None
 
 max_samples = 500
 samples = 0
-data_labels = ['temp_1 [°C]', 'temp_2 [°C]', 'temp_3 [°C]', 'pres_1 [RAW]', 'pres_2 [RAW]', 'sensor_time [ms]', 'motor_pos [0.1 deg]', 'motor_psu [V]', 'motor_torque [mN]', 'motor_position [inc]', 'motor_position_demand [inc]', 'motor_current [mA]', 'motor_current_demand [mA]','motor_velocity [inc/s]', 'motor_time [ms]']
+data_labels = ['temp_1 [°C]', 'temp_2 [°C]', 'temp_3 [°C]', 'pres_1 [RAW]', 'pres_2 [RAW]', 'sensor_time [ms]', 'motor_pos [0.1 deg]', 'motor_psu [V]', 'motor_torque [mN]', 'motor_position [inc]', 'motor_position_demand [inc]', 'motor_current [mA]', 'motor_current_demand [mA]','motor_velocity [rpm]', 'motor_time [ms]']
 data_data = [0]*len(data_labels)
 data_sampled = 0
 temp1_data = []
@@ -90,9 +90,13 @@ def start_record():
         start_rec['bg'] = 'red'
         fn = fil_rec.get()
         if(fn == ''):
-            rec_file = open('default.csv', 'w')
-        else:
-            rec_file = open(fn, 'w')
+            fn = 'default'
+        num = 0
+        fnam = "{}{}.csv".format(fn, num);
+        while(os.path.isfile(fnam)):
+            num += 1
+            fnam = "{}{}.csv".format(fn, num);
+        rec_file = open(fnam, 'w')
         write_csv(rec_file, data_labels)
 
 
