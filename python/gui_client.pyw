@@ -1,5 +1,6 @@
 import os
 import tkinter as tk
+from tkinter import font
 import tkinter.ttk as ttk
 import serial
 import math
@@ -15,18 +16,18 @@ import matplotlib.animation as animation
 from matplotlib import style
 import matplotlib
 
-font = {'family' : 'normal',
+used_font = {'family' : 'System',
         'weight' : 'normal',
         'size'   : 7}
 
-matplotlib.rc('font', **font)
+matplotlib.rc('font', **used_font)
 
 import numpy as np
 
 
 #functions
 
-COM_PORT ='/dev/cu.usbmodem144303'
+COM_PORT ='COM17'
 
 safety = 1
 ser = serial.Serial()
@@ -52,27 +53,30 @@ time_data = []
 time_current = 0
 
 def write_csv(file, data):
-	for i, d in enumerate(data):
-		file.write(str(d))
-		if i == len(data)-1:
-			file.write('\n')
-		else:
-			file.write(';')
+    for i, d in enumerate(data):
+        file.write(str(d))
+        if i == len(data)-1:
+            file.write('\n')
+        else:
+            file.write(';')
 
 def start_record():
-	global recording
-	global rec_file
-	if recording:
-		recording=0
-		rec_file.close()
-	else:
-		recording=1
-		fn = fil_rec.get()
-		if(fn == ''):
-			rec_file = open('default.csv', 'w')
-		else:
-			rec_file = open(fn, 'w')
-		write_csv(rec_file, data_labels)
+    global recording
+    global rec_file
+    global start_rec
+    if recording:
+        recording=0
+        start_rec['bg'] = 'white'
+        rec_file.close()
+    else:
+        recording=1
+        start_rec['bg'] = 'red'
+        fn = fil_rec.get()
+        if(fn == ''):
+            rec_file = open('default.csv', 'w')
+        else:
+            rec_file = open(fn, 'w')
+        write_csv(rec_file, data_labels)
 
 
 def record_sample(data):
@@ -268,21 +272,21 @@ def toggle_solenoid():
                     
 
 def get_obj():
-	index = int(obj_index.get(), 0)
-	subindex = int(obj_subindex.get(), 0)
-	out = 'get_object {} {}\n'.format(index, subindex)
-	#print(out)
-	if ser.is_open:
-		ser.write(bytes(out, 'ascii'))
+    index = int(obj_index.get(), 0)
+    subindex = int(obj_subindex.get(), 0)
+    out = 'get_object {} {}\n'.format(index, subindex)
+    #print(out)
+    if ser.is_open:
+        ser.write(bytes(out, 'ascii'))
 
 def set_obj():
-	index = int(obj_index.get(), 0)
-	subindex = int(obj_subindex.get(), 0)
-	data = int(obj_in.get(), 0)
-	out = 'set_object {} {} {}\n'.format(index, subindex, data)
-	#print(out)
-	if ser.is_open:
-		ser.write(bytes(out, 'ascii'))
+    index = int(obj_index.get(), 0)
+    subindex = int(obj_subindex.get(), 0)
+    data = int(obj_in.get(), 0)
+    out = 'set_object {} {} {}\n'.format(index, subindex, data)
+    #print(out)
+    if ser.is_open:
+        ser.write(bytes(out, 'ascii'))
 
     
 def startup():
@@ -942,5 +946,6 @@ canvas.grid(row=0, column=0, sticky='NSEW')
 
 main_update()
 
+window.geometry("")
 
 window.mainloop()
