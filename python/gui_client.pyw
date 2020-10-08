@@ -27,7 +27,24 @@ import numpy as np
 
 #functions
 
-COM_PORT ='COM17'
+COM_PORT ='COM7'
+if platform == 'darwin':
+    dev_dir = os.listdir('/dev');
+    res = None
+    for d in dev_dir:
+        res = re.search(r'cu.usbmodem[0-9]', d), d
+        if(res[0] is not None):
+            break
+
+    if(res[0] is not None):
+        COM_PORT = res
+    else:
+        COM_PORT = 'cu.usbmodem144303'
+
+
+
+elif platform == 'win32':
+    COM_PORT ='COM7'
 
 safety = 1
 ser = serial.Serial()
