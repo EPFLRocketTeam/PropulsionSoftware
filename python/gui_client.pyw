@@ -5,6 +5,7 @@ import tkinter.ttk as ttk
 import serial
 import math
 import platform
+import re
 
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -28,12 +29,14 @@ import numpy as np
 #functions
 
 COM_PORT ='COM7'
-if platform == 'darwin':
+print(platform.system())
+if platform.system() == 'Darwin':
     dev_dir = os.listdir('/dev');
     res = None
     for d in dev_dir:
         res = re.search(r'cu.usbmodem[0-9]', d), d
         if(res[0] is not None):
+            res = "/dev/{}".format(d)
             break
 
     if(res[0] is not None):
@@ -43,13 +46,17 @@ if platform == 'darwin':
 
 
 
-elif platform == 'win32':
+elif platform.system() == 'win32':
     COM_PORT ='COM7'
 
 safety = 1
+armed = 0
 ser = serial.Serial()
 connected = 0
 heart_beat=50
+slow_beat = 10
+slow_counter = 0
+scale_updated = 0
 
 recording = 0
 rec_file = None
@@ -114,6 +121,10 @@ def move_rel():
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
+
+def scale_update(targ):
+    global scale_updated
+    scale_updated = 1
 
 def move_abs():
     targ = tmp_target_entry.get()
@@ -193,18 +204,41 @@ def get_operation():
             op_wait2_entry.delete(0, tk.END)
             op_wait2_entry.insert(0, data[4])
 
-def safety_toggle():
-    global safety
-    if safety == 1:
-        safety=0
+def arm_toggle():
+    global armed
+    if armed == 0:
+        armed=1
         operation_but['state'] = 'active'
         homing_but['state'] = 'active'
-        saf_but['bg'] = 'lime'
+        arm_but['bg'] = 'orange'
     else:
-        safety=1
+        armed=0
         operation_but['state'] = 'disabled'
         homing_but['state'] = 'disabled'
+        arm_but['bg'] = 'lime'
+
+def safety_toggle():
+    global safety
+
+    if safety == 1:
+        safety = 0
+        arm_but['state'] = 'active'
+        mov_abs_btn['state'] = 'active'
+        mov_rel_btn['state'] = 'active'
+        pos_slider['state'] = 'active'
         saf_but['bg'] = 'orange'
+    else:
+        safety = 1
+        arm_but['state'] = 'disabled'
+        mov_abs_btn['state'] = 'disabled'
+        mov_rel_btn['state'] = 'disabled'
+        pos_slider['state'] = 'disabled'
+        saf_but['bg'] = 'lime'
+
+        armed=0
+        operation_but['state'] = 'disabled'
+        homing_but['state'] = 'disabled'
+        arm_but['bg'] = 'lime'
 
 def operation():
     out = 'operation\n'
@@ -344,13 +378,15 @@ def angle_half_mod(angle):
 
 def get_status():
     global data_sampled
+    global scale_updated
+    global slow_counter
     out = 'short_stat\n'
     #print(out)
     if ser.is_open:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
-        print(data)
+        #print(data)
         if(len(data) == 15):
             if int(data[0]):
                 stat_power['bg'] = 'lime'
@@ -402,6 +438,16 @@ def get_status():
             data_data[13] = data[13] #vel
             data_data[14] = data[14] #time
             data_sampled = 1
+    slow_counter += 1
+    if scale_updated:
+        slow_counter = 0
+        scale_updated = 0
+        targ = int(pos_slider.get()*10)
+        out = 'move_abs {}\n'.format(targ)
+        #print(out)
+        if ser.is_open:
+            ser.write(bytes(out, 'ascii'))
+            ser.readline()
 
 
             
@@ -559,11 +605,11 @@ tmp_target_entry.grid(row=1, column=1, sticky="E", pady=YPAD)
 tmp_target_label = tk.Label(pos_adj, text="[0.1 deg]")
 tmp_target_label.grid(row=1, column=2, sticky="W", pady=YPAD)
 
-mov_rel_btn = tk.Button(pos_adj, text="Relative", command=move_rel)
+mov_rel_btn = tk.Button(pos_adj, text="Relative", state='disabled', command=move_rel)
 mov_rel_btn.grid(row=1, column=3, sticky="EW", pady=YPAD)
 
-mov_rel_btn = tk.Button(pos_adj, text="Absolute", command=move_abs)
-mov_rel_btn.grid(row=1, column=4, sticky="EW", pady=YPAD)
+mov_abs_btn = tk.Button(pos_adj, text="Absolute", state='disabled', command=move_abs)
+mov_abs_btn.grid(row=1, column=4, sticky="EW", pady=YPAD)
 
 
 cur_pos_label = tk.Label(pos_adj, text="current position = ")
@@ -579,6 +625,13 @@ cur_pos_label2.grid(row=3, column=2, sticky="W", pady=YPAD)
 
 set_hom_btn = tk.Button(pos_adj, text="Home", command=set_home)
 set_hom_btn.grid(row=3, column=3,  sticky="EW", pady=YPAD)
+
+
+slider_label = tk.Label(pos_adj, text="position [deg]")
+slider_label.grid(row=4, column=0, sticky="W", pady=YPAD)
+
+pos_slider = tk.Scale(pos_adj, orient='horizontal', from_=0, to=-90, resolution=0.1, length=420, state='disabled', command=scale_update)
+pos_slider.grid(row=4, column=1, columnspan=4,  sticky="EW", pady=YPAD)
 
 
 prof_sett = ttk.Labelframe(motor, text='profile settings')
@@ -749,6 +802,10 @@ mot_ctrl.grid(row=6, column=0, sticky="WE")
 
 saf_but = tk.Button(mot_ctrl, text="Safety", bg='orange', command=safety_toggle)
 saf_but.grid(row=1, column=0, sticky="WE", pady=YPAD, padx=BPAD)
+
+arm_but = tk.Button(mot_ctrl, text="Arm", bg='orange', state='disabled', command=arm_toggle)
+arm_but.grid(row=1, column=1, sticky="WE", pady=YPAD, padx=BPAD)
+
 
 operation_but = tk.Button(mot_ctrl, text="Operation", state='disabled', command=operation)
 operation_but.grid(row=1, column=2, sticky="WE", pady=YPAD, padx=BPAD)
