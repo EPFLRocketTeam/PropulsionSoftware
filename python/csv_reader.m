@@ -8,7 +8,7 @@ legend("actual position", "demand position")
 xlabel("time [ms]");
 ylabel("position [inc]");
 hold off
-saveas(gcf,'1.png')
+
 figure;
 hold on
 plot(T.(15), T.(12))
@@ -18,7 +18,7 @@ legend("actual current", "demand current")
 xlabel("time [ms]");
 ylabel("current [mA]");
 hold off
-saveas(gcf,'2.png')
+
 
 figure;
 hold on
@@ -28,7 +28,7 @@ legend("actual velocity")
 xlabel("time [ms]");
 ylabel("velocity [rpm]");
 hold off
-saveas(gcf,'3.png')
+
 
 figure;
 hold on
