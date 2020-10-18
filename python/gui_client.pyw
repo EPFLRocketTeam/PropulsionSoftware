@@ -210,12 +210,12 @@ def arm_toggle():
         armed=1
         operation_but['state'] = 'active'
         homing_but['state'] = 'active'
-        arm_but['bg'] = 'orange'
+        arm_but['bg'] = 'lime'
     else:
         armed=0
         operation_but['state'] = 'disabled'
         homing_but['state'] = 'disabled'
-        arm_but['bg'] = 'lime'
+        arm_but['bg'] = 'orange'
 
 def safety_toggle():
     global safety
@@ -226,19 +226,19 @@ def safety_toggle():
         mov_abs_btn['state'] = 'active'
         mov_rel_btn['state'] = 'active'
         pos_slider['state'] = 'active'
-        saf_but['bg'] = 'orange'
+        saf_but['bg'] = 'lime'
     else:
         safety = 1
         arm_but['state'] = 'disabled'
         mov_abs_btn['state'] = 'disabled'
         mov_rel_btn['state'] = 'disabled'
         pos_slider['state'] = 'disabled'
-        saf_but['bg'] = 'lime'
+        saf_but['bg'] = 'orange'
 
         armed=0
         operation_but['state'] = 'disabled'
         homing_but['state'] = 'disabled'
-        arm_but['bg'] = 'lime'
+        arm_but['bg'] = 'orange'
 
 def operation():
     out = 'operation\n'
