@@ -73,8 +73,13 @@ void ui_open_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_close_solenoid(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_get_object(uint16_t nb, int32_t * in, uint8_t * out);
 void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out);
-void ui_test_write(uint16_t nb, int32_t * in, uint8_t * out);
-void ui_test_read(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_mem_stat(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_read_mem(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_start_mem(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_stop_mem(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_resume_mem(uint16_t nb, int32_t * in, uint8_t * out);
+void ui_download_mem(uint16_t nb, int32_t * in, uint8_t * out);
+
 
 
 
@@ -121,10 +126,14 @@ static DUI_ITEM_t ui_items[] = {
 		{"solenoid", 0, ui_solenoid},
 		{"get_object", 2, ui_get_object},
 		{"set_object", 3, ui_set_object},
-		{"write", 1, ui_test_write},
-		{"read", 0, ui_test_read},
 		{"open_sol", 0, ui_open_solenoid},
-		{"close_sol", 0, ui_close_solenoid}
+		{"close_sol", 0, ui_close_solenoid},
+		{"memory_stat", 0, ui_mem_stat},
+		{"read_mem", 1, ui_read_mem},
+		{"start_mem", 0, ui_start_mem},
+		{"stop_mem", 0, ui_stop_mem},
+		{"resume_mem", 0, ui_resume_mem},
+		{"download_mem", 1, ui_download_mem}
 };
 
 
@@ -267,8 +276,11 @@ void debug_ui_receive(uint8_t recvBuffer) {
 				//invoke function
 				resp[0] = '\0'; //clear response
 				ui_items[i].func(args_read, args, resp);
-
-				HAL_UART_Transmit(&UI_UART, resp, str_len(resp, DUI_RESP_LEN), 500);
+				if(ui_items[i].func == ui_download_mem) {
+					HAL_UART_Transmit(&UI_UART, resp, DUI_RESP_LEN, 500);
+				} else {
+					HAL_UART_Transmit(&UI_UART, resp, str_len(resp, DUI_RESP_LEN), 500);
+				}
 				return;
 			}
 		}
@@ -438,18 +450,34 @@ void ui_set_object(uint16_t nb, int32_t * in, uint8_t * out) {
 	}
 }
 
-void ui_test_write(uint16_t nb, int32_t * in, uint8_t * out) {
+void ui_mem_stat(uint16_t nb, int32_t * in, uint8_t * out) {
+	sprintf((char *) out, "%ld %ld\n", get_used_subsectors(), get_data_count());
+}
+
+void ui_read_mem(uint16_t nb, int32_t * in, uint8_t * out) {
 	if(nb >= 1) {
-		test_write(in[0]);
+		sprintf((char *) out, "%ld \n", read_mem(in[0]));
 	}
-	sprintf((char *) out, "done: %ld \n", test_read());
 }
 
-void ui_test_read(uint16_t nb, int32_t * in, uint8_t * out) {
-	sprintf((char *) out, "read: %ld \n", test_read());
+void ui_start_mem(uint16_t nb, int32_t * in, uint8_t * out) {
+	storage_start();
 }
 
+void ui_stop_mem(uint16_t nb, int32_t * in, uint8_t * out) {
+	storage_stop();
+}
 
+void ui_resume_mem(uint16_t nb, int32_t * in, uint8_t * out) {
+	storage_resume();
+}
+
+//downloads a data packet of 32 samples
+void ui_download_mem(uint16_t nb, int32_t * in, uint8_t * out) {
+	if(nb >= 1) {
+		get_32_samples(in[0], out);
+	}
+}
 
 
 

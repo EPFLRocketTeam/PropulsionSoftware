@@ -11,30 +11,26 @@
 
 #include <maxon_comm.h>
 #include <sensor.h>
+#include "cmsis_os.h"
+#include <semphr.h>
 
 
 
-typedef struct {
-	SENSOR_DATA_t sensor_data;
-	uint32_t sample;
-}SAMPLE_DATA_t;
+uint32_t read_mem(uint32_t address);
 
+void storage_start(void);
+void storage_stop(void);
+void storage_resume(void);
 
+void get_32_samples(uint16_t sample_id, uint8_t * out);
 
-#define MAX_SAMPLES	8192
-
-#define SAMPLE_BASE_ADDRESS	0
-#define SAMPLE_ADDRESS(i) 	(SAMPLE_BASE_ADDRESS + i*sizeof(SAMPLE_DATA_t))
-
+uint32_t get_data_count(void);
+SemaphoreHandle_t get_storage_sem(void);
 
 void storage_init();
 
-void write_sample(SAMPLE_DATA_t * sample);
+uint32_t get_used_subsectors(void);
 
-void read_sample(SAMPLE_DATA_t * sample, uint32_t id);
-
-int32_t test_read(void);
-void test_write(int32_t data);
-
+void PP_storageFunc(void *argument);
 
 #endif

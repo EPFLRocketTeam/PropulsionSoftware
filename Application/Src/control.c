@@ -74,7 +74,6 @@ void PP_controlFunc(void *argument) {
 	 TickType_t lastWakeTime;
 	 const TickType_t period = pdMS_TO_TICKS(HEART_BEAT);
 
-
 	 lastWakeTime = xTaskGetTickCount();
 
 	 PP_setLed(0, 0, 5);

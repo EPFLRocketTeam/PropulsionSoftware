@@ -15,6 +15,7 @@
 #include <comm.h>
 #include <maxon_comm.h>
 #include <sound.h>
+#include <storage.h>
 
 
 typedef StaticTask_t osStaticThreadDef_t;
@@ -112,7 +113,17 @@ const osThreadAttr_t PP_canSend_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 
-
+osThreadId_t PP_storageHandle;
+uint32_t PP_storageBuffer[ 1024 ];
+osStaticThreadDef_t PP_storageControlBlock;
+const osThreadAttr_t PP_storage_attributes = {
+  .name = "PP_storage",
+  .stack_mem = &PP_storageBuffer[0],
+  .stack_size = sizeof(PP_storageBuffer),
+  .cb_mem = &PP_storageControlBlock,
+  .cb_size = sizeof(PP_storageControlBlock),
+  .priority = (osPriority_t) osPriorityNormal,
+};
 
 
 
@@ -140,6 +151,8 @@ void PP_initThreads(void) {
 	//control thread init
 	PP_controlHandle = osThreadNew(PP_controlFunc, NULL, &PP_control_attributes);
 	PP_canSendHandle =osThreadNew(PP_canSendFunc, NULL, &PP_canSend_attributes);
+
+	PP_storageHandle =osThreadNew(PP_storageFunc, NULL, &PP_storage_attributes);
 
 	soundHandle = osThreadNew(PP_soundFunc, NULL, &sound_attributes);
 
