@@ -6,6 +6,7 @@ import serial
 import math
 import platform
 import re
+import struct
 
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -28,7 +29,7 @@ import numpy as np
 
 #functions
 
-COM_PORT ='COM7'
+COM_PORT ='COM18'
 print(platform.system())
 if platform.system() == 'Darwin':
     dev_dir = os.listdir('/dev');
@@ -46,8 +47,8 @@ if platform.system() == 'Darwin':
 
 
 
-elif platform.system() == 'win32':
-    COM_PORT ='COM7'
+elif platform.system() == 'Windows':
+    COM_PORT ='COM18'
 
 safety = 1
 armed = 0
@@ -57,6 +58,7 @@ heart_beat=50
 slow_beat = 10
 slow_counter = 0
 scale_updated = 0
+lock = 1
 
 recording = 0
 rec_file = None
@@ -97,7 +99,7 @@ def start_record():
         start_rec['bg'] = 'red'
         fn = fil_rec.get()
         if(fn == ''):
-            fn = 'default'
+            fn = 'local'
         num = 0
         fnam = "{}{}.csv".format(fn, num);
         while(os.path.isfile(fnam)):
@@ -118,7 +120,7 @@ def move_rel():
     targ = tmp_target_entry.get()
     out = 'move_rel {}\n'.format(targ)
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
 
@@ -130,14 +132,14 @@ def move_abs():
     targ = tmp_target_entry.get()
     out = 'move_abs {}\n'.format(targ)
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
 
 def set_home():
     out = 'homing\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
 
 def set_profile():
@@ -146,7 +148,7 @@ def set_profile():
     dec = prof_dec_entry.get()
     out = 'ppm_profile {} {} {}\n'.format(vel, acc, dec)
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
         ser.readline()
@@ -160,7 +162,7 @@ def set_operation():
     wait2 = op_wait2_entry.get()
     out = 'op_profile {} {} {} {} {}\n'.format(pre, half, wait1, full, wait2)
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         ser.readline()
         ser.readline()
@@ -171,7 +173,7 @@ def set_operation():
 def get_profile():
     out = 'short_ppm\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
@@ -187,7 +189,7 @@ def get_profile():
 def get_operation():
     out = 'short_op\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
@@ -243,31 +245,31 @@ def safety_toggle():
 def operation():
     out = 'operation\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
 
 def homing():
     out = 'homing\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
 
 def abort():
     out = 'abort\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
 
 def enable():
     if stat_enabled['bg'] == 'lime':
         out = 'disable\n'
         #print(out)
-        if ser.is_open:
+        if ser.is_open and lock:
             ser.write(bytes(out, 'ascii'))
     else:
         out = 'enable\n'
         #print(out)
-        if ser.is_open:
+        if ser.is_open and lock:
             ser.write(bytes(out, 'ascii'))
 
 
@@ -278,7 +280,7 @@ def enable():
 def open_solenoid():
     out = 'open_sol\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
@@ -294,7 +296,7 @@ def open_solenoid():
 def close_solenoid():
     out = 'close_sol\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
@@ -312,7 +314,7 @@ def close_solenoid():
 def toggle_solenoid():
     out = 'solenoid\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
@@ -331,7 +333,7 @@ def get_obj():
     subindex = int(obj_subindex.get(), 0)
     out = 'get_object {} {}\n'.format(index, subindex)
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
 
 def set_obj():
@@ -340,7 +342,7 @@ def set_obj():
     data = int(obj_in.get(), 0)
     out = 'set_object {} {} {}\n'.format(index, subindex, data)
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
 
     
@@ -348,18 +350,18 @@ def startup():
     if stat_power['bg'] == 'lime':
         out = 'shutdown\n'
         #print(out)
-        if ser.is_open:
+        if ser.is_open and lock:
             ser.write(bytes(out, 'ascii'))
     else:
         out = 'startup\n'
         #print(out)
-        if ser.is_open:
+        if ser.is_open and lock:
             ser.write(bytes(out, 'ascii'))
 
 def fstartup():
     out = 'startup\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
       ser.write(bytes(out, 'ascii'))
    
 
@@ -382,7 +384,7 @@ def get_status():
     global slow_counter
     out = 'short_stat\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
@@ -457,7 +459,7 @@ def get_sensors():
     global data_sampled
     out = 'short_sensors\n'
     #print(out)
-    if ser.is_open:
+    if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
         resp = ser.readline().decode('ascii')
         data = resp.split()
@@ -505,6 +507,92 @@ def get_sensors():
                 time_data.pop(0) 
                 samples -= 1
 
+
+def start_memory():
+    out = 'start_mem\n'
+    #print(out)
+    if ser.is_open and lock:
+        ser.write(bytes(out, 'ascii'))
+
+def stop_memory():
+    out = 'stop_mem\n'
+    #print(out)
+    if ser.is_open and lock:
+        ser.write(bytes(out, 'ascii'))
+
+def resume_memory():
+    out = 'resume_mem\n'
+    #print(out)
+    if ser.is_open and lock:
+        ser.write(bytes(out, 'ascii'))
+
+def download_memory():
+    global lock
+    recv_labels = ['sample_id', 'temp_1', 'temp_2', 'temp_3', 'press_1', 'press_2', 'motor_pos', 'system_status', 'reserved_0', 'reserved_1', 'reserved_2', 'reserved_3', 'sensor_time', 'motor_time']
+
+    if ser.is_open:
+        lock = 0
+        size = 0
+        #get size
+        out = 'stop_mem\n'
+        ser.write(bytes(out, 'ascii'))
+        out = 'memory_stat\n'
+        ser.write(bytes(out, 'ascii'))
+        resp = ser.readline().decode('ascii')
+        data = resp.split()
+
+        if(len(data) == 2):
+            size = int(data[1])
+
+        fn = fnam_mem.get()
+        if(fn == ''):
+            fn = 'remote'
+        num = 0
+        fnam = "{}{}.csv".format(fn, num);
+        while(os.path.isfile(fnam)):
+            num += 1
+            fnam = "{}{}.csv".format(fn, num);
+        mem_file = open(fnam, 'w')
+        write_csv(mem_file, recv_labels)
+        count = 0
+        while(count < size):
+            #download data
+            print('{:.1f}%'.format((count/size)*100))
+            out = 'download_mem {}\n'.format(count)
+            ser.write(bytes(out, 'ascii'))
+            resp = ser.read(1024)
+            for i in range(32):
+                data = struct.unpack('HhhhHHhHHHHHII', resp[(32*i):(32*(i+1))])
+                if(data[0] == 0xffff):
+                    break
+                count += 1
+                write_csv(mem_file, data)
+        mem_file.close()
+        print('100.0%')
+        lock = 1
+
+
+def get_mem():
+    out = 'memory_stat\n'
+    #print(out)
+    if ser.is_open and lock:
+        ser.write(bytes(out, 'ascii'))
+        resp = ser.readline().decode('ascii')
+        data = resp.split()
+        #print(data)
+        if(len(data) == 2):
+            usage = float(data[1])*32
+            u_str = "B"
+            u_flt = usage
+            if(usage > 1000):
+                u_str = "KB"
+                u_flt =usage / 1000
+            if(usage > 1000000):
+                u_str = "MB"
+                u_flt =usage / 1000000
+
+            mem_quant['text'] = "{:.2f}{}".format(u_flt, u_str)
+
 def connect():
     global ser
     global connected
@@ -548,6 +636,7 @@ def main_update():
 
     get_status()
     get_sensors()
+    get_mem()
     record_sample(data_data)
     window.after(heart_beat, main_update)
 
@@ -571,8 +660,14 @@ sensor = ttk.Labelframe(window, text="sensors")
 sensor.grid(row=1, column=1, sticky="NSEW")
 
 
-other = ttk.Labelframe(window, text="other")
+other = ttk.Labelframe(window, text="solenoid")
 other.grid(row=2, column=1, sticky="NSEW")
+
+onboard_mem = ttk.Labelframe(window, text="onboard memory")
+onboard_mem.grid(row=3, column=0, sticky="NSEW")
+
+remote_mem = ttk.Labelframe(window, text="remote memory")
+remote_mem.grid(row=3, column=1, sticky="NSEW")
 
 YPAD = 2
 BPAD = 5
@@ -910,17 +1005,38 @@ plot_canvas.draw()
 plot_canvas.get_tk_widget().grid(row=6, column=0, columnspan=3, sticky="E", pady=YPAD)
 ani = animation.FuncAnimation(fig, data_update, interval=200)
 
-sol_opn = tk.Button(other, text='Open solenoid', bg='white', command=open_solenoid)
-sol_opn.grid(row=0, column=0, pady=YPAD)
+sol_opn = tk.Button(other, text='Open solenoid', command=open_solenoid)
+sol_opn.grid(row=0, column=0, pady=YPAD, padx=BPAD)
 
-sol_cls = tk.Button(other, text='Close solenoid', bg='white', command=close_solenoid)
-sol_cls.grid(row=0, column=1, pady=YPAD)
+sol_cls = tk.Button(other, text='Close solenoid', command=close_solenoid)
+sol_cls.grid(row=0, column=1, pady=YPAD, padx=BPAD)
 
-fil_rec = tk.Entry(other)
-fil_rec.grid(row=0, column=2, pady=YPAD)
+fil_rec = tk.Entry(remote_mem)
+fil_rec.grid(row=0, column=2, pady=YPAD, padx=BPAD)
 
-start_rec = tk.Button(other, text='Record', bg='white', command=start_record)
-start_rec.grid(row=0, column=3, pady=YPAD)
+start_rec = tk.Button(remote_mem, text='Record', bg='white', command=start_record)
+start_rec.grid(row=0, column=3, pady=YPAD, padx=BPAD)
+
+fnam_mem = tk.Entry(onboard_mem)
+fnam_mem.grid(row=0, column=0, pady=YPAD, padx=BPAD)
+
+down_mem = tk.Button(onboard_mem, text="Download", command=download_memory)
+down_mem.grid(row=0, column=1, pady=YPAD, padx=BPAD)
+
+
+mem_quant = tk.Label(onboard_mem, text="0B")
+mem_quant.grid(row=0, column=2, pady=YPAD, padx=BPAD)
+
+start_mem = tk.Button(onboard_mem, text="Start", command=start_memory)
+start_mem.grid(row=0, column=3, pady=YPAD, padx=BPAD)
+
+stop_mem = tk.Button(onboard_mem, text="Stop", command=stop_memory)
+stop_mem.grid(row=0, column=4, pady=YPAD, padx=BPAD)
+
+res_mem = tk.Button(onboard_mem, text="Resume", command=resume_memory)
+res_mem.grid(row=0, column=5, pady=YPAD, padx=BPAD)
+
+
 
 
 #plumbing diagram

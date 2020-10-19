@@ -67,8 +67,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 		sampling.press_1 = 0;
 		sampling.press_2 = 0;
 		static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-		xSemaphoreGiveFromISR( get_can_sem(), &xHigherPriorityTaskWoken );
-		xSemaphoreGiveFromISR( get_storage_sem(), &xHigherPriorityTaskWoken );
+		if(get_can_sem()) {
+			xSemaphoreGiveFromISR( get_can_sem(), &xHigherPriorityTaskWoken );
+		}
+		if(get_storage_sem()) {
+			xSemaphoreGiveFromISR( get_storage_sem(), &xHigherPriorityTaskWoken );
+		}
 		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 
 	}

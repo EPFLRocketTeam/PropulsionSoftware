@@ -31,15 +31,22 @@
 
 typedef struct {
 	uint16_t sample_id;
-	SENSOR_DATA_t sensor_data;
+	int16_t temp_1;
+	int16_t temp_2;
+	int16_t temp_3;
+	uint16_t press_1;
+	uint16_t press_2;
 	int16_t motor_pos;
 	uint16_t system_status;
 	uint16_t reserved[4];
+	uint32_t sensor_time;
+	uint32_t motor_time;
 }DATA_t;
 
 #define MAGIC_NUMBER	0xCBE0C5E5
 #define MAGIC_ADDR		0x00000000
 #define USED_SS_ADDR	0x00000004
+#define STATE_ADDR		0x00000008
 
 #define SUBSECTOR_SIZE	4096
 #define SAMPLES_PER_SS	(SUBSECTOR_SIZE/sizeof(DATA_t))
@@ -61,16 +68,22 @@ SemaphoreHandle_t get_storage_sem(void) {
 static uint32_t tmp_data;
 static uint32_t used_subsectors;
 static uint32_t data_counter;
-static uint8_t should_store = 1;
+static uint8_t should_stop = 0;
+static uint8_t should_resume = 0;
+static uint8_t should_restart = 0;
+static uint32_t mem_state;
 
 
-void write_used_subsectors(uint32_t nb) {
+void write_header(uint32_t nb_ss, uint32_t st) {
 	flash_erase_subsector(MAGIC_ADDR);
 	tmp_data = MAGIC_NUMBER;
 	flash_write(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
-	tmp_data = nb;
+	tmp_data = nb_ss;
 	flash_write(USED_SS_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
-	used_subsectors = nb;
+	tmp_data = st;
+	flash_write(STATE_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
+	used_subsectors = nb_ss;
+	mem_state = st;
 }
 
 DATA_t read_data(uint32_t address) {
@@ -80,17 +93,15 @@ DATA_t read_data(uint32_t address) {
 }
 
 void storage_start(void) {
-	write_used_subsectors(1);
-	data_counter = 0;
-	should_store = 1;
+	should_restart = 1;
 }
 
 void storage_stop(void) {
-	should_store = 0;
+	should_stop = 1;
 }
 
 void storage_resume(void) {
-	should_store = 1;
+	should_resume = 1;
 }
 
 uint32_t get_data_count(void) {
@@ -110,17 +121,21 @@ void storage_init() {
 	flash_read(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	if(tmp_data == MAGIC_NUMBER) {
 		flash_read(USED_SS_ADDR, (uint8_t *) &used_subsectors, sizeof(uint32_t));
+		flash_read(STATE_ADDR, (uint8_t *) &mem_state, sizeof(uint32_t));
 		//find the data count in last subsector
-		DATA_t data;
-		data.sample_id = 0;
-		uint16_t count = 0;
-		while(data.sample_id != 0xffff) {
-			data = read_data(SUBSECTOR(used_subsectors)+count);
-			count++;
+		if(used_subsectors >=2) {
+			DATA_t data;
+			uint32_t count = (used_subsectors-2)*SAMPLES_PER_SS;
+			data = read_data(ADDRESS(count));
+			while(data.sample_id == count){
+				data = read_data(ADDRESS(++count));
+			}
+			data_counter = count;
+		} else {
+			data_counter = 0;
 		}
-		data_counter = count + SAMPLES_PER_SS*(used_subsectors-1);
 	} else {
-		write_used_subsectors(1);
+		write_header(1, 0);
 		data_counter = 0;
 	}
 	ready2store_sem = xSemaphoreCreateBinaryStatic( &ready2store_semBuffer );
@@ -139,20 +154,38 @@ uint32_t read_mem(uint32_t address) {
 void PP_storageFunc(void *argument) {
 	storage_init();
 	for(;;) {
+		if(should_restart) {
+			write_header(1, 1);
+			should_restart = 0;
+			data_counter = 0;
+		}
+		if(should_stop) {
+			write_header(used_subsectors, 0);
+			should_stop = 0;
+		}
+		if(should_resume) {
+			write_header(used_subsectors, 1);
+			should_resume = 0;
+		}
 		if( xSemaphoreTake( ready2store_sem, LONG_TIME ) == pdTRUE ) {
-			if(should_store) {
+			if(mem_state) {
 				//fetch data
 				static DATA_t data;
-				uint32_t lol = sizeof(data);
 				data.sample_id = data_counter;
-				data.sensor_data = sensor_get_data_struct();
+				SENSOR_DATA_t tmp = sensor_get_data_struct();
+				data.temp_1 = tmp.temp_1;
+				data.temp_2 = tmp.temp_2;
+				data.temp_3 = tmp.temp_3;
+				data.press_1 = tmp.press_1;
+				data.press_2 = tmp.press_2;
+				data.sensor_time = tmp.time;
 				data.motor_pos = motor_get_pos();
+				data.motor_time = motor_get_time();
 				data.system_status = get_global_status();
-
 				//compute address
 				uint32_t address = ADDRESS(data_counter++);
 				if(address % SUBSECTOR_SIZE == 0) { // new subsector
-					write_used_subsectors(used_subsectors + 1);
+					write_header(used_subsectors + 1, mem_state);
 					flash_erase_subsector(address);
 				}
 				flash_write(address, (uint8_t *) &data, sizeof(DATA_t));

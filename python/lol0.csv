@@ -1,1 +1,0 @@
-temp_1 [°C];temp_2 [°C];temp_3 [°C];pres_1 [RAW];pres_2 [RAW];sensor_time [ms];motor_pos [0.1 deg];motor_psu [V];motor_torque [mN];motor_position [inc];motor_position_demand [inc];motor_current [mA];motor_current_demand [mA];motor_velocity [rpm];motor_time [ms]
