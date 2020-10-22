@@ -11,8 +11,12 @@
 #include <main.h>
 #include <error.h>
 
+#define SOLENOID_PORT	GPIOB
+#define SOLENOID_PIN	GPIO_PIN_9
 
-#define SOLENOID	GPIOB, GPIO_PIN_9
+#define SOLENOID	SOLENOID_PORT, SOLENOID_PIN
+
+
 //SOLENOID: PB9 | D1 S2
 //returns the pin state after toggle
 uint8_t toggle_solenoid();

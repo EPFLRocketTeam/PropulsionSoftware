@@ -108,11 +108,13 @@ uint32_t get_data_count(void) {
 	return data_counter;
 }
 
+
+
 void get_32_samples(uint16_t sample_id, uint8_t * out) {
 	static DATA_t data;
 	for(uint16_t i = 0; i < 32; i++) {
 		data = read_data(ADDRESS(i+sample_id));
-		memcpy(out+(i*sizeof(DATA_t)), (uint8_t *) &data, sizeof(DATA_t));
+		memcpy((uint32_t *)(out+(i*sizeof(DATA_t))), (uint32_t *) &data, sizeof(DATA_t));
 	}
 }
 

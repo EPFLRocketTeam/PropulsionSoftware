@@ -43,7 +43,7 @@ if platform.system() == 'Darwin':
     if(res[0] is not None):
         COM_PORT = res
     else:
-        COM_PORT = 'cu.usbmodem144303'
+        COM_PORT = '/dev/cu.usbmodem144303'
 
 
 
@@ -555,20 +555,30 @@ def download_memory():
         mem_file = open(fnam, 'w')
         write_csv(mem_file, recv_labels)
         count = 0
-        while(count < size):
+        error_cnt = 0
+        while(count < size and error_cnt < 5):
             #download data
             print('{:.1f}%'.format((count/size)*100))
             out = 'download_mem {}\n'.format(count)
             ser.write(bytes(out, 'ascii'))
             resp = ser.read(1024)
+            print(resp)
             for i in range(32):
-                data = struct.unpack('HhhhHHhHHHHHII', resp[(32*i):(32*(i+1))])
-                if(data[0] == 0xffff):
+                try:
+                    data = struct.unpack('HhhhHHhHHHHHII', resp[(32*i):(32*(i+1))])
+                    if(data[0] == 0xffff):
+                        break
+                    count += 1
+                    
+                    write_csv(mem_file, data)
+                except:
+                    error_cnt += 1
                     break
-                count += 1
-                write_csv(mem_file, data)
         mem_file.close()
-        print('100.0%')
+        if(error_cnt >= 5):
+            print('ERROR')
+        else:
+            print('100.0%')
         lock = 1
 
 
@@ -639,9 +649,6 @@ def main_update():
     get_mem()
     record_sample(data_data)
     window.after(heart_beat, main_update)
-
-
-
 
 
 

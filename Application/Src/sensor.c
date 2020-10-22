@@ -27,6 +27,7 @@ static SENSOR_DATA_t current_data;
 static SAMPLING_DATA_t sampling = {0};
 
 static uint16_t counter = 0;
+static uint16_t can_counter = 0;
 
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
@@ -69,7 +70,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 		static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 		if(get_can_sem()) {
 			xSemaphoreGiveFromISR( get_can_sem(), &xHigherPriorityTaskWoken );
+			can_counter = 0;
 		}
+		can_counter++;
 		if(get_storage_sem()) {
 			xSemaphoreGiveFromISR( get_storage_sem(), &xHigherPriorityTaskWoken );
 		}

@@ -83,7 +83,7 @@ void PP_controlFunc(void *argument) {
 		//poll CAN communication
 		while(can_msgPending()) {
 			control_msg = can_readBuffer();
-			if(control_msg.id_CAN == CAN_ID_PROPULSION_BOARD) {
+			if(control_msg.id_CAN != CAN_ID_PROPULSION_BOARD) {
 
 				if(control_msg.id == DATA_ID_START_OPERATION && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
 					PP_setLed(0, 5, 0);
@@ -96,7 +96,7 @@ void PP_controlFunc(void *argument) {
 				}
 				if(control_msg.id == DATA_ID_CLOSE_SOLENOID && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
 					close_solenoid();
-					PP_setLed(0, 5, 0);
+					PP_setLed(2, 5, 3);
 
 				}
 				if(control_msg.id == DATA_ID_START_HOMING && control_msg.data == DATA_COMMAND_CHECK_VALUE) {
@@ -137,12 +137,12 @@ uint8_t toggle_solenoid() {
 }
 
 uint8_t open_solenoid() {
-	HAL_GPIO_WritePin(SOLENOID, 1);
+	SOLENOID_PORT->BSRR |= SOLENOID_PIN;
 	return HAL_GPIO_ReadPin(SOLENOID);
 }
 
 uint8_t close_solenoid() {
-	HAL_GPIO_WritePin(SOLENOID, 0);
+	SOLENOID_PORT->BSRR |= SOLENOID_PIN << 16;
 	return HAL_GPIO_ReadPin(SOLENOID);
 }
 
