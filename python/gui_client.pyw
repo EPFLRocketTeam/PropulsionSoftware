@@ -67,7 +67,7 @@ rec_file = None
 
 max_samples = 500
 samples = 0
-data_labels = ['temp_1 [°C]', 'temp_2 [°C]', 'temp_3 [°C]', 'pres_1 [RAW]', 'pres_2 [RAW]', 'sensor_time [ms]', 'motor_pos [0.1 deg]', 'motor_psu [V]', 'motor_torque [mN]', 'motor_position [inc]', 'motor_position_demand [inc]', 'motor_current [mA]', 'motor_current_demand [mA]','motor_velocity [rpm]', 'motor_time [ms]']
+data_labels = ['temp_1 [°C]', 'temp_2 [°C]', 'temp_3 [°C]', 'pres_1 [mBar]', 'pres_2 [mBar]', 'sensor_time [ms]', 'motor_pos [0.1 deg]', 'motor_psu [V]', 'motor_torque [mN]', 'motor_position [inc]', 'motor_position_demand [inc]', 'motor_current [mA]', 'motor_current_demand [mA]','motor_velocity [rpm]', 'motor_time [ms]']
 data_data = [0]*len(data_labels)
 data_sampled = 0
 temp1_data = []
@@ -479,8 +479,8 @@ def get_sensors():
             canvas.itemconfig(temp1_disp, text=str(int(data[2])/10.0)+' [°C]')
             canvas.itemconfig(temp2_disp, text=str(int(data[3])/10.0)+' [°C]')
             canvas.itemconfig(temp3_disp, text=str(int(data[4])/10.0)+' [°C]')
-            canvas.itemconfig(pres1_disp, text=data[0]+' [raw]')
-            canvas.itemconfig(pres2_disp, text=data[1]+' [raw]')
+            canvas.itemconfig(pres1_disp, text=data[0]+' [mBar]')
+            canvas.itemconfig(pres2_disp, text=data[1]+' [mBar]')
 
             pres1_data.append(int(data[0]))
             pres2_data.append(int(data[1]))
@@ -925,7 +925,7 @@ pres1_entry = tk.Entry(sensor, justify='right')
 pres1_entry.grid(row=0, column = 1, sticky="E", pady=YPAD)
 pres1_entry.bind("<Key>", lambda e: "break")
 
-pres1_label2 = tk.Label(sensor, text='[RAW]')
+pres1_label2 = tk.Label(sensor, text='[mBar]')
 pres1_label2.grid(row=0, column=2, sticky="E", pady=YPAD)
 
 pres2_label = tk.Label(sensor, text='pressure 2 = ')
@@ -935,7 +935,7 @@ pres2_entry = tk.Entry(sensor, justify='right')
 pres2_entry.grid(row=1, column = 1, sticky="E", pady=YPAD)
 pres2_entry.bind("<Key>", lambda e: "break")
 
-pres2_label2 = tk.Label(sensor, text='[RAW]')
+pres2_label2 = tk.Label(sensor, text='[mBar]')
 pres2_label2.grid(row=1, column=2, sticky="E", pady=YPAD)
 
 temp1_label = tk.Label(sensor, text='temperature 1 = ')
@@ -995,7 +995,7 @@ def data_update(i):
     ax1.clear()
     ax2.clear()
     ax1.set_xticks([])
-    ax1.set_ylabel("Pressure [RAW]")
+    ax1.set_ylabel("Pressure [mBar]")
     ax2.set_ylabel("Temperature [°C]")
     ax2.set_xlabel("Time [ms]")
     ax1.set_xlim(-heart_beat*max_samples-100, 100)

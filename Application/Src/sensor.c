@@ -26,8 +26,31 @@ static SENSOR_DATA_t current_data;
 
 static SAMPLING_DATA_t sampling = {0};
 
+static uint16_t initialized = 0;
+
+static uint32_t press_1_calib = 0;
+static uint32_t press_2_calib = 0;
+
+static uint16_t press_1_base =1000;
+static uint16_t press_2_base =1000;
+
 static uint16_t counter = 0;
 static uint16_t can_counter = 0;
+
+
+#define R1_VAL	1799
+#define R2_VAL	4700
+
+#define R3_VAL	1798
+#define R4_VAL	4700
+
+#define KULITE_322_CAL			64341	//uV/bar
+
+#define KULITE_322_DECODE(val)	((uint64_t)(val) * (R3_VAL+R4_VAL) * 3300 * 1000000 / KULITE_322_CAL / 4096 / R4_VAL)
+
+#define KULITE_323_CAL			64271	//uV/bar
+
+#define KULITE_323_DECODE(val)	((uint64_t)(val) * (R1_VAL+R2_VAL) * 3300 * 1000000 / KULITE_323_CAL / 4096 / R2_VAL)
 
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
@@ -35,8 +58,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	for(int i = 0; i < PP_NB_SENSOR; i++) {
 		PP_sensorData[i] = adcBuffer[i];
 	}
-	sampling.press_1 += adcBuffer[0];
-	sampling.press_2 += adcBuffer[1];
+	sampling.press_1 += KULITE_323_DECODE(adcBuffer[0]) - (press_1_base - 1000);
+	sampling.press_2 += KULITE_322_DECODE(adcBuffer[1]) - (press_2_base - 1000);
 	if(adcBuffer[2] >= TEMP_MIN && adcBuffer[2] < TEMP_MAX) {
 		sampling.temp_1 += temp_LUT[adcBuffer[2]-TEMP_MIN];
 	} else {
@@ -58,8 +81,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 		current_data.temp_1 = sampling.temp_1>>6;
 		current_data.temp_2 = sampling.temp_2>>6;
 		current_data.temp_3 = sampling.temp_3>>6;
-		current_data.press_1 = sampling.press_1>>6;
-		current_data.press_2 = sampling.press_2>>6;
+		current_data.press_1 = (sampling.press_1>>6);
+		current_data.press_2 = (sampling.press_2>>6);
 		current_data.time = xTaskGetTickCountFromISR() * 1000 / configTICK_RATE_HZ;
 		counter = 0;
 		sampling.temp_1 = 0;
@@ -67,6 +90,15 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 		sampling.temp_3 = 0;
 		sampling.press_1 = 0;
 		sampling.press_2 = 0;
+		if(initialized < 8) {
+			press_1_calib += current_data.press_1;
+			press_2_calib += current_data.press_2;
+			initialized += 1;
+		} else if(initialized == 8) {
+			press_1_base = press_1_calib >> 3;
+			press_2_base = press_2_calib >> 3;
+			initialized += 1;
+		}
 		static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 		if(get_can_sem()) {
 			xSemaphoreGiveFromISR( get_can_sem(), &xHigherPriorityTaskWoken );
