@@ -38,7 +38,8 @@ typedef struct {
 	uint16_t press_2;
 	int16_t motor_pos;
 	uint16_t system_status;
-	uint16_t reserved[4];
+	uint32_t motor_ipos;
+	uint32_t motor_icmd;
 	uint32_t sensor_time;
 	uint32_t motor_time;
 }DATA_t;
@@ -184,6 +185,8 @@ void PP_storageFunc(void *argument) {
 				data.motor_pos = INC2DDEG(motor_get_pos());
 				data.motor_time = motor_get_time();
 				data.system_status = get_global_status();
+				data.motor_ipos = motor_get_pos();
+				data.motor_icmd = motor_get_pos_cmd();
 				//compute address
 				uint32_t address = ADDRESS(data_counter++);
 				if(address % SUBSECTOR_SIZE == 0) { // new subsector

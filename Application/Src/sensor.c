@@ -120,7 +120,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 void PP_sensorInit(void) {
 
 	//define the sampling period
-	TIM3->ARR = MS_2_SENSOR_TIMER(1);
+	TIM3->ARR = MS_2_SENSOR_TIMER(5);
 	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuffer, PP_NB_SENSOR);
 	time = 0;

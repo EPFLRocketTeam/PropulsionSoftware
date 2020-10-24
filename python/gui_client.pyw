@@ -528,7 +528,7 @@ def resume_memory():
 
 def download_memory():
     global lock
-    recv_labels = ['sample_id', 'temp_1', 'temp_2', 'temp_3', 'press_1', 'press_2', 'motor_pos', 'system_status', 'reserved_0', 'reserved_1', 'reserved_2', 'reserved_3', 'sensor_time', 'motor_time']
+    recv_labels = ['sample_id', 'temp_1', 'temp_2', 'temp_3', 'press_1', 'press_2', 'motor_pos', 'system_status', 'motor_ipos', 'motor_icmd', 'sensor_time', 'motor_time']
 
     if ser.is_open:
         lock = 0
@@ -565,7 +565,7 @@ def download_memory():
             print(resp)
             for i in range(32):
                 try:
-                    data = struct.unpack('HhhhHHhHHHHHII', resp[(32*i):(32*(i+1))])
+                    data = struct.unpack('HhhhHHhHIIII', resp[(32*i):(32*(i+1))])
                     if(data[0] == 0xffff):
                         break
                     count += 1
