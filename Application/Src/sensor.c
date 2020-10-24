@@ -37,6 +37,8 @@ static uint16_t press_2_base =1000;
 static uint16_t counter = 0;
 static uint16_t can_counter = 0;
 
+#define MS_2_SENSOR_TIMER(ms)	72e6/64*(ms)/1000
+
 
 #define R1_VAL	1799
 #define R2_VAL	4700
@@ -117,7 +119,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 //SETUP THE SENSOR VALUES IN CUBE_MX  -> they need to be on the S2 because s1 is used for maxon_comm.
 void PP_sensorInit(void) {
 
-	//the sampling rate is 100Hz to be setup in  prop_soft.ioc
+	//define the sampling period
+	TIM3->ARR = MS_2_SENSOR_TIMER(1);
 	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuffer, PP_NB_SENSOR);
 	time = 0;

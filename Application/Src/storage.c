@@ -181,7 +181,7 @@ void PP_storageFunc(void *argument) {
 				data.press_1 = tmp.press_1;
 				data.press_2 = tmp.press_2;
 				data.sensor_time = tmp.time;
-				data.motor_pos = motor_get_pos();
+				data.motor_pos = INC2DDEG(motor_get_pos());
 				data.motor_time = motor_get_time();
 				data.system_status = get_global_status();
 				//compute address
