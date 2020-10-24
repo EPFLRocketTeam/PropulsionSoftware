@@ -38,8 +38,8 @@ typedef struct {
 	uint16_t press_2;
 	int16_t motor_pos;
 	uint16_t system_status;
-	uint32_t motor_ipos;
-	uint32_t motor_icmd;
+	int32_t motor_ipos;
+	int32_t motor_icmd;
 	uint32_t sensor_time;
 	uint32_t motor_time;
 }DATA_t;

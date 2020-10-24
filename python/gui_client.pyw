@@ -565,7 +565,7 @@ def download_memory():
             print(resp)
             for i in range(32):
                 try:
-                    data = struct.unpack('HhhhHHhHIIII', resp[(32*i):(32*(i+1))])
+                    data = struct.unpack('HhhhHHhHiiII', resp[(32*i):(32*(i+1))])
                     if(data[0] == 0xffff):
                         break
                     count += 1
