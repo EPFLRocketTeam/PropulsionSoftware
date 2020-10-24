@@ -704,6 +704,7 @@ static int32_t current_pos_cmd;
 static int32_t current_curr_cmd;
 static int32_t current_curr;
 static uint32_t current_time;
+static uint32_t last_time;
 
 void motor_def_init(void) {
 	motor_todo.enable = 0;
@@ -864,8 +865,11 @@ void motor_mainloop(void * argument) {
 			read_curr(&current_curr);
 			read_curr_cmd(&current_curr_cmd);
 			motor_read_custom_object();
-			status_counter += HEART_BEAT;
+			last_time = current_time;
 			current_time = xTaskGetTickCount() * 1000 / configTICK_RATE_HZ; //ticks to ms
+			uint32_t ellapsed_time = current_time-last_time;
+			status_counter += ellapsed_time;
+
 			if(emergency_abort) {
 				if(emergency_abort == 1) {
 					motor_quickstop();
@@ -969,8 +973,8 @@ void motor_mainloop(void * argument) {
 				}
 
 				if(motor_todo.start_operation == 2) {
-					operation_counter += HEART_BEAT;
-					if(operation_counter >= motor_ppm_params.pre_wait) {
+					operation_counter += ellapsed_time;
+					if(operation_counter >= motor_ppm_params.pre_wait-HEART_BEAT) {
 						motor_set_target_abs(motor_ppm_params.half_target);
 						motor_todo.start_operation = 3;
 						status_counter = 0;
@@ -978,8 +982,8 @@ void motor_mainloop(void * argument) {
 					}
 				}
 				if(motor_todo.start_operation == 3 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
-					operation_counter += HEART_BEAT;
-					if(operation_counter >= motor_ppm_params.half_wait) {
+					operation_counter += ellapsed_time;
+					if(operation_counter >= motor_ppm_params.half_wait-HEART_BEAT) {
 						motor_todo.start_operation = 4;
 						operation_counter = 0;
 						status_counter = 0;
@@ -990,8 +994,8 @@ void motor_mainloop(void * argument) {
 					motor_todo.start_operation = 5;
 				}
 				if(motor_todo.start_operation == 5 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
-					operation_counter += HEART_BEAT;
-					if(operation_counter >= motor_ppm_params.end_wait) {
+					operation_counter += ellapsed_time;
+					if(operation_counter >= motor_ppm_params.end_wait-HEART_BEAT) {
 						motor_todo.start_operation = 6;
 						operation_counter = 0;
 						status_counter = 0;

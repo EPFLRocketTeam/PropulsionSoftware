@@ -37,7 +37,7 @@ static uint16_t press_2_base =1000;
 static uint16_t counter = 0;
 static uint16_t can_counter = 0;
 
-#define MS_2_SENSOR_TIMER(ms)	72e6/64*(ms)/1000
+#define MS_2_SENSOR_TIMER(ms)	72e6/32*(ms)/1000
 
 
 #define R1_VAL	1799
@@ -80,11 +80,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	counter++;
 	if(counter == NB_SAMPLES) {
 		time += SAMPLING_TIME;
-		current_data.temp_1 = sampling.temp_1>>6;
-		current_data.temp_2 = sampling.temp_2>>6;
-		current_data.temp_3 = sampling.temp_3>>6;
-		current_data.press_1 = (sampling.press_1>>6);
-		current_data.press_2 = (sampling.press_2>>6);
+		current_data.temp_1 = sampling.temp_1>>5;
+		current_data.temp_2 = sampling.temp_2>>5;
+		current_data.temp_3 = sampling.temp_3>>5;
+		current_data.press_1 = (sampling.press_1>>5);
+		current_data.press_2 = (sampling.press_2>>5);
 		current_data.time = xTaskGetTickCountFromISR() * 1000 / configTICK_RATE_HZ;
 		counter = 0;
 		sampling.temp_1 = 0;

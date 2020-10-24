@@ -11,7 +11,7 @@
 
 #define SAMPLING_TIME 	20 //ms
 #define ADC_FREQ		3200 //Hz
-#define NB_SAMPLES		64
+#define NB_SAMPLES		32
 
 
 #define SEND_RATE	20
