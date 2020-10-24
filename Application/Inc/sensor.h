@@ -17,8 +17,8 @@
 #define SEND_RATE	20
 
 typedef enum { //MODIFY IN IOC
-	PP_PRESSURE_1, 		// PC0 | A0 S2
-	PP_PRESSURE_2, 		// PA2 | A1 S2
+	PP_PRESSURE_1, 		// PC0 | A0 S2  m2  tank
+	PP_PRESSURE_2, 		// PA2 | A1 S2  m1  cc
 	PP_TEMPERATURE_1, 	// PA0 | D0 S1
 	PP_TEMPERATURE_2, 	// PA1 | D1 S1
 	PP_TEMPERATURE_3,	// PA3 | A0 S1
