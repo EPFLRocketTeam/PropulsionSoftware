@@ -840,6 +840,8 @@ void update_todo(void) {
 #define CLOSE_TO_Z	200
 #define ABS(a)	(a>=0?a:-a)
 
+//This will now just enable/update the target position of the motor
+
 void motor_mainloop(void * argument) {
 	 TickType_t lastWakeTime;
 		 const TickType_t period = pdMS_TO_TICKS(HEART_BEAT);

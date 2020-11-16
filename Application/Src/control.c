@@ -68,6 +68,8 @@ uint16_t get_global_status() {
 
 static CAN_msg control_msg;
 
+//trajectory generator somewhere here
+
 
 void PP_controlFunc(void *argument) {
 
