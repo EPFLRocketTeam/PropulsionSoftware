@@ -673,7 +673,7 @@ typedef struct {
 	uint8_t config;
 	uint8_t startup;
 	uint8_t shutdown;
-	uint8_t set_ppm;
+	uint8_t set_csp;
 	uint8_t set_homing;
 	uint8_t start_ppm_operation;
 	uint8_t start_homing_operation;
@@ -712,7 +712,7 @@ void motor_def_init(void) {
 	motor_todo.config = 0;
 	motor_todo.startup = 0;
 	motor_todo.shutdown = 0;
-	motor_todo.set_ppm = 0;
+	motor_todo.set_csp = 0;
 	motor_todo.set_homing = 0;
 	motor_todo.start_ppm_operation = 0;
 	motor_todo.start_homing_operation = 0;
@@ -723,7 +723,7 @@ void motor_def_init(void) {
 	motor_todo_buf.config = 0;
 	motor_todo_buf.startup = 0;
 	motor_todo_buf.shutdown = 0;
-	motor_todo_buf.set_ppm = 0;
+	motor_todo_buf.set_csp = 0;
 	motor_todo_buf.set_homing = 0;
 	motor_todo_buf.start_ppm_operation = 0;
 	motor_todo_buf.start_homing_operation = 0;
@@ -809,9 +809,9 @@ void update_todo(void) {
 		motor_todo.shutdown = 1;
 		motor_todo_buf.shutdown = 0;
 	}
-	if(motor_todo_buf.set_ppm) {
-		motor_todo.set_ppm = 1;
-		motor_todo_buf.set_ppm = 0;
+	if(motor_todo_buf.set_csp) {
+		motor_todo.set_csp = 1;
+		motor_todo_buf.set_csp = 0;
 	}
 	if(motor_todo_buf.set_homing) {
 		motor_todo.set_homing = 1;
@@ -840,7 +840,124 @@ void update_todo(void) {
 #define CLOSE_TO_Z	200
 #define ABS(a)	(a>=0?a:-a)
 
-//This will now just enable/update the target position of the motor
+//NEW MOTOR MAINLOOP
+
+#ifndef LEGACY
+
+void motor_mainloop(void * argument) {
+	 TickType_t lastWakeTime;
+	 const TickType_t period = pdMS_TO_TICKS(HEART_BEAT);
+
+	 lastWakeTime = xTaskGetTickCount();
+	 motor_def_init();
+	 motor_config_gen();
+	 motor_fault_rst();
+	 motor_disable();
+	 motor_shutdown();
+	 motor_switch_on();
+	 current_time = 0;
+
+	for(;;) {
+		read_error_word(&motor_error);
+		read_status_word(&motor_status);
+		read_psu_voltage(&psu_voltage);
+		read_position(&current_pos);
+		read_pos_cmd(&current_pos_cmd);
+		read_torque(&current_torque);
+		read_speed(&current_speed);
+		read_curr(&current_curr);
+		read_curr_cmd(&current_curr_cmd);
+		motor_read_custom_object();
+		last_time = current_time;
+		current_time = xTaskGetTickCount() * 1000 / configTICK_RATE_HZ; //ticks to ms
+		uint32_t ellapsed_time = current_time-last_time;
+		status_counter += ellapsed_time;
+
+		if(emergency_abort) {
+			if(emergency_abort == 1) {
+				motor_quickstop();
+				emergency_abort = 2;
+				status_counter = 0;
+			}
+			if(emergency_abort == 2 && current_speed == 0 && status_counter > STATUS_THRESH) {
+				motor_unquickstop();
+				motor_config_ppm();
+				motor_fault_rst();
+				motor_shutdown();
+				motor_switch_on();
+				motor_enable();
+				motor_set_target_abs(0);
+				emergency_abort = 3;
+				status_counter = 0;
+			}
+			if(emergency_abort == 3 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
+				emergency_abort = 0;
+				motor_disable();
+				motor_shutdown();
+			}
+		}
+		if(motor_todo.write_obj) {
+			motor_write_custom_object();
+			motor_todo.write_obj = 0;
+		}
+		if(motor_todo.enable) {
+			motor_enable();
+			motor_todo.enable = 0;
+		}
+		if(motor_todo.disable) {
+			motor_disable();
+			motor_todo.disable = 0;
+		}
+		if(motor_todo.config) {
+			motor_config_gen();
+			motor_todo.config = 0;
+		}
+		if(motor_todo.startup) {
+			motor_fault_rst();
+			motor_shutdown();
+			motor_switch_on();
+			motor_todo.startup = 0;
+		}
+		if(motor_todo.shutdown) {
+			motor_disable();
+			motor_disable_voltage();
+			motor_shutdown();
+			motor_todo.shutdown = 0;
+		}
+		if(motor_todo.set_csp) {
+			motor_config_ppm();
+			motor_todo.set_csp = 0;
+		}
+		if(motor_todo.set_homing) {
+			motor_config_homing();
+			motor_todo.set_homing = 0;
+		}
+
+		if(motor_todo.start_homing_operation) {
+			if(motor_todo.start_homing_operation == 1) {
+				motor_config_homing();
+				motor_enable();
+				motor_start();
+				motor_todo.start_homing_operation = 2;
+				status_counter = 0;
+			}
+			//if homing op finished
+			if(SW_TARGET_REACHED(motor_status) && motor_todo.start_homing_operation == 2 && status_counter > STATUS_THRESH) {
+				motor_disable();
+				motor_todo.start_homing_operation = 0;
+			}
+		}
+
+
+		//do something with the status
+
+		vTaskDelayUntil( &lastWakeTime, period );
+
+	}
+}
+
+#else
+//OLD MOTOR MAINLOOP
 
 void motor_mainloop(void * argument) {
 	 TickType_t lastWakeTime;
@@ -923,9 +1040,9 @@ void motor_mainloop(void * argument) {
 				motor_shutdown();
 				motor_todo.shutdown = 0;
 			}
-			if(motor_todo.set_ppm) {
+			if(motor_todo.set_csp) {
 				motor_config_ppm();
-				motor_todo.set_ppm = 0;
+				motor_todo.set_csp = 0;
 			}
 			if(motor_todo.set_homing) {
 				motor_config_homing();
@@ -1021,6 +1138,8 @@ void motor_mainloop(void * argument) {
 		}
 }
 
+#endif // LEGACY
+
 uint16_t motor_get_status(void) {
 	return motor_status;
 }
@@ -1074,7 +1193,7 @@ void motor_def_shutdown() {
 	motor_todo_buf.shutdown = 1;
 }
 void motor_def_set_ppm() {
-	motor_todo_buf.set_ppm = 1;
+	motor_todo_buf.set_csp = 1;
 }
 void motor_def_set_homing() {
 	motor_todo_buf.set_homing = 1;
@@ -1100,7 +1219,7 @@ void motor_def_abort(void) {
 	motor_todo.config = 0;
 	motor_todo.startup = 0;
 	motor_todo.shutdown = 0;
-	motor_todo.set_ppm = 0;
+	motor_todo.set_csp = 0;
 	motor_todo.set_homing = 0;
 	motor_todo.start_ppm_operation = 0;
 	motor_todo.start_homing_operation = 0;
@@ -1111,7 +1230,7 @@ void motor_def_abort(void) {
 	motor_todo_buf.config = 0;
 	motor_todo_buf.startup = 0;
 	motor_todo_buf.shutdown = 0;
-	motor_todo_buf.set_ppm = 0;
+	motor_todo_buf.set_csp = 0;
 	motor_todo_buf.set_homing = 0;
 	motor_todo_buf.start_ppm_operation = 0;
 	motor_todo_buf.start_homing_operation = 0;
