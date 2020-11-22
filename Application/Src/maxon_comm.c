@@ -33,6 +33,37 @@ typedef enum {
 
 
 
+
+void traj_buffer_init(TRAJ_BUFFER_t * bfr) {
+	bfr->c_ix = 0;
+	bfr->l_ix = 0;
+}
+
+void traj_buffer_add(TRAJ_BUFFER_t * bfr, int32_t d) {
+	bfr->buffer[bfr->c_ix++] = d; //store recieved in a buffer
+	if(bfr->c_ix == TRAJECTORY_LEN) bfr->c_ix = 0; //loop around
+}
+
+int32_t traj_buffer_get(TRAJ_BUFFER_t * bfr) {
+	uint8_t tmp = bfr->buffer[bfr->l_ix++];
+	if(bfr->l_ix == TRAJECTORY_LEN) bfr->l_ix=0;
+	return tmp;
+}
+
+uint8_t traj_buffer_is_empty(TRAJ_BUFFER_t * bfr) {
+	return bfr->l_ix == bfr->c_ix;
+}
+//END OF TRAJECTORY BUFFER CODE
+
+TRAJ_BUFFER_t traj_buffer;
+
+
+TRAJ_BUFFER_t * get_traj_bfr(void) {
+	return &traj_buffer;
+}
+
+
+
 //DEBUG
 
 uint8_t get_busy_state(void) {
@@ -448,6 +479,7 @@ void motor_setup_ppm(uint32_t profile_acc, uint32_t profile_dec, uint32_t profil
 	Write_object(MAXON_MOTION_PROFILE_TYPE, tmp_data);
 }
 
+
 int8_t motor_get_mode(int8_t * mode) {
 	if(Read_object(MAXON_MODE_OF_OPERATION, tmp_data) == -1) {
 			return -1;
@@ -776,6 +808,33 @@ void motor_config_ppm(void) {
 	Write_object(MAXON_MOTION_PROFILE_TYPE, tmp_data);
 }
 
+void motor_config_csp(void) {
+	store_int8(MAXON_MODE_CSP, tmp_data);
+	Write_object(MAXON_MODE_OF_OPERATION, tmp_data);
+
+	store_uint32(motor_ppm_params.deceleration, tmp_data);
+	Write_object(MAXON_PROFILE_DECELERATION, tmp_data);
+
+	store_int8(INTERP_EXP, tmp_data);
+	Write_object(MAXON_INTERP_EXP, tmp_data);
+
+	store_uint8(INTERP_TIME, tmp_data);
+	Write_object(MAXON_INTERP_TIME, tmp_data);
+
+	//pas de commande A PRIORI
+	store_int32(0, tmp_data);
+	Write_object(MAXON_POSITION_OFFSET, tmp_data);
+
+	store_int32(0, tmp_data);
+	Write_object(MAXON_TORQUE_OFFSET, tmp_data);
+
+}
+
+void motor_set_target(int32_t pos) {
+	store_int32(pos, tmp_data);
+	Write_object(MAXON_TARGET_POSITION, tmp_data);
+}
+
 
 void motor_config_homing(void) {
 	store_int8(MAXON_MODE_HOMING, tmp_data);
@@ -925,12 +984,47 @@ void motor_mainloop(void * argument) {
 			motor_todo.shutdown = 0;
 		}
 		if(motor_todo.set_csp) {
-			motor_config_ppm();
+			motor_config_csp();
+			//motor_write_target();
 			motor_todo.set_csp = 0;
 		}
 		if(motor_todo.set_homing) {
 			motor_config_homing();
 			motor_todo.set_homing = 0;
+		}
+		if(motor_todo.start_ppm_operation) {
+			//check that the motor is in PPM mode
+			motor_config_ppm();
+			motor_enable();
+			if(motor_todo.start_ppm_operation == 1) {
+				if(motor_ppm_params.absolute) {
+					motor_set_target_abs(motor_ppm_params.tmp_target);
+				} else {
+					motor_set_target_rel(motor_ppm_params.tmp_target);
+				}
+				motor_todo.start_ppm_operation = 2;
+				status_counter = 0;
+			}
+			if(SW_TARGET_REACHED(motor_status) && motor_todo.start_ppm_operation == 2 && status_counter > STATUS_THRESH) {
+				motor_todo.start_ppm_operation = 0;
+				motor_disable();
+			}
+
+		}
+
+		if(motor_todo.start_operation) {
+			//config csp
+			if(motor_todo.start_operation == 1) {
+				motor_config_csp();
+				motor_enable();
+				motor_todo.start_operation = 2;
+			}
+			if(!traj_buffer_is_empty(&traj_buffer)) {
+				motor_set_target(traj_buffer_get(&traj_buffer));
+			} else {
+				motor_todo.start_operation = 0;
+				motor_disable();
+			}
 		}
 
 		if(motor_todo.start_homing_operation) {

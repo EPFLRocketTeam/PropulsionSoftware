@@ -69,11 +69,31 @@
 #define PROFILE_VEL 	8000
 #define PROFILE_TYPE	0
 
+#define INTERP_TIME 	20
+#define INTERP_EXP		-3
+
 
 
 #define DEG2INC(deg)	(int32_t) ((int64_t) (deg)*4*ENC_NB_PULSES*GEAR_NUM/GEAR_DEN/360)
 #define DDEG2INC(deg)	(int32_t) ((int64_t) (deg)*4*ENC_NB_PULSES*GEAR_NUM/GEAR_DEN/3600)
 #define INC2DDEG(inc)	(int32_t) ((int64_t) (inc)*3600*GEAR_DEN/GEAR_NUM/4/ENC_NB_PULSES)
+
+
+#define TRAJECTORY_LEN	4096
+
+//TRAJECTORY BUFFER CODE
+typedef struct {
+	uint16_t c_ix;
+	uint16_t l_ix;
+	int32_t buffer[TRAJECTORY_LEN];
+}TRAJ_BUFFER_t;
+
+void traj_buffer_init(TRAJ_BUFFER_t * bfr);
+void traj_buffer_add(TRAJ_BUFFER_t * bfr, int32_t d);
+int32_t traj_buffer_get(TRAJ_BUFFER_t * bfr);
+uint8_t traj_buffer_is_empty(TRAJ_BUFFER_t * bfr);
+
+TRAJ_BUFFER_t * get_traj_bfr(void);
 
 typedef struct {
 	uint32_t acceleration;

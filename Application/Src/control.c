@@ -64,6 +64,51 @@ uint16_t get_global_status() {
 }
 
 
+int8_t generate_trajectory(NOMINAL_TRAJ_t traj, TRAJ_BUFFER_t * traj_bfr) {
+	//first flat
+	uint16_t time = 0;
+	while (time < traj.time_1) {
+		time += traj.time_step;
+		traj_buffer_add(traj_bfr, 0);
+	}
+	//first slope
+	time = 0;
+	while (time < traj.time_2) {
+		time += traj.time_step;
+		int32_t pos = time*traj.pos_1/traj.time_2;
+		traj_buffer_add(traj_bfr, pos);
+	}
+	//second slope
+	time = 0;
+	while (time < traj.time_3) {
+		time += traj.time_step;
+		int32_t pos = time*(traj.pos_2 - traj.pos_1)/traj.time_3 + traj.pos_1;
+		traj_buffer_add(traj_bfr, pos);
+	}
+	//third slope
+	time = 0;
+	while (time < traj.time_4) {
+		time += traj.time_step;
+		int32_t pos = time*(traj.pos_3 - traj.pos_2)/traj.time_4 + traj.pos_2;
+		traj_buffer_add(traj_bfr, pos);
+	}
+	//second flat
+	time = 0;
+	while (time < traj.time_5) {
+		time += traj.time_step;
+		traj_buffer_add(traj_bfr, traj.pos_3);
+	}
+	//fourth flat
+	time = 0;
+	while (time < traj.time_6) {
+		time += traj.time_step;
+		int32_t pos = traj.pos_3 - time*(traj.pos_3)/traj.time_6;
+		traj_buffer_add(traj_bfr, pos);
+	}
+
+	return 1;
+}
+
 
 
 static CAN_msg control_msg;

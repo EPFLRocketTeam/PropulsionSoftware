@@ -2,7 +2,7 @@ close all;
 clear all;
 clc;
 
-T = readtable("lol3.csv");
+T = readtable("");
 
 
 
