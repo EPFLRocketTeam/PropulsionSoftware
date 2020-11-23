@@ -44,7 +44,7 @@ typedef struct {
 	uint32_t motor_time;
 }DATA_t;
 
-#define MAGIC_NUMBER	0xCBE0C5E5
+#define MAGIC_NUMBER	0xCBE0C5E6
 #define MAGIC_ADDR		0x00000000
 #define USED_SS_ADDR	0x00000004
 #define STATE_ADDR		0x00000008

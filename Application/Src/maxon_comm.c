@@ -771,8 +771,9 @@ void motor_def_init(void) {
 
 	//modifiable params
 	motor_ppm_params.target = DDEG2INC(-900);
-	motor_ppm_params.half_target = DDEG2INC(-300);
+	motor_ppm_params.half_target = DDEG2INC(-250);
 	motor_ppm_params.half_wait = 3000;
+	motor_ppm_params.sec_half_target = DDEG2INC(-300);
 	motor_ppm_params.end_wait = 20000;
 	motor_ppm_params.pre_wait = 5000;
 
