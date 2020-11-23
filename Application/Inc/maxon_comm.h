@@ -69,7 +69,7 @@
 #define PROFILE_VEL 	8000
 #define PROFILE_TYPE	0
 
-#define INTERP_TIME 	20
+#define INTERP_TIME 	50
 #define INTERP_EXP		-3
 
 
@@ -102,6 +102,7 @@ typedef struct {
 	int32_t tmp_target;
 	int32_t target;
 	int32_t half_target;
+	int32_t sec_half_target;
 	uint32_t half_wait; //ms
 	uint32_t end_wait; //ms
 	uint32_t pre_wait; //ms
@@ -256,6 +257,8 @@ void motor_register_target(int32_t target);
  */
 void motor_register_half_target(int32_t half_target);
 
+void motor_register_sec_half_target(int32_t sec_half_target);
+
 /*
  * @biref			register operation end wait
  *
@@ -321,6 +324,13 @@ int32_t motor_get_target();
  * @return			current operation half target
  */
 int32_t motor_get_half_target();
+
+/*
+ * @brief           get operation half target
+ *
+ * @return          current operation half target
+ */
+int32_t motor_get_sec_half_target();
 
 /*
  * @brief			get operation end wait

@@ -39,7 +39,7 @@ uint8_t toggle_solenoid();
 uint8_t open_solenoid();
 uint8_t close_solenoid();
 
-int8_t generate_trajectory(NOMINAL_TRAJ_t traj, TRAJ_BUFFER_t * traj_bfr);
+void generate_trajectory(NOMINAL_TRAJ_t traj, TRAJ_BUFFER_t * traj_bfr);
 
 PP_STATUS_t start_setup(void);
 PP_STATUS_t start_operation(void);

@@ -116,7 +116,7 @@ static DUI_ITEM_t ui_items[] = {
 		{"move_rel", 1, ui_move_rel},
 		{"homing", 0, ui_homing},
 		{"ppm_profile", 3, ui_reg_ppm_profile},
-		{"op_profile", 5, ui_reg_op_profile},
+		{"op_profile", 6, ui_reg_op_profile},
 		{"operation", 0, ui_operation},
 		{"abort", 0, ui_abort},
 		{"short_stat", 0, ui_short_stat},
@@ -345,12 +345,13 @@ void ui_reg_ppm_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 
 }
 void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out) {
-	if(nb >= 5) {
+	if(nb >= 6) {
 		motor_register_pre_wait(in[0]);
 		motor_register_half_target(DDEG2INC(in[1]));
 		motor_register_half_wait(in[2]);
-		motor_register_target(DDEG2INC(in[3]));
-		motor_register_end_wait(in[4]);
+		motor_register_sec_half_target(DDEG2INC(in[3]));
+		motor_register_target(DDEG2INC(in[4]));
+		motor_register_end_wait(in[5]);
 		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n", in[0], in[1], in[2], in[3], in[4]);
 	} else{
 		sprintf((char *) out, "pre wait: %ld\nhalf target: %ld [0.1deg]\nwait 1: %ld [ms]\ntarget: %ld  [0.1deg]\nwait 2: %ld [ms]\n",
@@ -358,7 +359,7 @@ void ui_reg_op_profile(uint16_t nb, int32_t * in, uint8_t * out) {
 	}
 }
 void ui_operation(uint16_t nb, int32_t * in, uint8_t * out) {
-	motor_def_start_operation();
+	start_operation();
 
 #if TEST_BOARD == 1
 	can_setFrame(0, DATA_ID_START_OPERATION, 0);
@@ -412,7 +413,7 @@ void ui_short_ppm(uint16_t nb, int32_t * in, uint8_t * out) {
 }
 
 void ui_short_op(uint16_t nb, int32_t * in, uint8_t * out) {
-	sprintf((char *) out, "%ld %ld %ld %ld %ld\n", motor_get_pre_wait(), INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_target()), motor_get_end_wait());
+	sprintf((char *) out, "%ld %ld %ld %ld %ld %ld\n", motor_get_pre_wait(), INC2DDEG(motor_get_half_target()), motor_get_half_wait(), INC2DDEG(motor_get_sec_half_target()), INC2DDEG(motor_get_target()), motor_get_end_wait());
 }
 
 void ui_short_sensors(uint16_t nb, int32_t * in, uint8_t * out) {

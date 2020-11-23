@@ -917,6 +917,7 @@ void motor_mainloop(void * argument) {
 	 current_time = 0;
 
 	for(;;) {
+		update_todo();
 		read_error_word(&motor_error);
 		read_status_word(&motor_status);
 		read_psu_voltage(&psu_voltage);
@@ -1019,11 +1020,13 @@ void motor_mainloop(void * argument) {
 				motor_enable();
 				motor_todo.start_operation = 2;
 			}
-			if(!traj_buffer_is_empty(&traj_buffer)) {
-				motor_set_target(traj_buffer_get(&traj_buffer));
-			} else {
-				motor_todo.start_operation = 0;
-				motor_disable();
+			if(motor_todo.start_operation == 2) {
+				if(!traj_buffer_is_empty(&traj_buffer)) {
+					motor_set_target(traj_buffer_get(&traj_buffer));
+				} else {
+					motor_todo.start_operation = 0;
+					motor_disable();
+				}
 			}
 		}
 
@@ -1356,6 +1359,10 @@ void motor_register_half_target(int32_t half_target) {
 	motor_ppm_params.half_target = half_target;
 }
 
+void motor_register_sec_half_target(int32_t sec_half_target) {
+	motor_ppm_params.sec_half_target = sec_half_target;
+}
+
 void motor_register_end_wait(uint32_t end_wait) {
 	motor_ppm_params.end_wait = end_wait;
 }
@@ -1386,6 +1393,10 @@ int32_t motor_get_target() {
 
 int32_t motor_get_half_target() {
 	return motor_ppm_params.half_target;
+}
+
+int32_t motor_get_sec_half_target() {
+	return motor_ppm_params.sec_half_target;
 }
 
 uint32_t motor_get_end_wait() {

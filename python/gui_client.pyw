@@ -160,7 +160,8 @@ def set_operation():
     wait1 = op_wait1_entry.get()
     full = op_full_entry.get()
     wait2 = op_wait2_entry.get()
-    out = 'op_profile {} {} {} {} {}\n'.format(pre, half, wait1, full, wait2)
+    half_sec = op_sec_half_entry.get()
+    out = 'op_profile {} {} {} {} {} {}\n'.format(pre, half, wait1, half_sec, full, wait2)
     #print(out)
     if ser.is_open and lock:
         ser.write(bytes(out, 'ascii'))
@@ -194,17 +195,19 @@ def get_operation():
         resp = ser.readline().decode('ascii')
         data = resp.split()
         #print(data)
-        if(len(data) == 5):
+        if(len(data) == 6):
             op_wait0_entry.delete(0, tk.END)
             op_wait0_entry.insert(0, data[0])
             op_half_entry.delete(0, tk.END)
             op_half_entry.insert(0, data[1])
             op_wait1_entry.delete(0, tk.END)
             op_wait1_entry.insert(0, data[2])
+            op_sec_half_entry.delete(0, tk.END)
+            op_sec_half_entry.insert(0, data[3])
             op_full_entry.delete(0, tk.END)
-            op_full_entry.insert(0, data[3])
+            op_full_entry.insert(0, data[4])
             op_wait2_entry.delete(0, tk.END)
-            op_wait2_entry.insert(0, data[4])
+            op_wait2_entry.insert(0, data[5])
 
 def arm_toggle():
     global armed
@@ -790,11 +793,14 @@ op_half_label.grid(row=3, column=0, sticky="E", pady=YPAD)
 op_wait1_label = tk.Label(op_sett, text="half wait = ")
 op_wait1_label.grid(row=4, column=0, sticky="E", pady=YPAD)
 
+op_sec_half_label = tk.Label(op_sett, text="sec half angle = ")
+op_sec_half_label.grid(row=5, column=0, sticky="E", pady=YPAD)
+
 op_full_label = tk.Label(op_sett, text="full angle = ")
-op_full_label.grid(row=5, column=0, sticky="E", pady=YPAD)
+op_full_label.grid(row=6, column=0, sticky="E", pady=YPAD)
 
 op_wait2_label = tk.Label(op_sett, text="full wait = ")
-op_wait2_label.grid(row=6, column=0, sticky="E", pady=YPAD)
+op_wait2_label.grid(row=7, column=0, sticky="E", pady=YPAD)
 
 op_wait0_entry = tk.Entry(op_sett, justify='right')
 op_wait0_entry.grid(row=2, column=1, sticky="E", pady=YPAD)
@@ -805,11 +811,14 @@ op_half_entry.grid(row=3, column=1, sticky="E", pady=YPAD)
 op_wait1_entry = tk.Entry(op_sett, justify='right')
 op_wait1_entry.grid(row=4, column=1, sticky="E", pady=YPAD)
 
+op_sec_half_entry = tk.Entry(op_sett, justify='right')
+op_sec_half_entry.grid(row=5, column=1, sticky="E", pady=YPAD)
+
 op_full_entry = tk.Entry(op_sett, justify='right')
-op_full_entry.grid(row=5, column=1, sticky="E", pady=YPAD)
+op_full_entry.grid(row=6, column=1, sticky="E", pady=YPAD)
 
 op_wait2_entry = tk.Entry(op_sett, justify='right')
-op_wait2_entry.grid(row=6, column=1, sticky="E", pady=YPAD)
+op_wait2_entry.grid(row=7, column=1, sticky="E", pady=YPAD)
 
 op_wait0_label2 = tk.Label(op_sett, text="[ms]")
 op_wait0_label2.grid(row=2, column=2, sticky="W", pady=YPAD)
@@ -820,17 +829,20 @@ op_half_label2.grid(row=3, column=2, sticky="W", pady=YPAD)
 op_wait1_label2 = tk.Label(op_sett, text="[ms]")
 op_wait1_label2.grid(row=4, column=2, sticky="W", pady=YPAD)
 
+op_sec_half_label2 = tk.Label(op_sett, text="[0.1 deg]")
+op_sec_half_label2.grid(row=5, column=2, sticky="W", pady=YPAD)
+
 op_full_label2 = tk.Label(op_sett, text="[0.1 deg]")
-op_full_label2.grid(row=5, column=2, sticky="W", pady=YPAD)
+op_full_label2.grid(row=6, column=2, sticky="W", pady=YPAD)
 
 op_wait2_label2 = tk.Label(op_sett, text="[ms]")
-op_wait2_label2.grid(row=6, column=2, sticky="W", pady=YPAD)
+op_wait2_label2.grid(row=7, column=2, sticky="W", pady=YPAD)
 
 op_get_btn = tk.Button(op_sett, text="Get", command=get_operation)
-op_get_btn.grid(row=6, column=3, sticky="W", pady=YPAD, padx=BPAD)
+op_get_btn.grid(row=7, column=3, sticky="W", pady=YPAD, padx=BPAD)
 
 op_set_btn = tk.Button(op_sett, text="Set", command=set_operation)
-op_set_btn.grid(row=6, column=4, sticky="W", pady=YPAD, padx=BPAD)
+op_set_btn.grid(row=7, column=4, sticky="W", pady=YPAD, padx=BPAD)
 
 motor_stat = ttk.Labelframe(motor, text='motor status')
 motor_stat.grid(row=4, column=0, sticky="WE")

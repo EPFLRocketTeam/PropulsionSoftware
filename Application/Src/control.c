@@ -43,8 +43,24 @@ PP_STATUS_t start_setup(void) {
 	return PP_SUCCESS;
 }
 
+#define ABS(x)   ((x)>=0?(x):-(x))
 
 PP_STATUS_t start_operation(void) {
+	NOMINAL_TRAJ_t traj_def;
+	int32_t speed = motor_get_ppm_speed();
+	traj_def.time_step = 50;
+	traj_def.pos_1 = motor_get_half_target();
+	traj_def.pos_2 = motor_get_sec_half_target();
+	traj_def.pos_3 = motor_get_target();
+	traj_def.time_1 = motor_get_pre_wait();
+	traj_def.time_3 = motor_get_half_wait();
+	traj_def.time_5 = motor_get_end_wait();
+	int32_t speed_incsec = speed*1024/60;
+	traj_def.time_2 = ABS(traj_def.pos_1)*1000/speed_incsec;
+	traj_def.time_4 = ABS(traj_def.pos_3-traj_def.pos_2)*1000/speed_incsec;
+	traj_def.time_6 = ABS(traj_def.pos_3)*1000/speed_incsec;
+	traj_buffer_init(get_traj_bfr());
+	generate_trajectory(traj_def, get_traj_bfr());
 	motor_def_start_operation();
 	return PP_SUCCESS;
 }
@@ -64,7 +80,7 @@ uint16_t get_global_status() {
 }
 
 
-int8_t generate_trajectory(NOMINAL_TRAJ_t traj, TRAJ_BUFFER_t * traj_bfr) {
+void generate_trajectory(NOMINAL_TRAJ_t traj, TRAJ_BUFFER_t * traj_bfr) {
 	//first flat
 	uint16_t time = 0;
 	while (time < traj.time_1) {
@@ -106,7 +122,6 @@ int8_t generate_trajectory(NOMINAL_TRAJ_t traj, TRAJ_BUFFER_t * traj_bfr) {
 		traj_buffer_add(traj_bfr, pos);
 	}
 
-	return 1;
 }
 
 
