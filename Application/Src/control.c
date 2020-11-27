@@ -121,6 +121,12 @@ void generate_trajectory(NOMINAL_TRAJ_t traj, TRAJ_BUFFER_t * traj_bfr) {
 		int32_t pos = traj.pos_3 - time*(traj.pos_3)/traj.time_6;
 		traj_buffer_add(traj_bfr, pos);
 	}
+	time = 0;
+	while (time < 1000) {
+		time += traj.time_step;
+		int32_t pos = 0;
+		traj_buffer_add(traj_bfr, pos);
+	}
 }
 
 

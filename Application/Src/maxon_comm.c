@@ -45,7 +45,7 @@ void traj_buffer_add(TRAJ_BUFFER_t * bfr, int32_t d) {
 }
 
 int32_t traj_buffer_get(TRAJ_BUFFER_t * bfr) {
-	uint8_t tmp = bfr->buffer[bfr->l_ix++];
+	int32_t tmp = bfr->buffer[bfr->l_ix++];
 	if(bfr->l_ix == TRAJECTORY_LEN) bfr->l_ix=0;
 	return tmp;
 }
@@ -816,10 +816,10 @@ void motor_config_csp(void) {
 	store_uint32(motor_ppm_params.deceleration, tmp_data);
 	Write_object(MAXON_PROFILE_DECELERATION, tmp_data);
 
-	store_int8(INTERP_EXP, tmp_data);
+	store_int8(-2, tmp_data);
 	Write_object(MAXON_INTERP_EXP, tmp_data);
 
-	store_uint8(INTERP_TIME, tmp_data);
+	store_uint8(5, tmp_data);
 	Write_object(MAXON_INTERP_TIME, tmp_data);
 
 	//pas de commande A PRIORI
@@ -834,6 +834,12 @@ void motor_config_csp(void) {
 void motor_set_target(int32_t pos) {
 	store_int32(pos, tmp_data);
 	Write_object(MAXON_TARGET_POSITION, tmp_data);
+}
+
+void motor_set_target_pdo(int32_t pos) {
+	//DOES NOT WORK
+	store_int32(pos, tmp_data);
+	Write_object(0x1602, 0x02, tmp_data);
 }
 
 
