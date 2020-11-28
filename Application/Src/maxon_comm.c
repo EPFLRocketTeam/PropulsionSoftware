@@ -4,6 +4,8 @@
 #include "usart.h"
 #include <led.h>
 
+//This activates the old version
+//--> PPM valve operation
 #define LEGACY
 
 
@@ -32,6 +34,11 @@ typedef enum {
 	MDE_ERROR
 
 }MAXON_DRIVER_ERROR_t;
+
+typedef enum {
+	OP_DISABLED = 0,
+	OP_WAIT_START
+}OPERATION_STATES_t;
 
 
 
@@ -1188,6 +1195,10 @@ void motor_mainloop(void * argument) {
 				}
 			}
 			if(motor_todo.start_operation) {
+				//TODO:
+				//this should be changed as a switch and described as a proper finite state machine.
+				//Define the states properly
+
 				//check that the motor is in PPM mode
 				motor_config_ppm();
 				motor_enable();
@@ -1220,6 +1231,7 @@ void motor_mainloop(void * argument) {
 				}
 				if(motor_todo.start_operation == 5 && SW_TARGET_REACHED(motor_status) && status_counter > STATUS_THRESH) {
 					operation_counter += ellapsed_time;
+					//here we can use CSP mode for thrust control.
 					if(operation_counter >= motor_ppm_params.end_wait-HEART_BEAT) {
 						motor_todo.start_operation = 6;
 						operation_counter = 0;
