@@ -4,6 +4,8 @@
 #include "usart.h"
 #include <led.h>
 
+#define LEGACY
+
 
 static uint16_t crcDataArray[MAX_FRAME_LEN];
 static uint16_t crcDataArrayRecv[MAX_FRAME_LEN];

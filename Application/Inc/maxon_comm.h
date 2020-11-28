@@ -56,11 +56,19 @@
 //controllers
 #define CURRENT_P		140106 //check
 #define CURRENT_I		203253 //check
+
 #define POSITION_P		1703746 //check
 #define POSITION_I		8397288 //check
 #define POSITION_D		25239 //check
 #define POSITION_FFV	3568 //check
 #define POSITION_FFA	162 //check
+
+
+//#define POSITION_P		100000//check
+//#define POSITION_I		1000000 //check
+//#define POSITION_D		20000 //check
+//#define POSITION_FFV	0 //check
+//#define POSITION_FFA	0 //check
 
 #define FOLLOW_WINDOW	1000000
 
