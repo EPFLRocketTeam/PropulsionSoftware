@@ -78,6 +78,35 @@ pres2_data = []
 time_data = []
 time_current = 0
 
+def reconnect():
+    #try to reconnect
+    serial_but['text']='Reconnecting...'
+    try:
+        com = serial_entry.get()
+        ser = serial.Serial(com, 115200, timeout=1)      
+        if ser.is_open:
+            connected = 1
+            serial_but['text']='Disconnect'
+    except:
+        print("connexion error")
+
+
+def send_data(string):
+    try:
+        ser.write(bytes(string, 'ascii'))
+
+    except:
+        reconnect()
+
+
+def get_data():
+    try:
+       return ser.readline().decode('ascii')
+    except:
+        reconnect()
+
+
+
 def write_csv(file, data):
     for i, d in enumerate(data):
         file.write(str(d))
@@ -121,8 +150,8 @@ def move_rel():
     out = 'move_rel {}\n'.format(targ)
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        ser.readline()
+        send_data(out)
+        get_data()
 
 def scale_update(targ):
     global scale_updated
@@ -133,14 +162,14 @@ def move_abs():
     out = 'move_abs {}\n'.format(targ)
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        ser.readline()
+        send_data(out)
+        get_data()
 
 def set_home():
     out = 'homing\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def set_profile():
     vel = prof_spd_entry.get()
@@ -149,10 +178,10 @@ def set_profile():
     out = 'ppm_profile {} {} {}\n'.format(vel, acc, dec)
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        ser.readline()
-        ser.readline()
-        ser.readline()
+        send_data(out)
+        get_data()
+        get_data()
+        get_data()
 
 def set_operation():
     pre = op_wait0_entry.get()
@@ -164,19 +193,19 @@ def set_operation():
     out = 'op_profile {} {} {} {} {} {}\n'.format(pre, half, wait1, half_sec, full, wait2)
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        ser.readline()
-        ser.readline()
-        ser.readline()
-        ser.readline()
-        ser.readline()
+        send_data(out)
+        get_data()
+        get_data()
+        get_data()
+        get_data()
+        get_data()
 
 def get_profile():
     out = 'short_ppm\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 3):
@@ -191,8 +220,8 @@ def get_operation():
     out = 'short_op\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 6):
@@ -249,31 +278,31 @@ def operation():
     out = 'operation\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def homing():
     out = 'homing\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def abort():
     out = 'abort\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def enable():
     if stat_enabled['bg'] == 'lime':
         out = 'disable\n'
         #print(out)
         if ser.is_open and lock:
-            ser.write(bytes(out, 'ascii'))
+            send_data(out)
     else:
         out = 'enable\n'
         #print(out)
         if ser.is_open and lock:
-            ser.write(bytes(out, 'ascii'))
+            send_data(out)
 
 
 
@@ -284,8 +313,8 @@ def open_solenoid():
     out = 'open_sol\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 1):
@@ -300,8 +329,8 @@ def close_solenoid():
     out = 'close_sol\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 1):
@@ -318,8 +347,8 @@ def toggle_solenoid():
     out = 'solenoid\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 1):
@@ -337,7 +366,7 @@ def get_obj():
     out = 'get_object {} {}\n'.format(index, subindex)
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def set_obj():
     index = int(obj_index.get(), 0)
@@ -346,7 +375,7 @@ def set_obj():
     out = 'set_object {} {} {}\n'.format(index, subindex, data)
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
     
 def startup():
@@ -354,18 +383,18 @@ def startup():
         out = 'shutdown\n'
         #print(out)
         if ser.is_open and lock:
-            ser.write(bytes(out, 'ascii'))
+            send_data(out)
     else:
         out = 'startup\n'
         #print(out)
         if ser.is_open and lock:
-            ser.write(bytes(out, 'ascii'))
+            send_data(out)
 
 def fstartup():
     out = 'startup\n'
     #print(out)
     if ser.is_open and lock:
-      ser.write(bytes(out, 'ascii'))
+      send_data(out)
    
 
 def twos_complement(hexstr,bits):
@@ -388,8 +417,8 @@ def get_status():
     out = 'short_stat\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 15):
@@ -451,8 +480,8 @@ def get_status():
         out = 'move_abs {}\n'.format(targ)
         #print(out)
         if ser.is_open:
-            ser.write(bytes(out, 'ascii'))
-            ser.readline()
+            send_data(out)
+            get_data()
 
 
             
@@ -463,8 +492,8 @@ def get_sensors():
     out = 'short_sensors\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 6):
@@ -515,19 +544,19 @@ def start_memory():
     out = 'start_mem\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def stop_memory():
     out = 'stop_mem\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def resume_memory():
     out = 'resume_mem\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
 
 def download_memory():
     global lock
@@ -538,10 +567,10 @@ def download_memory():
         size = 0
         #get size
         out = 'stop_mem\n'
-        ser.write(bytes(out, 'ascii'))
+        send_data(out)
         out = 'memory_stat\n'
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
 
         if(len(data) == 2):
@@ -563,8 +592,13 @@ def download_memory():
             #download data
             print('{:.1f}%'.format((count/size)*100))
             out = 'download_mem {}\n'.format(count)
-            ser.write(bytes(out, 'ascii'))
-            resp = ser.read(1024)
+            send_data(out)
+            try:
+                resp = ser.read(1024)
+            except:
+                reconnect()
+                print("error")
+                return
             print(resp)
             for i in range(32):
                 try:
@@ -589,8 +623,8 @@ def get_mem():
     out = 'memory_stat\n'
     #print(out)
     if ser.is_open and lock:
-        ser.write(bytes(out, 'ascii'))
-        resp = ser.readline().decode('ascii')
+        send_data(out)
+        resp = get_data()
         data = resp.split()
         #print(data)
         if(len(data) == 2):
