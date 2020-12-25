@@ -29,7 +29,7 @@ import numpy as np
 
 #functions
 
-COM_PORT ='COM18'
+COM_PORT ='COM17'
 print(platform.system())
 if platform.system() == 'Darwin':
     dev_dir = os.listdir('/dev');
@@ -48,7 +48,7 @@ if platform.system() == 'Darwin':
 
 
 elif platform.system() == 'Windows':
-    COM_PORT ='COM18'
+    COM_PORT ='COM17'
 
 safety = 1
 armed = 0
@@ -79,6 +79,8 @@ time_data = []
 time_current = 0
 
 def reconnect():
+    global connected
+    global ser
     #try to reconnect
     serial_but['text']='Reconnecting...'
     try:
@@ -99,11 +101,13 @@ def send_data(string):
         reconnect()
 
 
+
 def get_data():
     try:
        return ser.readline().decode('ascii')
     except:
         reconnect()
+        return ""
 
 
 
