@@ -11,6 +11,7 @@
  **********************/
 
 #include <epos4.h>
+#include <msv2.h>
 
 /**********************
  *	CONFIGURATION
