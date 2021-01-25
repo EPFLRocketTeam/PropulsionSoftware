@@ -3,7 +3,7 @@
  *	Author		: iacopo sprenger
  *	Date		: 20.01.2021
  *	Version		: 0.1
- *	Description	: Maxon serial v2 transport layer
+ *	Description	: Maxon serial v2 data transport layer
  */
 
 /**********************
@@ -11,6 +11,13 @@
  **********************/
 
 #include <msv2.h>
+
+/**********************
+ *	CONFIGURATION
+ **********************/
+
+//define serial write
+//define serial read
 
 /**********************
  *	CONSTANTS
@@ -30,7 +37,7 @@
  *	TYPEDEFS
  **********************/
 
-typedef enum DECODE_STATE{
+typedef enum MSV2_DECODE_STATE{
 	WAITING_DLE,
 	WAITING_STX,
 	WAITING_OPCODE,
@@ -38,7 +45,32 @@ typedef enum DECODE_STATE{
 	WAITING_DATA,
 	WAITING_CRC1,
 	WAITING_CRC2
-}DECODE_STATE_t;
+}MSV2_DECODE_STATE_t;
+
+typedef struct MSV2_RX_DATA{
+	uint8_t opcode;
+	uint8_t data_len;
+	uint16_t crc;
+	MSV2_DECODE_STATE_t state;
+	uint8_t escape;
+	uint16_t length;
+	uint16_t counter;
+	uint8_t data[MSV2_MAX_FRAME_LEN];
+}MSV2_RX_DATA_t;
+
+typedef struct MSV2_TX_DATA{
+	uint8_t opcode;
+	uint8_t data_len;
+	uint16_t crc;
+	uint8_t data[MSV2_MAX_FRAME_LEN];
+	uint16_t crc_data[MSV2_MAX_FRAME_LEN/sizeof(uint16_t)];
+}MSV2_TX_DATA_t;
+
+struct MSV2_INST{
+	uint32_t id;
+	MSV2_RX_DATA_t rx;
+	MSV2_TX_DATA_t tx;
+};
 
 
 /**********************
@@ -50,23 +82,20 @@ typedef enum DECODE_STATE{
  *	PROTOTYPES
  **********************/
 
-static uint16_t CalcFieldCRC(uint16_t* pDataArray, uint16_t ArrayLength);
-static uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, uint8_t * data);
-static int32_t Decode_frame(uint8_t d, uint8_t * opcode, uint8_t * data, uint16_t * crc);
-
+static uint16_t calc_field_CRC(uint16_t* p_data_array, uint16_t ArrayLength);
 
 
 /**********************
  *	DECLARATIONS
  **********************/
 
-uint16_t CalcFieldCRC(uint16_t *pDataArray, uint16_t ArrayLength) {
+uint16_t calc_field_CRC(uint16_t *p_data_array, uint16_t ArrayLength) {
 	uint16_t shifter, c;
 	uint16_t carry;
 	uint16_t crc = 0;
 	while (ArrayLength--) {
 		shifter = 0x8000;
-		c = *pDataArray++;
+		c = *p_data_array++;
 		do {
 			carry = crc & 0x8000;
 			crc <<= 1;
@@ -80,34 +109,36 @@ uint16_t CalcFieldCRC(uint16_t *pDataArray, uint16_t ArrayLength) {
 	return crc;
 }
 
-uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, uint8_t * data) {
+uint16_t msv2_create_frame(MSV2_INST_t * msv2, uint8_t opcode, uint8_t data_len, uint8_t * data) {
 	uint16_t array_len = data_len+2; //we add 1 for the opcode and len fields and 1 for the crc
-	frameBuffer[0] = DLE;
-	frameBuffer[1] = STX;
-	frameBuffer[2] = opcode;
-	frameBuffer[3] = data_len;
-	crcDataArray[0] = (data_len<<8) | opcode;  //header bytes inverted
+	msv2->tx.data_len = data_len;
+	msv2->tx.opcode = opcode;
+	msv2->tx.data[0] = DLE;
+	msv2->tx.data[1] = STX;
+	msv2->tx.data[2] = opcode;
+	msv2->tx.data[3] = data_len;
+	msv2->tx.crc_data[0] = (data_len<<8) | opcode;  //header bytes inverted
 	uint16_t counter=4;
 	for(uint16_t i = 0; i < data_len; i++) {
-		frameBuffer[counter++] = data[2*i]; //bytes in data need to be inverted before
-		if(frameBuffer[counter-1] == DLE) {
-			frameBuffer[counter++] = DLE;
+		msv2->tx.data[counter++] = data[2*i]; //bytes in data need to be inverted before
+		if(msv2->tx.data[counter-1] == DLE) {
+			msv2->tx.data[counter++] = DLE;
 		}
-		frameBuffer[counter++] = data[2*i+1];
-		if(frameBuffer[counter-1] == DLE) {
-			frameBuffer[counter++] = DLE;
+		msv2->tx.data[counter++] = data[2*i+1];
+		if(msv2->tx.data[counter-1] == DLE) {
+			msv2->tx.data[counter++] = DLE;
 		}
-		crcDataArray[i+1] = (data[2*i+1]<<8) |  data[2*i];
+		msv2->tx.crc_data[i+1] = (data[2*i+1]<<8) |  data[2*i];
 	}
-	crcDataArray[array_len-1] = 0x0000;
-	uint16_t crc = CalcFieldCRC(crcDataArray, array_len);
-	frameBuffer[counter++] = crc&0xff; //crc bytes are inverted (LSB first) !!
-	if(frameBuffer[counter-1] == DLE) {
-		frameBuffer[counter++] = DLE;
+	msv2->tx.crc_data[array_len-1] = 0x0000;
+	uint16_t crc = calc_field_CRC(msv2->tx.crc_data, array_len);
+	msv2->tx.data[counter++] = crc&0xff; //crc bytes are inverted (LSB first) !!
+	if(msv2->tx.data[counter-1] == DLE) {
+		msv2->tx.data[counter++] = DLE;
 	}
-	frameBuffer[counter++] = crc>>8;
-	if(frameBuffer[counter-1] == DLE) {
-		frameBuffer[counter++] = DLE;
+	msv2->tx.data[counter++] = crc>>8;
+	if(msv2->tx.data[counter-1] == DLE) {
+		msv2->tx.data[counter++] = DLE;
 	}
 	return counter;
 }
@@ -117,74 +148,70 @@ uint16_t Create_frame(uint8_t * frameBuffer, uint8_t opcode, uint8_t data_len, u
  * 	d: received byte
  *
  */
-int32_t Decode_frame(uint8_t d, uint8_t * opcode, uint8_t * data, uint16_t * crc) {
-    static uint8_t escape = 0;
-    static uint16_t length = 0;
-    static uint16_t counter = 0;
-    static DECODE_STATE_t state = WAITING_DLE;
+int32_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d) {
     //if a DLE in data is followed by STX, we start again
-    if (escape == 1 && d == STX) {
-        state = WAITING_OPCODE;
-        escape = 0;
+    if (msv2->rx.escape == 1 && d == STX) {
+    	msv2->rx.state = WAITING_OPCODE;
+    	msv2->rx.escape = 0;
         return -1;
     }
 
-    if (state == WAITING_DLE && d == DLE) {
-        state = WAITING_STX;
+    if (msv2->rx.state == WAITING_DLE && d == DLE) {
+    	msv2->rx.state = WAITING_STX;
         return -1;
     }
     //escape in case a DLE is in the data
-    if (d == DLE && escape == 0) {
-        escape = 1;
+    if (d == DLE && msv2->rx.escape == 0) {
+    	msv2->rx.escape = 1;
         return -1;
     }
     //if it is doubled, it counts as data
-    if (d == DLE && escape == 1) {
-        escape = 0;
+    if (d == DLE && msv2->rx.escape == 1) {
+    	msv2->rx.escape = 0;
 
     }
 
-    if (state == WAITING_STX && d == STX) {
-        state = WAITING_OPCODE;
+    if (msv2->rx.state == WAITING_STX && d == STX) {
+    	msv2->rx.state = WAITING_OPCODE;
         return -1;
     }
 
-    if (state == WAITING_OPCODE) {
-        *opcode = d;
-        state = WAITING_LEN;
+    if (msv2->rx.state == WAITING_OPCODE) {
+    	msv2->rx.opcode = d;
+    	msv2->rx.state = WAITING_LEN;
         return -1;
     }
 
-    if (state == WAITING_LEN) {
-        length = d;
-        counter = 0;
-        state = WAITING_DATA;
+    if (msv2->rx.state == WAITING_LEN) {
+    	msv2->rx.length = d;
+    	msv2->rx.counter = 0;
+    	msv2->rx.state = WAITING_DATA;
         return -1;
     }
 
-    if (state == WAITING_DATA) {
-        data[counter] = d;
-        counter += 1;
+    if (msv2->rx.state == WAITING_DATA) {
+    	msv2->rx.data[msv2->rx.counter] = d;
+    	msv2->rx.counter += 1;
         //the length  is in WORDS, but we read BYTES
-        if (counter==2*length) {
-            state = WAITING_CRC1;
+        if (msv2->rx.counter==2*msv2->rx.length) {
+        	msv2->rx.state = WAITING_CRC1;
         }
         return -1;
     }
 
-    if (state == WAITING_CRC1) {
-        *crc = d;
-        state = WAITING_CRC2;
+    if (msv2->rx.state == WAITING_CRC1) {
+    	msv2->rx.crc = d;
+    	msv2->rx.state = WAITING_CRC2;
         return -1;
 
     }
 
-    if (state == WAITING_CRC2) {
-        *crc += d<<8;
-        state = WAITING_DLE;
-        return length;
+    if (msv2->rx.state == WAITING_CRC2) {
+    	msv2->rx.crc += d<<8;
+    	msv2->rx.state = WAITING_DLE;
+        return msv2->rx.length;
     }
-    state=WAITING_DLE;
+    msv2->rx.state=WAITING_DLE;
     return -1;
 }
 

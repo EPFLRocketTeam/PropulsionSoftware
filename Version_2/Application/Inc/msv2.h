@@ -3,7 +3,7 @@
  *  Author      : iacopo sprenger
  *  Date        : 20.01.2021
  *  Version     : 0.1
- *  Description : Maxon serial v2 transport layer
+ *  Description : Maxon serial v2 data transport layer
  */
 
 #ifndef MSV2_H
@@ -19,6 +19,8 @@
  *  CONSTANTS
  **********************/
 
+#define MSV2_MAX_FRAME_LEN	(1024)
+
 
 /**********************
  *  MACROS
@@ -29,9 +31,9 @@
  *  TYPEDEFS
  **********************/
 
-typedef struct MSV2{
+typedef struct MSV2_INST MSV2_INST_t;
 
-}MSV2_t;
+
 
 
 /**********************
@@ -47,7 +49,9 @@ typedef struct MSV2{
 extern "C"{
 #endif
 
+int32_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d);
 
+uint16_t msv2_create_frame(MSV2_INST_t * msv2, uint8_t opcode, uint8_t data_len, uint8_t * data);
 
 #ifdef __cplusplus
 } // extern "C"

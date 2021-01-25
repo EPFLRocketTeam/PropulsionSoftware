@@ -29,18 +29,17 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "stm32f4xx_ll_adc.h"
-#include "stm32f4xx_ll_dma.h"
-#include "stm32f4xx_ll_rcc.h"
+#include "stm32f4xx_ll_tim.h"
 #include "stm32f4xx_ll_bus.h"
-#include "stm32f4xx_ll_system.h"
-#include "stm32f4xx_ll_exti.h"
 #include "stm32f4xx_ll_cortex.h"
+#include "stm32f4xx_ll_rcc.h"
+#include "stm32f4xx_ll_system.h"
 #include "stm32f4xx_ll_utils.h"
 #include "stm32f4xx_ll_pwr.h"
-#include "stm32f4xx_ll_tim.h"
-#include "stm32f4xx_ll_usart.h"
 #include "stm32f4xx_ll_gpio.h"
+#include "stm32f4xx_ll_dma.h"
+
+#include "stm32f4xx_ll_exti.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -70,31 +69,31 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define PRES_1_Pin LL_GPIO_PIN_0
+#define PRES_1_Pin GPIO_PIN_0
 #define PRES_1_GPIO_Port GPIOC
-#define TEMP_1_Pin LL_GPIO_PIN_0
+#define TEMP_1_Pin GPIO_PIN_0
 #define TEMP_1_GPIO_Port GPIOA
-#define TEMP_2_Pin LL_GPIO_PIN_1
+#define TEMP_2_Pin GPIO_PIN_1
 #define TEMP_2_GPIO_Port GPIOA
-#define PRES_2_Pin LL_GPIO_PIN_2
+#define PRES_2_Pin GPIO_PIN_2
 #define PRES_2_GPIO_Port GPIOA
-#define TEMP_3_Pin LL_GPIO_PIN_3
+#define TEMP_3_Pin GPIO_PIN_3
 #define TEMP_3_GPIO_Port GPIOA
-#define LED_RED_Pin LL_GPIO_PIN_7
+#define LED_RED_Pin GPIO_PIN_7
 #define LED_RED_GPIO_Port GPIOA
-#define DEBUG_RX_Pin LL_GPIO_PIN_5
+#define DEBUG_RX_Pin GPIO_PIN_5
 #define DEBUG_RX_GPIO_Port GPIOC
-#define DEBUG_TX_Pin LL_GPIO_PIN_10
+#define DEBUG_TX_Pin GPIO_PIN_10
 #define DEBUG_TX_GPIO_Port GPIOB
-#define LED_GREEN_Pin LL_GPIO_PIN_14
+#define LED_GREEN_Pin GPIO_PIN_14
 #define LED_GREEN_GPIO_Port GPIOB
-#define LED_BLUE_Pin LL_GPIO_PIN_15
+#define LED_BLUE_Pin GPIO_PIN_15
 #define LED_BLUE_GPIO_Port GPIOB
-#define MOTOR_TX_Pin LL_GPIO_PIN_6
+#define MOTOR_TX_Pin GPIO_PIN_6
 #define MOTOR_TX_GPIO_Port GPIOC
-#define MOTOR_RX_Pin LL_GPIO_PIN_7
+#define MOTOR_RX_Pin GPIO_PIN_7
 #define MOTOR_RX_GPIO_Port GPIOC
-#define SOLENOID_Pin LL_GPIO_PIN_7
+#define SOLENOID_Pin GPIO_PIN_7
 #define SOLENOID_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
