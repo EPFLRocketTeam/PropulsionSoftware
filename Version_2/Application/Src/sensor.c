@@ -248,8 +248,14 @@ void sensor_thread(void * arg) {
 			filtered.temperature[2] += filter_data.temperature[2]*filter_coefficients[i] >> 12;
 		}
 
+		//Estimation of other motor parameters
 
 
+		//Notify CAN for transfer
+
+		//Notify storage for storage
+
+		//Results accessible from DEBUG UART
 
 		vTaskDelayUntil( &last_wake_time, period );
 	}
