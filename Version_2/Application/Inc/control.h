@@ -37,8 +37,9 @@ typedef enum CONTROL_STATE{
 	CS_ARMED,
 	CS_COUNTDOWN,
 	CS_IGNITION,
-	CS_THURST,
+	CS_THRUST,
 	CS_SHUTDOWN,
+	CS_GLIDE,
 	CS_ABORT,
 	CS_ERROR
 }CONTROL_STATE_t;
@@ -62,7 +63,7 @@ typedef struct CONTROL_INST{
 extern "C"{
 #endif
 
-void control_mainloop(void);
+void control_thread(void * arg);
 
 #ifdef __cplusplus
 } // extern "C"

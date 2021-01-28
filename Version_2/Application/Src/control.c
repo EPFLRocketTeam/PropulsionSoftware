@@ -9,13 +9,20 @@
 /**********************
  *	INCLUDES
  **********************/
-
-#include <control.h>
 #include <main.h>
+#include <cmsis_os.h>
+#include <control.h>
+
+/**********************
+ *	CONFIGURATION
+ **********************/
+
+#define CONTROL_HEART_BEAT	20 /* ms */
 
 /**********************
  *	CONSTANTS
  **********************/
+
 
 
 
@@ -41,8 +48,8 @@
  *	PROTOTYPES
  **********************/
 
-static void init_control(CONTROL_t * control);
-static void update_control(CONTROL_t * control);
+static void control_init(CONTROL_t * control);
+static void control_update(CONTROL_t * control);
 
 // Enter state functions
 static void init_idle(CONTROL_t * control);
@@ -60,24 +67,29 @@ static void idle(CONTROL_t * control);
 static void calibration(CONTROL_t * control);
 static void armed(CONTROL_t * control);
 static void countdown(CONTROL_t * control);
-static void ignintion(CONTROL_t * control);
+static void ignition(CONTROL_t * control);
 static void thrust(CONTROL_t * control);
 static void shutdown(CONTROL_t * control);
-static void abort(CONTROL_t * control);
+static void glide(CONTROL_t * control);
+static void emergency(CONTROL_t * control);
 static void error(CONTROL_t * control);
 
 /**********************
  *	DECLARATIONS
  **********************/
 
-void control_mainloop(void) {
+void control_thread(void * arg) {
 	static CONTROL_t control;
+	static TickType_t last_wake_time;
+	static const TickType_t period = pdMS_TO_TICKS(CONTROL_HEART_BEAT);
 
-	init_control(&control);
+	last_wake_time = xTaskGetTickCount();
+
+	control_init(&control);
 
 	for(;;) {
 
-		update_control(&control);
+		control_update(&control);
 
 		switch(control.state) {
 		case CS_IDLE:
@@ -86,18 +98,44 @@ void control_mainloop(void) {
 		case CS_CALIBRATION:
 			calibration(&control);
 			break;
+		case CS_ARMED:
+			armed(&control);
+			break;
+		case CS_COUNTDOWN:
+			countdown(&control);
+			break;
+		case CS_IGNITION:
+			ignition(&control);
+			break;
+		case CS_THRUST:
+			thrust(&control);
+			break;
+		case CS_SHUTDOWN:
+			shutdown(&control);
+			break;
+		case CS_GLIDE:
+			glide(&control);
+			break;
+		case CS_ABORT:
+			emergency(&control);
+			break;
+		case CS_ERROR:
+			error(&control);
+			break;
 		default:
 			control.state = CS_ERROR;
 			break;
 		}
+
+		vTaskDelayUntil( &last_wake_time, period );
 	}
 }
 
-static void init_control(CONTROL_t * control) {
+static void control_init(CONTROL_t * control) {
 	control->state = CS_IDLE;
 }
 
-static void update_control(CONTROL_t * control) {
+static void control_update(CONTROL_t * control) {
 	control->time = HAL_GetTick();
 }
 
@@ -113,7 +151,7 @@ static void armed(CONTROL_t * control) {
 static void countdown(CONTROL_t * control) {
 
 }
-static void ignintion(CONTROL_t * control) {
+static void ignition(CONTROL_t * control) {
 
 }
 static void thrust(CONTROL_t * control) {
@@ -122,7 +160,10 @@ static void thrust(CONTROL_t * control) {
 static void shutdown(CONTROL_t * control) {
 
 }
-static void abort(CONTROL_t * control) {
+static void glide(CONTROL_t * control) {
+
+}
+static void emergency(CONTROL_t * control) {
 
 }
 static void error(CONTROL_t * control) {

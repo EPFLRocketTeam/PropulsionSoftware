@@ -1,6 +1,6 @@
 #MicroXplorer Configuration settings - do not modify
-ADC1.Channel-5\#ChannelRegularConversion=ADC_CHANNEL_2
-ADC1.Channel-6\#ChannelRegularConversion=ADC_CHANNEL_10
+ADC1.Channel-5\#ChannelRegularConversion=ADC_CHANNEL_10
+ADC1.Channel-6\#ChannelRegularConversion=ADC_CHANNEL_2
 ADC1.Channel-7\#ChannelRegularConversion=ADC_CHANNEL_0
 ADC1.Channel-8\#ChannelRegularConversion=ADC_CHANNEL_1
 ADC1.Channel-9\#ChannelRegularConversion=ADC_CHANNEL_3
@@ -113,7 +113,7 @@ Mcu.Pin8=PB10
 Mcu.Pin9=PB14
 Mcu.PinsNb=27
 Mcu.ThirdPartyNb=0
-Mcu.UserConstants=
+Mcu.UserConstants=ADC_HEART_BEAT,1125
 Mcu.UserName=STM32F446RETx
 MxCube.Version=6.0.0
 MxDb.Version=DB.6.0.0
@@ -292,7 +292,7 @@ TIM3.Channel-Output\ Compare1\ No\ Output=TIM_CHANNEL_1
 TIM3.CounterMode=TIM_COUNTERMODE_UP
 TIM3.IPParameters=CounterMode,Prescaler,Period,TIM_MasterOutputTrigger,Channel-Output Compare1 No Output,OCMode_1
 TIM3.OCMode_1=TIM_OCMODE_TOGGLE
-TIM3.Period=1125
+TIM3.Period=ADC_HEART_BEAT
 TIM3.Prescaler=0
 TIM3.TIM_MasterOutputTrigger=TIM_TRGO_RESET
 TIM8.Channel-PWM\ Generation1\ CH1N=TIM_CHANNEL_1
