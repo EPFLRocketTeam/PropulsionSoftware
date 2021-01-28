@@ -22,7 +22,7 @@
  **********************/
 
 
-#define DEFAULT_SZ	(256)
+#define DEFAULT_SZ	(1024)
 
 #define CONTROL_SZ	DEFAULT_SZ
 #define CONTROL_PRIO	(6)

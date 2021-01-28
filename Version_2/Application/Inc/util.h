@@ -39,7 +39,7 @@ static inline void util_buffer_##name##_init(UTIL_BUFFER_##name##_t * bfr, type 
 	bfr->l_ix = 0;                                                                                   \
 	bfr->bfr_len = bfr_len;                                                                          \
 	bfr->buffer = buffer;                                                                            \
-}                                                                                                    \
+}                                                                                                \
 static inline void util_buffer_##name##_add(UTIL_BUFFER_##name##_t * bfr, type d) {                          \
 	bfr->buffer[bfr->c_ix++] = d;                                                                    \
 	if(bfr->c_ix == bfr->bfr_len) bfr->c_ix = 0;                                                     \
@@ -49,6 +49,11 @@ static inline type util_buffer_##name##_get(UTIL_BUFFER_##name##_t * bfr) {     
 	if(bfr->l_ix == bfr->bfr_len) bfr->l_ix=0;                                                       \
 	return tmp;                                                                                      \
 }                                                                                                    \
+static inline type util_buffer_##name##_access(UTIL_BUFFER_##name##_t * bfr, uint16_t ix) {                   \
+	int16_t i = bfr->c_ix - ix - 1;                                                                       \
+	while(i < 0) i += bfr->bfr_len;                                                    \
+	return bfr->buffer[i];                                                                          \
+}																										\
 static inline uint8_t util_buffer_##name##_isempty(UTIL_BUFFER_##name##_t * bfr) {                           \
 	return bfr->l_ix == bfr->c_ix;                                                                   \
 }
@@ -112,6 +117,12 @@ static inline uint8_t util_buffer_u8_get(UTIL_BUFFER_U8_t * bfr) {
 	uint8_t tmp = bfr->buffer[bfr->l_ix++];
 	if(bfr->l_ix == bfr->bfr_len) bfr->l_ix=0;
 	return tmp;
+}
+//Access from ix-th element back in history from the last insert
+static inline uint8_t util_buffer_u8_access(UTIL_BUFFER_U8_t * bfr, int16_t ix) {
+	ix = bfr->c_ix - ix - 1;
+	while(ix < 0) ix += bfr->bfr_len;
+	return bfr->buffer[ix];
 }
 
 static inline uint8_t util_buffer_u8_isempty(UTIL_BUFFER_U8_t * bfr) {
