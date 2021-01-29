@@ -237,7 +237,7 @@ void sensor_thread(void * arg) {
 
 
 
-		//Filter
+		//Low pass filter
 		SENSOR_DATA_t filtered = {0};
 		for(uint8_t i = 0; i < FILTER_LEN; i++) {
 			SENSOR_DATA_t filter_data = util_buffer_SENSOR_access(&filter_bfr, i);
@@ -248,7 +248,11 @@ void sensor_thread(void * arg) {
 			filtered.temperature[2] += filter_data.temperature[2]*filter_coefficients[i] >> 12;
 		}
 
-		//Estimation of other motor parameters
+		//Predictor and wrong measurements rejector (Temperature only)
+
+		//predict next state according to the derivative
+		//if measurement is too far, use an estimation from the derivative and the time to get the next measurement
+
 
 
 		//Notify CAN for transfer
