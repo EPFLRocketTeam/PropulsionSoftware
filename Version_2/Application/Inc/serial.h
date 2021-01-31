@@ -16,10 +16,15 @@
  **********************/
 
 #include <stdint.h>
+#include <usart.h>
+#include <util.h>
 
 /**********************
  *  CONSTANTS
  **********************/
+
+#define SERIAL_MAX_INST	(16)
+#define SERIAL_FIFO_LEN	(128)
 
 
 /**********************
@@ -31,6 +36,21 @@
  *  TYPEDEFS
  **********************/
 
+typedef enum SERIAL_RET {
+	SERIAL_DONE,
+	SERIAL_PROGRESS,
+	SERIAL_ERROR
+}SERIAL_RET_t;
+
+typedef struct SERIAL_INST {
+	uint32_t id;
+	UART_HandleTypeDef * uart;
+	void * inst;
+	SERIAL_RET_t (*decode_fcn)(void *, uint8_t);
+	UTIL_BUFFER_U8_t bfr;
+	uint8_t buffer[SERIAL_FIFO_LEN];
+	uint8_t dma_buffer;
+}SERIAL_INST_t;
 
 /**********************
  *  VARIABLES
@@ -45,6 +65,14 @@
 extern "C"{
 #endif
 
+
+void serial_global_init();
+
+void serial_init(SERIAL_INST_t * ser, UART_HandleTypeDef * uart, void * inst, SERIAL_RET_t (*decode_fcn)(void *, uint8_t));
+
+void serial_send(SERIAL_INST_t * ser, uint8_t * data, uint16_t length);
+
+void serial_thread(void * arg);
 
 #ifdef __cplusplus
 } // extern "C"

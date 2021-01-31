@@ -16,6 +16,7 @@
 #include <threads.h>
 #include <control.h>
 #include <sensor.h>
+#include <serial.h>
 
 /**********************
  *	CONSTANTS
@@ -29,6 +30,9 @@
 
 #define SENSOR_SZ	DEFAULT_SZ
 #define SENSOR_PRIO	(5)
+
+#define SERIAL_SZ	DEFAULT_SZ
+#define SERIAL_PRIO	(1)
 
 
 /**********************
@@ -59,6 +63,7 @@
 
 static TaskHandle_t sensor_handle = NULL;
 static TaskHandle_t control_handle = NULL;
+static TaskHandle_t serial_handle = NULL;
 
 
 /**********************
@@ -76,10 +81,10 @@ static TaskHandle_t control_handle = NULL;
 void threads_init(void) {
 
 	/*
-	 *  Main control thread
-	 *  Highest priority
+	 *  Serial RX processing thread (Bottom half)
+	 *  low priority
 	 */
-	CREATE_THREAD(control_handle, control, control_thread, CONTROL_SZ, CONTROL_PRIO);
+	CREATE_THREAD(serial_handle, serial, serial_thread, SERIAL_SZ, SERIAL_PRIO);
 
 	/*
 	 *  Sensor processing thread
@@ -87,6 +92,11 @@ void threads_init(void) {
 	 */
 	CREATE_THREAD(sensor_handle, sensor, sensor_thread, SENSOR_SZ, SENSOR_PRIO);
 
+	/*
+	 *  Main control thread
+	 *  Highest priority
+	 */
+	CREATE_THREAD(control_handle, control, control_thread, CONTROL_SZ, CONTROL_PRIO);
 
 
 

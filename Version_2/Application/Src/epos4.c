@@ -16,14 +16,19 @@
 #include <cmsis_os.h>
 #include <usart.h>
 
+
 /**********************
  *	CONFIGURATION
  **********************/
 
+
+//OLD
 #define UART_TX	HAL_UART_Transmit
 #define EPOS4_UART	huart6
 
 #define UART_RX
+
+
 
 
 /**********************
@@ -100,12 +105,7 @@
 
 
 
-struct EPOS4_INST{
-	uint32_t id;
-	uint8_t can_id; //CAN ID for communication and gateway to other boards
-	EPOS4_STATE_t state;
-	MSV2_INST_t * msv2;
-};
+
 
 
 /**********************
@@ -126,12 +126,6 @@ static StaticSemaphore_t epos4_rx_sem_buffer;
  *	PROTOTYPES
  **********************/
 
-static inline void store_uint8(uint8_t value, uint8_t * data);
-static inline void store_uint16(uint16_t value, uint8_t * data);
-static inline void store_uint32(uint32_t value, uint8_t * data);
-static inline void store_int8(int8_t value, uint8_t * data);
-static inline void store_int16(int16_t value, uint8_t * data);
-static inline void store_int32(int32_t value, uint8_t * data);
 
 //What is needed:
 /*
@@ -145,42 +139,6 @@ static inline void store_int32(int32_t value, uint8_t * data);
 /**********************
  *	DECLARATIONS
  **********************/
-static inline void store_uint8(uint8_t value, uint8_t * data) {
-	data[0] = value;
-	data[1] = 0x00;
-	data[2] = 0x00;
-	data[3] = 0x00;
-}
-static inline void store_uint16(uint16_t value, uint8_t * data) {
-	data[0] = value;
-	data[1] = value>>8;
-	data[2] = 0x00;
-	data[3] = 0x00;
-}
-static inline void store_uint32(uint32_t value, uint8_t * data) {
-	data[0] = value;
-	data[1] = value>>8;
-	data[2] = value>>16;
-	data[3] = value>>24;
-}
-static inline void store_int8(int8_t value, uint8_t * data) {
-	data[0] = value;
-	data[1] = 0x00;
-	data[2] = 0x00;
-	data[3] = 0x00;
-}
-static inline void store_int16(int16_t value, uint8_t * data) {
-	data[0] = value;
-	data[1] = value>>8;
-	data[2] = 0x00;
-	data[3] = 0x00;
-}
-static inline void store_int32(int32_t value, uint8_t * data) {
-	data[0] = value;
-	data[1] = value>>8;
-	data[2] = value>>16;
-	data[3] = value>>24;
-}
 
 
 void epos4_global_init() {
@@ -192,7 +150,17 @@ void epos4_global_init() {
 }
 
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
+	static uint32_t id_counter = 0;
+	epos4->id = id_counter++;
 
+	static MSV2_INST_t msv2;
+	msv2_init(&msv2);
+
+	epos4->can_id = id;
+	epos4->msv2 = &msv2;
+
+	static SERIAL_INST_t ser;
+	serial_init(&ser, &EPOS4_UART, &msv2, epos4_decode_func);
 }
 
 
@@ -260,6 +228,14 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 	} else {
 		return EPOS4_ERROR;
 	}
+}
+
+SERIAL_RET_t epos4_decode_func(void * inst, uint8_t data) {
+	MSV2_ERROR_t tmp = msv2_decode_fragment((MSV2_INST_t *) inst, data);
+	if(!tmp) {
+		xSemaphoreGive(epos4_rx_sem); // one frame has been received!
+	}
+	return tmp;
 }
 
 

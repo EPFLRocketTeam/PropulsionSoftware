@@ -14,6 +14,8 @@
  **********************/
 
 #include <stdint.h>
+#include <serial.h>
+#include <msv2.h>
 
 /**********************
  *  CONSTANTS
@@ -30,8 +32,6 @@
  *  TYPEDEFS
  **********************/
 
-typedef struct EPOS4_INST EPOS4_INST_t;
-
 typedef enum EPOS4_STATE {
 	EPOS4_PPM,
 	EPOS4_HOM,
@@ -44,6 +44,13 @@ typedef enum EPOS4_ERROR {
 	EPOS4_REMOTE_ERROR,
 	EPOS4_ERROR
 }EPOS4_ERROR_t;
+
+typedef struct EPOS4_INST{
+	uint32_t id;
+	uint8_t can_id; //CAN ID for communication and gateway to other boards
+	EPOS4_STATE_t state;
+	MSV2_INST_t * msv2;
+}EPOS4_INST_t;
 
 typedef struct EPOS4_PPM_CONFIG {
 
@@ -74,6 +81,8 @@ extern "C"{
 //MISC
 void epos4_global_init();
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id);
+
+SERIAL_RET_t epos4_decode_func(void * inst, uint8_t data);
 
 //LOW LEVEL
 EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err);

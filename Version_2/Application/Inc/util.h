@@ -175,6 +175,44 @@ static inline uint8_t util_buffer_i16_isempty(UTIL_BUFFER_I16_t * bfr) {
 	return bfr->l_ix == bfr->c_ix;
 }
 
+static inline void util_store_uint8(uint8_t value, uint8_t * data) {
+	data[0] = value;
+	data[1] = 0x00;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+static inline void util_store_uint16(uint16_t value, uint8_t * data) {
+	data[0] = value;
+	data[1] = value>>8;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+static inline void util_store_uint32(uint32_t value, uint8_t * data) {
+	data[0] = value;
+	data[1] = value>>8;
+	data[2] = value>>16;
+	data[3] = value>>24;
+}
+static inline void util_store_int8(int8_t value, uint8_t * data) {
+	data[0] = value;
+	data[1] = 0x00;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+static inline void util_store_int16(int16_t value, uint8_t * data) {
+	data[0] = value;
+	data[1] = value>>8;
+	data[2] = 0x00;
+	data[3] = 0x00;
+}
+static inline void util_store_int32(int32_t value, uint8_t * data) {
+	data[0] = value;
+	data[1] = value>>8;
+	data[2] = value>>16;
+	data[3] = value>>24;
+}
+
+
 
 #ifdef __cplusplus
 } // extern "C"

@@ -14,6 +14,7 @@
  **********************/
 
 #include <stdint.h>
+#include <serial.h>
 
 /**********************
  *  CONSTANTS
@@ -38,7 +39,41 @@ typedef enum MSV2_ERROR {
 	MSV2_ERROR
 }MSV2_ERROR_t;
 
-typedef struct MSV2_INST MSV2_INST_t;
+typedef enum MSV2_DECODE_STATE{
+	WAITING_DLE,
+	WAITING_STX,
+	WAITING_OPCODE,
+	WAITING_LEN,
+	WAITING_DATA,
+	WAITING_CRC1,
+	WAITING_CRC2
+}MSV2_DECODE_STATE_t;
+
+typedef struct MSV2_RX_DATA{
+	uint8_t opcode;
+	uint8_t data_len;
+	uint16_t crc;
+	MSV2_DECODE_STATE_t state;
+	uint8_t escape;
+	uint16_t length;
+	uint16_t counter;
+	uint8_t data[MSV2_MAX_FRAME_LEN];
+	uint16_t crc_data[MSV2_MAX_FRAME_LEN/sizeof(uint16_t)];
+}MSV2_RX_DATA_t;
+
+typedef struct MSV2_TX_DATA{
+	uint8_t opcode;
+	uint8_t data_len;
+	uint16_t crc;
+	uint8_t data[MSV2_MAX_FRAME_LEN];
+	uint16_t crc_data[MSV2_MAX_FRAME_LEN/sizeof(uint16_t)];
+}MSV2_TX_DATA_t;
+
+typedef struct MSV2_INST{
+	uint32_t id;
+	MSV2_RX_DATA_t rx;
+	MSV2_TX_DATA_t tx;
+}MSV2_INST_t;
 
 
 
@@ -55,6 +90,8 @@ typedef struct MSV2_INST MSV2_INST_t;
 #ifdef __cplusplus
 extern "C"{
 #endif
+
+SERIAL_RET_t msv2_decode_func(void * inst, uint8_t data);
 
 MSV2_ERROR_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d);
 
