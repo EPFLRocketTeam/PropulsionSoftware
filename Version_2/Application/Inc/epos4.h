@@ -30,7 +30,7 @@
  *  TYPEDEFS
  **********************/
 
-typedef EPOS4_INST EPOS4_INST_t;
+typedef struct EPOS4_INST EPOS4_INST_t;
 
 typedef enum EPOS4_STATE {
 	EPOS4_PPM,
@@ -39,8 +39,9 @@ typedef enum EPOS4_STATE {
 }EPOS4_STATE_t;
 
 typedef enum EPOS4_ERROR {
-	EPOS4_SUCESS = 0,
+	EPOS4_SUCCESS = 0,
 	EPOS4_TIMEOUT,
+	EPOS4_REMOTE_ERROR,
 	EPOS4_ERROR
 }EPOS4_ERROR_t;
 
@@ -70,9 +71,13 @@ typedef struct EPOS4_HOM_CONFIG {
 extern "C"{
 #endif
 
+//MISC
+void epos4_global_init();
+void epos4_init(EPOS4_INST_t * epos4, uint8_t id);
+
 //LOW LEVEL
-EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data);
-EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data);
+EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err);
+EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err);
 
 
 //MEDIUM LEVEL

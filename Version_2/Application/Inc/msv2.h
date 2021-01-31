@@ -31,6 +31,13 @@
  *  TYPEDEFS
  **********************/
 
+typedef enum MSV2_ERROR {
+	MSV2_SUCCESS = 0,
+	MSV2_PROGRESS,
+	MSV2_WRONG_CRC,
+	MSV2_ERROR
+}MSV2_ERROR_t;
+
 typedef struct MSV2_INST MSV2_INST_t;
 
 
@@ -49,9 +56,15 @@ typedef struct MSV2_INST MSV2_INST_t;
 extern "C"{
 #endif
 
-int32_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d);
+MSV2_ERROR_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d);
+
+void msv2_init(MSV2_INST_t * msv2);
 
 uint16_t msv2_create_frame(MSV2_INST_t * msv2, uint8_t opcode, uint8_t data_len, uint8_t * data);
+
+uint8_t * msv2_rx_data(MSV2_INST_t * msv2);
+
+uint8_t * msv2_tx_data(MSV2_INST_t * msv2);
 
 #ifdef __cplusplus
 } // extern "C"

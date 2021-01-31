@@ -56,6 +56,7 @@ typedef struct MSV2_RX_DATA{
 	uint16_t length;
 	uint16_t counter;
 	uint8_t data[MSV2_MAX_FRAME_LEN];
+	uint16_t crc_data[MSV2_MAX_FRAME_LEN/sizeof(uint16_t)];
 }MSV2_RX_DATA_t;
 
 typedef struct MSV2_TX_DATA{
@@ -109,6 +110,11 @@ uint16_t calc_field_CRC(uint16_t *p_data_array, uint16_t ArrayLength) {
 	return crc;
 }
 
+void msv2_init(MSV2_INST_t * msv2) {
+	static uint32_t id_counter = 0;
+	msv2->id = id_counter++;
+}
+
 uint16_t msv2_create_frame(MSV2_INST_t * msv2, uint8_t opcode, uint8_t data_len, uint8_t * data) {
 	uint16_t array_len = data_len+2; //we add 1 for the opcode and len fields and 1 for the crc
 	msv2->tx.data_len = data_len;
@@ -148,22 +154,22 @@ uint16_t msv2_create_frame(MSV2_INST_t * msv2, uint8_t opcode, uint8_t data_len,
  * 	d: received byte
  *
  */
-int32_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d) {
+MSV2_ERROR_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d) {
     //if a DLE in data is followed by STX, we start again
     if (msv2->rx.escape == 1 && d == STX) {
     	msv2->rx.state = WAITING_OPCODE;
     	msv2->rx.escape = 0;
-        return -1;
+        return MSV2_PROGRESS;
     }
 
     if (msv2->rx.state == WAITING_DLE && d == DLE) {
     	msv2->rx.state = WAITING_STX;
-        return -1;
+        return MSV2_PROGRESS;
     }
     //escape in case a DLE is in the data
     if (d == DLE && msv2->rx.escape == 0) {
     	msv2->rx.escape = 1;
-        return -1;
+        return MSV2_PROGRESS;
     }
     //if it is doubled, it counts as data
     if (d == DLE && msv2->rx.escape == 1) {
@@ -173,46 +179,64 @@ int32_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d) {
 
     if (msv2->rx.state == WAITING_STX && d == STX) {
     	msv2->rx.state = WAITING_OPCODE;
-        return -1;
+        return MSV2_PROGRESS;
     }
 
     if (msv2->rx.state == WAITING_OPCODE) {
     	msv2->rx.opcode = d;
     	msv2->rx.state = WAITING_LEN;
-        return -1;
+        return MSV2_PROGRESS;
     }
 
     if (msv2->rx.state == WAITING_LEN) {
-    	msv2->rx.length = d;
+    	msv2->rx.data_len = d; //legth in words
+    	msv2->rx.length = 2*d; //length in bytes
+    	msv2->rx.crc_data[0] = (msv2->rx.data_len<<8) | msv2->rx.opcode;
     	msv2->rx.counter = 0;
     	msv2->rx.state = WAITING_DATA;
-        return -1;
+        return MSV2_PROGRESS;
     }
 
     if (msv2->rx.state == WAITING_DATA) {
     	msv2->rx.data[msv2->rx.counter] = d;
+    	if(msv2->rx.counter & 0x01) { //LSB == '1'
+    		msv2->rx.crc_data[msv2->rx.counter/2 + 1] = (msv2->rx.data[msv2->rx.counter - 1]<<8) |  d;
+    	}
     	msv2->rx.counter += 1;
         //the length  is in WORDS, but we read BYTES
-        if (msv2->rx.counter==2*msv2->rx.length) {
+        if (msv2->rx.counter==msv2->rx.length) {
         	msv2->rx.state = WAITING_CRC1;
         }
-        return -1;
+        return MSV2_PROGRESS;
     }
 
     if (msv2->rx.state == WAITING_CRC1) {
     	msv2->rx.crc = d;
     	msv2->rx.state = WAITING_CRC2;
-        return -1;
+        return MSV2_PROGRESS;
 
     }
 
     if (msv2->rx.state == WAITING_CRC2) {
     	msv2->rx.crc += d<<8;
     	msv2->rx.state = WAITING_DLE;
-        return msv2->rx.length;
+    	msv2->rx.crc_data[msv2->rx.counter] = 0;
+    	if(msv2->rx.crc == calc_field_CRC(msv2->rx.crc_data, msv2->rx.data_len+2)) {
+    		return MSV2_SUCCESS;
+    	} else {
+    		return MSV2_ERROR;
+    	}
     }
     msv2->rx.state=WAITING_DLE;
-    return -1;
+    return MSV2_PROGRESS;
+}
+
+uint8_t * msv2_rx_data(MSV2_INST_t * msv2) {
+	return msv2->rx.data;
+}
+
+uint8_t * msv2_tx_data(MSV2_INST_t * msv2) {
+	return msv2->tx.data;
 }
 
 
