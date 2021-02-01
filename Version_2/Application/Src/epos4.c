@@ -12,6 +12,7 @@
  **********************/
 
 #include <epos4.h>
+#include <epos4_def.h>
 #include <msv2.h>
 #include <cmsis_os.h>
 #include <usart.h>
@@ -22,11 +23,7 @@
  **********************/
 
 
-//OLD
-#define UART_TX	HAL_UART_Transmit
 #define EPOS4_UART	huart6
-
-#define UART_RX
 
 
 
@@ -50,7 +47,6 @@
 
 #define MAX_FRAME_LEN	64
 
-//#define MOTOR_UART	huart6
 
 //MOTOR_SPECIFIC SETTINGS
 #define MAX_POS			0	//checked
@@ -60,7 +56,7 @@
 #define QUICK_STOP_DEC	50000 //check
 #define MAX_ACC			100000 //check
 
-//motor csts
+//MOTOR_CSTE TO BE CHANGED --> GENERIC DRIVER
 #define MOTOR_TYPE	10			//sin com bldc motor
 
 #define MOTOR_MAX_SPEED	10000	//check
@@ -92,6 +88,8 @@
 #define POSITION_D		25239 //check
 #define POSITION_FFV	3568 //check
 #define POSITION_FFA	162 //check
+
+#define FOLLOW_WINDOW	1000000
 
 
 /**********************
@@ -161,6 +159,7 @@ void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
 
 	static SERIAL_INST_t ser;
 	serial_init(&ser, &EPOS4_UART, &msv2, epos4_decode_func);
+	epos4->ser = &ser;
 }
 
 
@@ -177,7 +176,7 @@ EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t sub
 			send_data[4+i] = data[i];
 		}
 		length = msv2_create_frame(epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
-		UART_TX(&EPOS4_UART, msv2_tx_data(epos4->msv2), length, 500);
+		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
 		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
 			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
 			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
@@ -211,7 +210,7 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 			send_data[4+i] = data[i];
 		}
 		length = msv2_create_frame(epos4->msv2, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
-		UART_TX(&EPOS4_UART, msv2_tx_data(epos4->msv2), length, 500);
+		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
 		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
 			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
 			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
@@ -237,6 +236,216 @@ SERIAL_RET_t epos4_decode_func(void * inst, uint8_t data) {
 	}
 	return tmp;
 }
+
+
+EPOS4_ERROR_t epos4_write_u8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	util_store_u8(bin_data, data);
+	return epos4_writeobject(epos4, index, subindex, bin_data, err);
+}
+
+EPOS4_ERROR_t epos4_write_u16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint16_t data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	util_store_u16(bin_data, data);
+	return epos4_writeobject(epos4, index, subindex, bin_data, err);
+}
+
+EPOS4_ERROR_t epos4_write_u32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint32_t data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	util_store_u32(bin_data, data);
+	return epos4_writeobject(epos4, index, subindex, bin_data, err);
+}
+
+EPOS4_ERROR_t epos4_write_i8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int8_t data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	util_store_i8(bin_data, data);
+	return epos4_writeobject(epos4, index, subindex, bin_data, err);
+}
+
+EPOS4_ERROR_t epos4_write_i16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int16_t data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	util_store_i16(bin_data, data);
+	return epos4_writeobject(epos4, index, subindex, bin_data, err);
+}
+
+EPOS4_ERROR_t epos4_write_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int32_t data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	util_store_i32(bin_data, data);
+	return epos4_writeobject(epos4, index, subindex, bin_data, err);
+}
+
+EPOS4_ERROR_t epos4_read_u8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	EPOS4_ERROR_t tmp = epos4_readobject(epos4, index, subindex, bin_data, err);
+	*data = util_decode_u8(bin_data);
+	return tmp;
+}
+
+EPOS4_ERROR_t epos4_read_u16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint16_t * data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	EPOS4_ERROR_t tmp = epos4_readobject(epos4, index, subindex, bin_data, err);
+	*data = util_decode_u16(bin_data);
+	return tmp;
+}
+
+EPOS4_ERROR_t epos4_read_u32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint32_t * data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	EPOS4_ERROR_t tmp = epos4_readobject(epos4, index, subindex, bin_data, err);
+	*data = util_decode_u32(bin_data);
+	return tmp;
+}
+
+EPOS4_ERROR_t epos4_read_i8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int8_t * data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	EPOS4_ERROR_t tmp = epos4_readobject(epos4, index, subindex, bin_data, err);
+	*data = util_decode_i8(bin_data);
+	return tmp;
+}
+
+EPOS4_ERROR_t epos4_read_i16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int16_t * data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	EPOS4_ERROR_t tmp = epos4_readobject(epos4, index, subindex, bin_data, err);
+	*data = util_decode_i16(bin_data);
+	return tmp;
+}
+
+EPOS4_ERROR_t epos4_read_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int32_t * data, uint32_t * err) {
+	uint8_t bin_data[DATA_SIZE];
+	EPOS4_ERROR_t tmp = epos4_readobject(epos4, index, subindex, bin_data, err);
+	*data = util_decode_i32(bin_data);
+	return tmp;
+}
+
+
+EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4) {
+	uint32_t err;
+	EPOS4_ERROR_t error = 0;
+
+	error |= epos4_write_u16(epos4, EPOS4_MOTOR_TYPE, MOTOR_TYPE, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_MOTOR_NOMINAL_CURRENT, MOTOR_NOM_CUR, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_MOTOR_CURRENT_LIMIT, MOTOR_MAX_CURRENT, &err);
+
+	error |= epos4_write_u8(epos4, EPOS4_MOTOR_POLE_PAIRS, NUM_POLE_PAIRS, &err);
+
+	error |= epos4_write_u16(epos4, EPOS4_MOTOR_THERMAL_CST, MOTOR_THERMAL, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_MOTOR_TORQUE_CST, MOTOR_TORQUE, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_MOTOR_MAX_SPEED, MOTOR_MAX_SPEED, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_GEAR_MAX_INPUT_SPEED, GEAR_MAX_SPEED, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_GEAR_NUMERATOR, GEAR_NUM, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_GEAR_DENOMINATOR, GEAR_DEN, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_MAX_PROFILE_VELOCITY, MAX_PROFILE_VEL, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_MAX_ACCELERATION, MAX_ACC, &err);
+
+	error |= epos4_write_i32(epos4, EPOS4_SOFTWARE_MIN_POSITION, MAX_POS, &err);
+
+	error |= epos4_write_i32(epos4, EPOS4_SOFTWARE_MAX_POSITION, MIN_POS, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_ELECTRICAL_RESISTANCE, EL_RESISTANCE, &err);
+
+	error |= epos4_write_u16(epos4, EPOS4_ELECTRICAL_INDUCTANCE, EL_INDUCTANCE, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_ENC1_NB_PULSES, ENC_NB_PULSES, &err);
+
+	error |= epos4_write_u16(epos4, EPOS4_ENC1_TYPE, ENC_TYPE, &err);
+
+	error |= epos4_write_u16(epos4, EPOS4_HALL_TYPE, HALL_TYPE, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_CUR_CTRL_P, CURRENT_P, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_CUR_CTRL_I, CURRENT_I, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_PPM_CTRL_P, POSITION_P, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_PPM_CTRL_I, POSITION_I, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_PPM_CTRL_D, POSITION_D, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_PPM_CTRL_FFV, POSITION_FFV, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_PPM_CTRL_FFA, POSITION_FFA, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_FOLLOW_ERROR_WINDOW, FOLLOW_WINDOW, &err);
+
+	return error;
+}
+
+EPOS4_ERROR_t epos4_ppm_prep(EPOS4_INST_t * epos4) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+	uint16_t status;
+
+	error |= epos4_write_i8(epos4, EPOS4_MODE_OF_OPERATION, EPOS4_MODE_PPM, &err);
+
+	error |= epos4_control_shutdown(epos4, &err);
+
+	error |= epos4_control_soenable(epos4, &err);
+
+	osDelay(1); //Wait 1ms to let the statusword become valid
+
+	error |= epos4_read_statusword(epos4, &status, &err);
+
+
+	if(!EPOS4_SW_ENABLED(status)) {
+		return EPOS4_ERROR;
+	}
+
+
+	return error;
+}
+
+EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t target) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+
+	uint16_t status;
+
+	error |= epos4_read_statusword(epos4, &status, &err);
+
+	if(!EPOS4_SW_ENABLED(status)) {
+		return EPOS4_ERROR;
+	}
+
+	error |= epos4_write_i32(epos4, EPOS4_TARGET_POSITION, target, &err);
+
+	switch(type) {
+	case EPOS4_ABSOLUTE:
+		error |= epos4_control_ppm_start_rel(epos4, &err);
+		break;
+	case EPOS4_ABSOLUTE_IMMEDIATE:
+		error |= epos4_control_ppm_start_rel_imm(epos4, &err);
+		break;
+	case EPOS4_RELATIVE:
+		error |= epos4_control_ppm_start_abs(epos4, &err);
+		break;
+	case EPOS4_RELATIVE_IMMEDIATE:
+		error |= epos4_control_ppm_start_abs_imm(epos4, &err);
+		break;
+	}
+	return error;
+}
+
+EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+
+	error |= epos4_write_u32(epos4, EPOS4_PROFILE_VELOCITY, config.profile_velocity, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_PROFILE_ACCELERATION, config.profile_acceleration, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_PROFILE_DECELERATION, config.profile_deceleration, &err);
+
+	return error;
+}
+
 
 
 

@@ -175,41 +175,65 @@ static inline uint8_t util_buffer_i16_isempty(UTIL_BUFFER_I16_t * bfr) {
 	return bfr->l_ix == bfr->c_ix;
 }
 
-static inline void util_store_uint8(uint8_t value, uint8_t * data) {
+static inline void util_store_u8(uint8_t * data, uint8_t value) {
 	data[0] = value;
 	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_uint16(uint16_t value, uint8_t * data) {
+static inline void util_store_u16(uint8_t * data, uint16_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_uint32(uint32_t value, uint8_t * data) {
+static inline void util_store_u32(uint8_t * data, uint32_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = value>>16;
 	data[3] = value>>24;
 }
-static inline void util_store_int8(int8_t value, uint8_t * data) {
+static inline void util_store_i8(uint8_t * data, int8_t value) {
 	data[0] = value;
 	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_int16(int16_t value, uint8_t * data) {
+static inline void util_store_i16(uint8_t * data, int16_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_int32(int32_t value, uint8_t * data) {
+static inline void util_store_i32(uint8_t * data, int32_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = value>>16;
 	data[3] = value>>24;
+}
+
+static inline uint8_t util_decode_u8(uint8_t * data) {
+	return data[0];
+}
+
+static inline uint16_t util_decode_u16(uint8_t * data) {
+	return (uint16_t) data[0] | data[1] << 8;
+}
+
+static inline uint32_t util_decode_u32(uint8_t * data) {
+	return (uint32_t) data[0] | data[1] << 8 | data[2] << 16 | data[3] << 24;
+}
+
+static inline int8_t util_decode_i8(uint8_t * data) {
+	return data[0];
+}
+
+static inline int16_t util_decode_i16(uint8_t * data) {
+	return (int16_t) data[0] | data[1] << 8;
+}
+
+static inline int32_t util_decode_i32(uint8_t * data) {
+	return (int32_t) data[0] | data[1] << 8 | data[2] << 16 | data[3] << 24;
 }
 
 
