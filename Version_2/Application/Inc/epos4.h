@@ -85,7 +85,7 @@ extern "C"{
 void epos4_global_init();
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id);
 
-SERIAL_RET_t epos4_decode_func(void * inst, uint8_t data);
+SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data);
 
 //LOW LEVEL
 EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err);

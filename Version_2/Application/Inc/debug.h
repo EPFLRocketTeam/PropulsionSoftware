@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <msv2.h>
+#include <serial.h>
 
 /**********************
  *  CONSTANTS
@@ -32,8 +33,8 @@
 
 typedef struct DEBUG_INST{
 	uint32_t id;
-
-};
+	MSV2_INST_t msv2;
+}DEBUG_INST_t;
 
 
 /**********************
@@ -50,6 +51,8 @@ typedef struct DEBUG_INST{
 extern "C"{
 #endif
 
+
+SERIAL_RET_t debug_decode_fcn(void * inst, uint8_t data);
 
 
 #ifdef __cplusplus

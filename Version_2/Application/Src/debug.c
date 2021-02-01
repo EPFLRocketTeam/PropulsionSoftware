@@ -44,11 +44,21 @@
  *	PROTOTYPES
  **********************/
 
+static void debug_action(DEBUG_INST_t * debug);
 
 /**********************
  *	DECLARATIONS
  **********************/
 
+SERIAL_RET_t debug_decode_fcn(void * inst, uint8_t data) {
+	MSV2_ERROR_t tmp = msv2_decode_fragment((MSV2_INST_t *) inst, data);
+
+	return tmp;
+}
+
+void debug_init(DEBUG_INST_t * debug) {
+	//??
+}
 
 /* END */
 

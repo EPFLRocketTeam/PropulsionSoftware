@@ -158,7 +158,7 @@ void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
 	epos4->msv2 = &msv2;
 
 	static SERIAL_INST_t ser;
-	serial_init(&ser, &EPOS4_UART, &msv2, epos4_decode_func);
+	serial_init(&ser, &EPOS4_UART, &msv2, epos4_decode_fcn);
 	epos4->ser = &ser;
 }
 
@@ -229,7 +229,7 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 	}
 }
 
-SERIAL_RET_t epos4_decode_func(void * inst, uint8_t data) {
+SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data) {
 	MSV2_ERROR_t tmp = msv2_decode_fragment((MSV2_INST_t *) inst, data);
 	if(!tmp) {
 		xSemaphoreGive(epos4_rx_sem); // one frame has been received!

@@ -49,18 +49,18 @@
  *	PROTOTYPES
  **********************/
 
-static uint16_t calc_field_CRC(uint16_t* p_data_array, uint16_t ArrayLength);
+static uint16_t calc_field_CRC(uint16_t* p_data_array, uint16_t length);
 
 
 /**********************
  *	DECLARATIONS
  **********************/
 
-uint16_t calc_field_CRC(uint16_t *p_data_array, uint16_t ArrayLength) {
+uint16_t calc_field_CRC(uint16_t *p_data_array, uint16_t length) {
 	uint16_t shifter, c;
 	uint16_t carry;
 	uint16_t crc = 0;
-	while (ArrayLength--) {
+	while (length--) {
 		shifter = 0x8000;
 		c = *p_data_array++;
 		do {

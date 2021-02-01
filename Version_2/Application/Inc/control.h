@@ -48,6 +48,7 @@ typedef enum CONTROL_STATE{
 typedef struct CONTROL_INST{
 	CONTROL_STATE_t state;
 	uint32_t time;
+	uint32_t iter;
 }CONTROL_t;
 
 /**********************
@@ -64,6 +65,8 @@ extern "C"{
 #endif
 
 void control_thread(void * arg);
+
+CONTROL_STATE_t control_get_state();
 
 #ifdef __cplusplus
 } // extern "C"

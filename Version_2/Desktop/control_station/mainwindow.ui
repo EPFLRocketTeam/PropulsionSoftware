@@ -18,77 +18,17 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="2" rowspan="4">
-     <widget class="QGroupBox" name="visual">
-      <property name="title">
-       <string>Visual</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QGroupBox" name="groupBox_2">
-      <property name="title">
-       <string>AB motor</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0" colspan="2">
-     <widget class="QGroupBox" name="connection">
-      <property name="title">
-       <string>Connection</string>
-      </property>
-      <widget class="QComboBox" name="comboBox">
-       <property name="geometry">
-        <rect>
-         <x>30</x>
-         <y>30</y>
-         <width>131</width>
-         <height>22</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pushButton">
-       <property name="geometry">
-        <rect>
-         <x>180</x>
-         <y>30</y>
-         <width>75</width>
-         <height>23</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Connect</string>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="lineEdit">
-       <property name="geometry">
-        <rect>
-         <x>340</x>
-         <y>30</y>
-         <width>113</width>
-         <height>20</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label">
-       <property name="geometry">
-        <rect>
-         <x>290</x>
-         <y>30</y>
-         <width>47</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Status</string>
-       </property>
-      </widget>
-     </widget>
-    </item>
     <item row="1" column="0">
      <widget class="QGroupBox" name="pp_motor">
       <property name="title">
        <string>PP motor</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2" rowspan="4">
+     <widget class="QGroupBox" name="visual">
+      <property name="title">
+       <string>Visual</string>
       </property>
      </widget>
     </item>
@@ -230,6 +170,66 @@
        </property>
        <property name="text">
         <string>Reset</string>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="title">
+       <string>AB motor</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0" colspan="2">
+     <widget class="QGroupBox" name="connection">
+      <property name="title">
+       <string>Connection</string>
+      </property>
+      <widget class="QPushButton" name="connect_btn">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>30</y>
+         <width>75</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Connect</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="connect_status">
+       <property name="geometry">
+        <rect>
+         <x>320</x>
+         <y>30</y>
+         <width>113</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>270</x>
+         <y>30</y>
+         <width>47</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Status</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="connect_status_2">
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>30</y>
+         <width>113</width>
+         <height>20</height>
+        </rect>
        </property>
       </widget>
      </widget>

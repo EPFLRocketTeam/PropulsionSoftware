@@ -42,13 +42,13 @@
  *	VARIABLES
  **********************/
 
+static CONTROL_t control;
 
 
 /**********************
  *	PROTOTYPES
  **********************/
 
-static void control_init(CONTROL_t * control);
 static void control_update(CONTROL_t * control);
 
 // Enter state functions
@@ -71,7 +71,7 @@ static void ignition(CONTROL_t * control);
 static void thrust(CONTROL_t * control);
 static void shutdown(CONTROL_t * control);
 static void glide(CONTROL_t * control);
-static void emergency(CONTROL_t * control);
+static void _abort(CONTROL_t * control);
 static void error(CONTROL_t * control);
 
 /**********************
@@ -79,13 +79,13 @@ static void error(CONTROL_t * control);
  **********************/
 
 void control_thread(void * arg) {
-	static CONTROL_t control;
+
 	static TickType_t last_wake_time;
 	static const TickType_t period = pdMS_TO_TICKS(CONTROL_HEART_BEAT);
 
 	last_wake_time = xTaskGetTickCount();
 
-	control_init(&control);
+	init_idle(&control);
 
 	for(;;) {
 
@@ -117,7 +117,7 @@ void control_thread(void * arg) {
 			glide(&control);
 			break;
 		case CS_ABORT:
-			emergency(&control);
+			_abort(&control);
 			break;
 		case CS_ERROR:
 			error(&control);
@@ -131,43 +131,130 @@ void control_thread(void * arg) {
 	}
 }
 
-static void control_init(CONTROL_t * control) {
-	control->state = CS_IDLE;
+CONTROL_STATE_t control_get_state() {
+	return control.state;
 }
+
 
 static void control_update(CONTROL_t * control) {
 	control->time = HAL_GetTick();
+	control->iter++;
+
+	//read motors parameters
+	//init error if there is an issue with a motor
+}
+
+static void init_idle(CONTROL_t * control) {
+	control->state = CS_IDLE;
 }
 
 static void idle(CONTROL_t * control) {
+	//React to external commands:
+	//launch calib
+	//arm
+	//motor movements for manual homing
+
+	//if recv calibration command -> calib init
+	//if recv arm command -> arm
 
 }
+
+static void init_calibration(CONTROL_t * control) {
+	control->state = CS_CALIBRATION;
+	//send calibration command to sensors
+}
+
 static void calibration(CONTROL_t * control) {
-
+	//Wait for the calibration ack to come from the sensors
 }
+
+static void init_armed(CONTROL_t * control) {
+	control->state = CS_ARMED;
+}
+
 static void armed(CONTROL_t * control) {
-
+	//react to external commands:
+	//disarm -> back to idle
+	//launch -> countdown
+	//no motor movements allowed
 }
+
+static void init_countdown(CONTROL_t * control) {
+	control->state = CS_COUNTDOWN;
+}
+
 static void countdown(CONTROL_t * control) {
-
+	//Wait for the right time to ellapse
+	//number of "loop iteration"
+	//osDelay for the last remaining time
 }
+
+static void init_ignition(CONTROL_t * control) {
+	control->state = CS_IGNITION;
+}
+
 static void ignition(CONTROL_t * control) {
+	//send first motor movement command
+
+	//wait for the half time in nb of cycles
+	//and osdelay for the remaining time
+
+	//send second movement command
+	//wait for the target reached
+	//init thrust
 
 }
+
+static void init_thrust(CONTROL_t * control) {
+	control->state = CS_THRUST;
+}
+
 static void thrust(CONTROL_t * control) {
+	//thrust control algorithm drives the motor
+	//successive motor ppm moves with the immediate flag set!
 
+	//detect flameout (pressure)
+	//-> init shutdown
 }
+
+static void init_shutdown(CONTROL_t * control) {
+	control->state = CS_SHUTDOWN;
+	//start motor movement to close valve
+}
+
 static void shutdown(CONTROL_t * control) {
-
+	//wait for the ack
 }
+
+static void init_glide(CONTROL_t * control) {
+	control->state = CS_GLIDE;
+}
+
 static void glide(CONTROL_t * control) {
+	//AB algorithm controls the airbrakes motor
 
+	//expect a stop signal to go to idle
+	//back to idle
 }
-static void emergency(CONTROL_t * control) {
 
+static void init_abort(CONTROL_t * control) {
+	control->state = CS_ABORT;
 }
+
+static void _abort(CONTROL_t * control) {
+	//close main valve
+	//close airbrakes
+	//wait for user release
+	//if user release -> IDLE
+}
+
+static void init_error(CONTROL_t * control) {
+	control->state = CS_ERROR;
+}
+
 static void error(CONTROL_t * control) {
-
+	//wait for user release
+	//if user release -> IDLE
 }
 
 /* END */
