@@ -31,6 +31,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <threads.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -103,6 +105,12 @@ int main(void)
   MX_QUADSPI_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_1);
+  HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_2);
+  HAL_TIMEx_PWMN_Start(&htim8,TIM_CHANNEL_3);
+
+  PP_initThreads();
 
   /* USER CODE END 2 */
 
