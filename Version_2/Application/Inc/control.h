@@ -44,12 +44,27 @@ typedef enum CONTROL_STATE{
 	CS_ERROR
 }CONTROL_STATE_t;
 
+typedef struct CONTROL_PP_PARAMS {
+	uint32_t acc;
+	uint32_t dec;
+	uint32_t speed;
+	uint32_t half_speed;
+	uint32_t countdown_wait;
+	uint32_t half_wait;
+	uint32_t full_wait;
+	int32_t half_angle;
+	int32_t full_angle;
+}CONTROL_PP_PARAMS_t;
+
 
 typedef struct CONTROL_INST{
 	CONTROL_STATE_t state;
 	uint32_t time;
 	uint32_t iter;
-}CONTROL_t;
+	CONTROL_PP_PARAMS_t pp_params;
+}CONTROL_INST_t;
+
+
 
 /**********************
  *  VARIABLES
@@ -67,6 +82,10 @@ extern "C"{
 void control_thread(void * arg);
 
 CONTROL_STATE_t control_get_state();
+
+CONTROL_PP_PARAMS_t control_get_pp_params();
+
+void control_set_pp_params(CONTROL_PP_PARAMS_t params);
 
 #ifdef __cplusplus
 } // extern "C"

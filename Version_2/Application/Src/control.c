@@ -12,6 +12,7 @@
 #include <main.h>
 #include <cmsis_os.h>
 #include <control.h>
+#include <epos4.h>
 
 /**********************
  *	CONFIGURATION
@@ -42,37 +43,39 @@
  *	VARIABLES
  **********************/
 
-static CONTROL_t control;
+static CONTROL_INST_t control;
+static EPOS4_INST_t pp_epos4;
+static EPOS4_INST_t ab_epos4;
 
 
 /**********************
  *	PROTOTYPES
  **********************/
 
-static void control_update(CONTROL_t * control);
+static void control_update(CONTROL_INST_t * control);
 
 // Enter state functions
-static void init_idle(CONTROL_t * control);
-static void init_calibration(CONTROL_t * control);
-static void init_armed(CONTROL_t * control);
-static void init_countdown(CONTROL_t * control);
-static void init_ignintion(CONTROL_t * control);
-static void init_thrust(CONTROL_t * control);
-static void init_shutdown(CONTROL_t * control);
-static void init_abort(CONTROL_t * control);
-static void init_error(CONTROL_t * control);
+static void init_idle(CONTROL_INST_t * control);
+static void init_calibration(CONTROL_INST_t * control);
+static void init_armed(CONTROL_INST_t * control);
+static void init_countdown(CONTROL_INST_t * control);
+static void init_ignition(CONTROL_INST_t * control);
+static void init_thrust(CONTROL_INST_t * control);
+static void init_shutdown(CONTROL_INST_t * control);
+static void init_abort(CONTROL_INST_t * control);
+static void init_error(CONTROL_INST_t * control);
 
 // Main state functions
-static void idle(CONTROL_t * control);
-static void calibration(CONTROL_t * control);
-static void armed(CONTROL_t * control);
-static void countdown(CONTROL_t * control);
-static void ignition(CONTROL_t * control);
-static void thrust(CONTROL_t * control);
-static void shutdown(CONTROL_t * control);
-static void glide(CONTROL_t * control);
-static void _abort(CONTROL_t * control);
-static void error(CONTROL_t * control);
+static void idle(CONTROL_INST_t * control);
+static void calibration(CONTROL_INST_t * control);
+static void armed(CONTROL_INST_t * control);
+static void countdown(CONTROL_INST_t * control);
+static void ignition(CONTROL_INST_t * control);
+static void thrust(CONTROL_INST_t * control);
+static void shutdown(CONTROL_INST_t * control);
+static void glide(CONTROL_INST_t * control);
+static void _abort(CONTROL_INST_t * control);
+static void error(CONTROL_INST_t * control);
 
 /**********************
  *	DECLARATIONS
@@ -86,6 +89,10 @@ void control_thread(void * arg) {
 	last_wake_time = xTaskGetTickCount();
 
 	init_idle(&control);
+
+	epos4_init(&pp_epos4, 1);
+	epos4_init(&ab_epos4, 2);
+
 
 	for(;;) {
 
@@ -131,12 +138,8 @@ void control_thread(void * arg) {
 	}
 }
 
-CONTROL_STATE_t control_get_state() {
-	return control.state;
-}
 
-
-static void control_update(CONTROL_t * control) {
+static void control_update(CONTROL_INST_t * control) {
 	control->time = HAL_GetTick();
 	control->iter++;
 
@@ -144,11 +147,11 @@ static void control_update(CONTROL_t * control) {
 	//init error if there is an issue with a motor
 }
 
-static void init_idle(CONTROL_t * control) {
+static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
 }
 
-static void idle(CONTROL_t * control) {
+static void idle(CONTROL_INST_t * control) {
 	//React to external commands:
 	//launch calib
 	//arm
@@ -159,41 +162,41 @@ static void idle(CONTROL_t * control) {
 
 }
 
-static void init_calibration(CONTROL_t * control) {
+static void init_calibration(CONTROL_INST_t * control) {
 	control->state = CS_CALIBRATION;
 	//send calibration command to sensors
 }
 
-static void calibration(CONTROL_t * control) {
+static void calibration(CONTROL_INST_t * control) {
 	//Wait for the calibration ack to come from the sensors
 }
 
-static void init_armed(CONTROL_t * control) {
+static void init_armed(CONTROL_INST_t * control) {
 	control->state = CS_ARMED;
 }
 
-static void armed(CONTROL_t * control) {
+static void armed(CONTROL_INST_t * control) {
 	//react to external commands:
 	//disarm -> back to idle
 	//launch -> countdown
 	//no motor movements allowed
 }
 
-static void init_countdown(CONTROL_t * control) {
+static void init_countdown(CONTROL_INST_t * control) {
 	control->state = CS_COUNTDOWN;
 }
 
-static void countdown(CONTROL_t * control) {
+static void countdown(CONTROL_INST_t * control) {
 	//Wait for the right time to ellapse
 	//number of "loop iteration"
 	//osDelay for the last remaining time
 }
 
-static void init_ignition(CONTROL_t * control) {
+static void init_ignition(CONTROL_INST_t * control) {
 	control->state = CS_IGNITION;
 }
 
-static void ignition(CONTROL_t * control) {
+static void ignition(CONTROL_INST_t * control) {
 	//send first motor movement command
 
 	//wait for the half time in nb of cycles
@@ -205,11 +208,11 @@ static void ignition(CONTROL_t * control) {
 
 }
 
-static void init_thrust(CONTROL_t * control) {
+static void init_thrust(CONTROL_INST_t * control) {
 	control->state = CS_THRUST;
 }
 
-static void thrust(CONTROL_t * control) {
+static void thrust(CONTROL_INST_t * control) {
 	//thrust control algorithm drives the motor
 	//successive motor ppm moves with the immediate flag set!
 
@@ -217,45 +220,58 @@ static void thrust(CONTROL_t * control) {
 	//-> init shutdown
 }
 
-static void init_shutdown(CONTROL_t * control) {
+static void init_shutdown(CONTROL_INST_t * control) {
 	control->state = CS_SHUTDOWN;
 	//start motor movement to close valve
 }
 
-static void shutdown(CONTROL_t * control) {
+static void shutdown(CONTROL_INST_t * control) {
 	//wait for the ack
 }
 
-static void init_glide(CONTROL_t * control) {
+static void init_glide(CONTROL_INST_t * control) {
 	control->state = CS_GLIDE;
 }
 
-static void glide(CONTROL_t * control) {
+static void glide(CONTROL_INST_t * control) {
 	//AB algorithm controls the airbrakes motor
 
 	//expect a stop signal to go to idle
 	//back to idle
 }
 
-static void init_abort(CONTROL_t * control) {
+static void init_abort(CONTROL_INST_t * control) {
 	control->state = CS_ABORT;
 }
 
-static void _abort(CONTROL_t * control) {
+static void _abort(CONTROL_INST_t * control) {
 	//close main valve
 	//close airbrakes
 	//wait for user release
 	//if user release -> IDLE
 }
 
-static void init_error(CONTROL_t * control) {
+static void init_error(CONTROL_INST_t * control) {
 	control->state = CS_ERROR;
 }
 
-static void error(CONTROL_t * control) {
+static void error(CONTROL_INST_t * control) {
 	//wait for user release
 	//if user release -> IDLE
 }
+
+CONTROL_STATE_t control_get_state() {
+	return control.state;
+}
+
+CONTROL_PP_PARAMS_t control_get_pp_params() {
+	return control.pp_params;
+}
+
+void control_set_pp_params(CONTROL_PP_PARAMS_t params) {
+	control.pp_params = params;
+}
+
 
 /* END */
 

@@ -17,6 +17,8 @@
 #include <control.h>
 #include <sensor.h>
 #include <serial.h>
+#include <debug.h>
+#include <epos4.h>
 
 /**********************
  *	CONSTANTS
@@ -79,6 +81,9 @@ static TaskHandle_t serial_handle = NULL;
  * Create all the threads needed by the software
  */
 void threads_init(void) {
+
+	static DEBUG_INST_t debug;
+	debug_init(&debug);
 
 	/*
 	 *  Serial RX processing thread (Bottom half)

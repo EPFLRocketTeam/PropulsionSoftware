@@ -168,7 +168,7 @@ MSV2_ERROR_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d) {
     if (msv2->rx.state == WAITING_DATA) {
     	msv2->rx.data[msv2->rx.counter] = d;
     	if(msv2->rx.counter & 0x01) { //LSB == '1'
-    		msv2->rx.crc_data[msv2->rx.counter/2 + 1] = (msv2->rx.data[msv2->rx.counter - 1]<<8) |  d;
+    		msv2->rx.crc_data[msv2->rx.counter/2 + 1] = (msv2->rx.data[msv2->rx.counter - 1]) |  d<<8;
     	}
     	msv2->rx.counter += 1;
         //the length  is in WORDS, but we read BYTES

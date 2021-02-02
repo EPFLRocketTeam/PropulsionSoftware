@@ -240,37 +240,37 @@ SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data) {
 
 EPOS4_ERROR_t epos4_write_u8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t data, uint32_t * err) {
 	uint8_t bin_data[DATA_SIZE];
-	util_store_u8(bin_data, data);
+	util_encode_u8(bin_data, data);
 	return epos4_writeobject(epos4, index, subindex, bin_data, err);
 }
 
 EPOS4_ERROR_t epos4_write_u16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint16_t data, uint32_t * err) {
 	uint8_t bin_data[DATA_SIZE];
-	util_store_u16(bin_data, data);
+	util_encode_u16(bin_data, data);
 	return epos4_writeobject(epos4, index, subindex, bin_data, err);
 }
 
 EPOS4_ERROR_t epos4_write_u32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint32_t data, uint32_t * err) {
 	uint8_t bin_data[DATA_SIZE];
-	util_store_u32(bin_data, data);
+	util_encode_u32(bin_data, data);
 	return epos4_writeobject(epos4, index, subindex, bin_data, err);
 }
 
 EPOS4_ERROR_t epos4_write_i8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int8_t data, uint32_t * err) {
 	uint8_t bin_data[DATA_SIZE];
-	util_store_i8(bin_data, data);
+	util_encode_i8(bin_data, data);
 	return epos4_writeobject(epos4, index, subindex, bin_data, err);
 }
 
 EPOS4_ERROR_t epos4_write_i16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int16_t data, uint32_t * err) {
 	uint8_t bin_data[DATA_SIZE];
-	util_store_i16(bin_data, data);
+	util_encode_i16(bin_data, data);
 	return epos4_writeobject(epos4, index, subindex, bin_data, err);
 }
 
 EPOS4_ERROR_t epos4_write_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int32_t data, uint32_t * err) {
 	uint8_t bin_data[DATA_SIZE];
-	util_store_i32(bin_data, data);
+	util_encode_i32(bin_data, data);
 	return epos4_writeobject(epos4, index, subindex, bin_data, err);
 }
 

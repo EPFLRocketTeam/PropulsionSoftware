@@ -22,6 +22,8 @@
 
 #define MSV2_MAX_FRAME_LEN	(1024)
 
+#define MSV2_MAX_DATA_LEN	(512)
+
 
 /**********************
  *  MACROS

@@ -21,7 +21,7 @@ MSV2_SUCCESS = 0
 MSV2_ERROR = 2
 
 
-def calc_crc(message):
+def crc16(message):
     crc = 0
     i = 0
     length = len(message)/2
@@ -44,12 +44,14 @@ def calc_crc(message):
     return crc
 
 
-
 class msv2:
     def __init__(self):
         self.ser = serial.Serial()
         self.escape = 0
         self.connected = 0
+        self.state = WAITING_DLE
+        self.crc_data = []
+        self.data = []
 
     def explore(self):
          list = serial.tools.list_ports.comports(include_links=False)
@@ -58,6 +60,7 @@ class msv2:
     def connect(self, port):
         self.ser.baudrate = BAUDRATE
         self.ser.port = port
+        self.ser.timeout = 0.2
         try:
             self.ser.open()
             self.connected = 1
@@ -96,12 +99,14 @@ class msv2:
 
         crc_data.append(0)
         crc_data.append(0)
-        crc = calc_crc(crc_data)
+        crc = crc16(crc_data)
         bin_data.append(crc & 0x00ff)
         bin_data.append(crc >> 8)
         return bin_data
 
     def decode(self, d):
+        print("decode state:", self.state)
+        d = ord(d)
         if (self.escape == 1 and d == STX):
             self.state = WAITING_OPCODE
             self.escape = 0
@@ -156,7 +161,7 @@ class msv2:
             self.state = WAITING_DLE
             self.crc_data.append(0)
             self.crc_data.append(0)
-            if(self.crc == calc_crc(self.crc_data)):
+            if(self.crc == crc16(self.crc_data)):
                 return MSV2_SUCCESS
             else:
                 return MSV2_WRONG_CRC
@@ -167,15 +172,24 @@ class msv2:
     def send(self, opcode, data):
         msg = self.encode(opcode, data)
         error = 0
+        self.ser.write(msg)
+        print('[{}]'.format(', '.join(hex(x) for x in msg)))
         try:
-            self.ser.write(msg)
             while 1:
-                res = self.decode(self.ser.read(1))
+                byte = self.ser.read(1)
+                #print("dta: {}".format(hex(ord(byte))))
+                if not byte:
+                    print("error")
+                    break
+                res = self.decode(byte)
+                print("res:", res)
                 if not res == MSV2_PROGRESS:
                     break
             return self.data
         except:
-            pass
+            print("ERROR")
+            return None
+
 
 
 

@@ -175,37 +175,37 @@ static inline uint8_t util_buffer_i16_isempty(UTIL_BUFFER_I16_t * bfr) {
 	return bfr->l_ix == bfr->c_ix;
 }
 
-static inline void util_store_u8(uint8_t * data, uint8_t value) {
+static inline void util_encode_u8(uint8_t * data, uint8_t value) {
 	data[0] = value;
 	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_u16(uint8_t * data, uint16_t value) {
+static inline void util_encode_u16(uint8_t * data, uint16_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_u32(uint8_t * data, uint32_t value) {
+static inline void util_encode_u32(uint8_t * data, uint32_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = value>>16;
 	data[3] = value>>24;
 }
-static inline void util_store_i8(uint8_t * data, int8_t value) {
+static inline void util_encode_i8(uint8_t * data, int8_t value) {
 	data[0] = value;
 	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_i16(uint8_t * data, int16_t value) {
+static inline void util_encode_i16(uint8_t * data, int16_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = 0x00;
 	data[3] = 0x00;
 }
-static inline void util_store_i32(uint8_t * data, int32_t value) {
+static inline void util_encode_i32(uint8_t * data, int32_t value) {
 	data[0] = value;
 	data[1] = value>>8;
 	data[2] = value>>16;

@@ -34,6 +34,7 @@
 typedef struct DEBUG_INST{
 	uint32_t id;
 	MSV2_INST_t msv2;
+	SERIAL_INST_t ser;
 }DEBUG_INST_t;
 
 
@@ -53,6 +54,9 @@ extern "C"{
 
 
 SERIAL_RET_t debug_decode_fcn(void * inst, uint8_t data);
+
+void debug_init(DEBUG_INST_t * debug);
+
 
 
 #ifdef __cplusplus

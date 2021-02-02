@@ -83,57 +83,57 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="1" colspan="2">
-        <widget class="QLineEdit" name="lineEdit_2"/>
-       </item>
        <item row="0" column="4">
-        <widget class="QPushButton" name="pushButton_7">
+        <widget class="QPushButton" name="status_reset">
          <property name="text">
           <string>Reset</string>
          </property>
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QPushButton" name="pushButton_6">
+        <widget class="QPushButton" name="status_safety">
          <property name="text">
           <string>Safety</string>
          </property>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QPushButton" name="pushButton_5">
+        <widget class="QPushButton" name="status_arm">
          <property name="text">
           <string>Arm</string>
          </property>
         </widget>
        </item>
        <item row="1" column="2">
-        <widget class="QPushButton" name="pushButton_4">
+        <widget class="QPushButton" name="status_ignite">
          <property name="text">
           <string>Ignite</string>
          </property>
         </widget>
        </item>
        <item row="1" column="3">
-        <widget class="QPushButton" name="pushButton_3">
+        <widget class="QPushButton" name="status_abort">
          <property name="text">
           <string>Abort</string>
          </property>
         </widget>
        </item>
        <item row="1" column="4">
-        <widget class="QPushButton" name="pushButton_11">
+        <widget class="QPushButton" name="status_calibrate">
          <property name="text">
           <string>Calibrate</string>
          </property>
         </widget>
        </item>
        <item row="0" column="3">
-        <widget class="QPushButton" name="pushButton_2">
+        <widget class="QPushButton" name="status_read">
          <property name="text">
-          <string>Force</string>
+          <string>Read</string>
          </property>
         </widget>
+       </item>
+       <item row="0" column="1" colspan="2">
+        <widget class="QLineEdit" name="status_state"/>
        </item>
       </layout>
      </widget>
@@ -293,7 +293,7 @@
           <item row="3" column="0">
            <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>S Spd</string>
+             <string>H Spd</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -323,7 +323,7 @@
           <item row="0" column="3">
            <widget class="QLabel" name="label_10">
             <property name="text">
-             <string>P Wait</string>
+             <string>C Wait</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -341,7 +341,7 @@
            </widget>
           </item>
           <item row="2" column="1" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_5">
+           <widget class="QLineEdit" name="pp_motor_speed">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -351,7 +351,7 @@
            </widget>
           </item>
           <item row="0" column="1" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_6">
+           <widget class="QLineEdit" name="pp_motor_acc">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -361,7 +361,7 @@
            </widget>
           </item>
           <item row="3" column="1" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_9">
+           <widget class="QLineEdit" name="pp_motor_hspeed">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -371,7 +371,7 @@
            </widget>
           </item>
           <item row="6" column="4" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_13">
+           <widget class="QLineEdit" name="pp_motor_fwait">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -381,7 +381,7 @@
            </widget>
           </item>
           <item row="3" column="4" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_12">
+           <widget class="QLineEdit" name="pp_motor_fangle">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -391,7 +391,7 @@
            </widget>
           </item>
           <item row="2" column="4" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_11">
+           <widget class="QLineEdit" name="pp_motor_hwait">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -401,7 +401,7 @@
            </widget>
           </item>
           <item row="1" column="4" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_10">
+           <widget class="QLineEdit" name="pp_motor_hangle">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -411,7 +411,7 @@
            </widget>
           </item>
           <item row="0" column="4" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_8">
+           <widget class="QLineEdit" name="pp_motor_cwait">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -421,7 +421,7 @@
            </widget>
           </item>
           <item row="6" column="1">
-           <widget class="QPushButton" name="pushButton_8">
+           <widget class="QPushButton" name="pp_motor_get">
             <property name="text">
              <string>Get</string>
             </property>
@@ -431,7 +431,7 @@
            </widget>
           </item>
           <item row="6" column="2">
-           <widget class="QPushButton" name="pushButton_9">
+           <widget class="QPushButton" name="pp_motor_set">
             <property name="text">
              <string>Set</string>
             </property>
@@ -441,7 +441,7 @@
            </widget>
           </item>
           <item row="1" column="1" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_7">
+           <widget class="QLineEdit" name="pp_motor_dec">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -466,7 +466,7 @@
          </property>
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="0" column="1">
-           <widget class="QLineEdit" name="lineEdit_4">
+           <widget class="QLineEdit" name="pp_motor_target">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -492,14 +492,14 @@
            </widget>
           </item>
           <item row="0" column="3">
-           <widget class="QRadioButton" name="radioButton_2">
+           <widget class="QRadioButton" name="pp_motor_relative">
             <property name="text">
              <string>Relative</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEdit">
+           <widget class="QLineEdit" name="pp_motor_current">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -524,58 +524,29 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_4">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Home </string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="2">
-           <widget class="QCheckBox" name="checkBox">
+           <widget class="QCheckBox" name="pp_motor_immediate">
             <property name="text">
              <string>Immediate</string>
             </property>
            </widget>
           </item>
           <item row="1" column="3">
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="pp_motor_move">
             <property name="text">
              <string>Go</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="lineEdit_3">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="2">
-           <widget class="QRadioButton" name="radioButton">
+           <widget class="QRadioButton" name="pp_motor_absolute">
             <property name="text">
              <string>Absolute</string>
             </property>
            </widget>
           </item>
           <item row="2" column="3">
-           <widget class="QPushButton" name="pushButton_10">
+           <widget class="QPushButton" name="pp_motor_home">
             <property name="text">
              <string>Home</string>
             </property>
