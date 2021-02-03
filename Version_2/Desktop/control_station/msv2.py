@@ -60,7 +60,7 @@ class msv2:
     def connect(self, port):
         self.ser.baudrate = BAUDRATE
         self.ser.port = port
-        self.ser.timeout = 0.2
+        self.ser.timeout = 0.5
         try:
             self.ser.open()
             self.connected = 1
@@ -105,7 +105,7 @@ class msv2:
         return bin_data
 
     def decode(self, d):
-        print("decode state:", self.state)
+        #print("decode state:", self.state)
         d = ord(d)
         if (self.escape == 1 and d == STX):
             self.state = WAITING_OPCODE
@@ -175,7 +175,7 @@ class msv2:
         try:
             self.ser.write(msg)
         except:
-            print("ERROR")
+            print("WRITE ERROR")
         print('[{}]'.format(', '.join(hex(x) for x in msg)))
         try:
             while 1:
@@ -185,12 +185,21 @@ class msv2:
                     print("error")
                     break
                 res = self.decode(byte)
-                print("res:", res)
+                #print("res:", res)
                 if not res == MSV2_PROGRESS:
                     break
-            return self.data
+            print('[{}]'.format(', '.join(hex(x) for x in self.data)))
+            resp = 1
+            while resp:
+                resp = self.ser.read(1)
+            if self.data == [0xce, 0xec] or self.data == [0xbe, 0xeb]:
+                return None
+            else:
+                return self.data
         except:
-            print("ERROR")
+            print("READ ERROR")
+            while resp:
+                resp = self.ser.read(1)
             return None
 
 

@@ -21,6 +21,17 @@
  *  CONSTANTS
  **********************/
 
+#define LED_RED			0xff, 0x00, 0x00
+#define LED_GREEN		0x00, 0xff, 0x00
+#define LED_BLUE		0x00, 0x00, 0xff
+
+#define LED_YELLOW		0x7f, 0x7f, 0x00
+#define LED_TEAL		0x00, 0x7f, 0x7f
+#define LED_PINK		0x7f, 0x00, 0x7f
+
+#define LED_BLACK		0x00, 0x00, 0x00
+#define LED_WHITE		0x2f, 0x2f, 0x2f
+
 
 /**********************
  *  MACROS
@@ -31,11 +42,6 @@
  *  TYPEDEFS
  **********************/
 
-typedef struct LED_COLOR{
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-}LED_COLOR_t;
 
 
 /**********************
@@ -53,7 +59,7 @@ extern "C"{
 
 void led_init(void);
 
-void led_set_color(LED_COLOR_t color);
+void led_set_color(uint8_t r, uint8_t g, uint8_t b);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -4,6 +4,9 @@
  *  Date        : 25.01.2021
  *  Version     : 0.1
  *  Description : Maxon epos 4 board driver
+ *  Careful Only one board supported for now
+ *  Bridged boards support comming soon
+ *  Multiboard support comming soon aswell :)
  */
 
 #ifndef EPOS4_H
@@ -51,6 +54,9 @@ typedef struct EPOS4_INST{
 	uint8_t can_id; //CAN ID for communication and gateway to other boards
 	MSV2_INST_t * msv2;
 	SERIAL_INST_t * ser;
+	//semaphore for sync
+	//main board in case of bridged
+
 }EPOS4_INST_t;
 
 typedef struct EPOS4_PPM_CONFIG {
@@ -84,6 +90,7 @@ extern "C"{
 //MISC
 void epos4_global_init();
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id);
+void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * bridge, uint8_t id);
 
 SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data);
 

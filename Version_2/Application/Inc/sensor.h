@@ -54,6 +54,8 @@ extern "C"{
 
 void sensor_calib(void);
 
+SENSOR_DATA_t sensor_get_last(void);
+
 void sensor_thread(void * arg);
 
 

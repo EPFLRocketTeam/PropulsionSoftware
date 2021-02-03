@@ -19,6 +19,12 @@ SET_PP_PARAMS = 0x01
 GET_PP_PARAMS = 0x02
 PP_MOVE =       0x03
 PP_HOME =       0x04
+CALIBRATE =     0x05
+ARM =           0x06
+IGNITE =        0x07
+ABORT =         0x08
+GET_SENSOR =    0x09
+GET_STATUS =    0x0A
 
 #MOVE MODES
 
@@ -60,14 +66,12 @@ def read():
 
 def pp_motor_get():
     bin_data = m.send(GET_PP_PARAMS, [0x00, 0x00]);
-    print(bin_data)
-    if(bin_data and len(bin_data) >= 36):
-        data = struct.unpack("IIIIIIIii", bytes(bin_data))
+    if(bin_data and len(bin_data) >= 32):
+        data = struct.unpack("IIIIIIii", bytes(bin_data))
 
         window.pp_motor_acc.clear()
         window.pp_motor_dec.clear()
         window.pp_motor_speed.clear()
-        window.pp_motor_hspeed.clear()
         window.pp_motor_cwait.clear()
         window.pp_motor_hwait.clear()
         window.pp_motor_fwait.clear()
@@ -77,25 +81,23 @@ def pp_motor_get():
         window.pp_motor_acc.insert(str(data[0]))
         window.pp_motor_dec.insert(str(data[1]))
         window.pp_motor_speed.insert(str(data[2]))
-        window.pp_motor_hspeed.insert(str(data[3]))
-        window.pp_motor_cwait.insert(str(data[4]))
-        window.pp_motor_hwait.insert(str(data[5]))
-        window.pp_motor_fwait.insert(str(data[6]))
-        window.pp_motor_hangle.insert(str(data[7]))
-        window.pp_motor_fangle.insert(str(data[8]))
+        window.pp_motor_cwait.insert(str(data[3]))
+        window.pp_motor_hwait.insert(str(data[4]))
+        window.pp_motor_fwait.insert(str(data[5]))
+        window.pp_motor_hangle.insert(str(data[6]))
+        window.pp_motor_fangle.insert(str(data[7]))
 
 
 def pp_motor_set():
     acc = safe_int(window.pp_motor_acc.text())
     dec = safe_int(window.pp_motor_dec.text())
     spd = safe_int(window.pp_motor_speed.text())
-    hspd = safe_int(window.pp_motor_hspeed.text())
     cwait = safe_int(window.pp_motor_cwait.text())
     hwait = safe_int(window.pp_motor_hwait.text())
     fwait = safe_int(window.pp_motor_fwait.text())
     hangle = safe_int(window.pp_motor_hangle.text())
     fangle = safe_int(window.pp_motor_fangle.text())
-    bin_data = struct.pack("IIIIIIIii", acc, dec, spd, hspd, cwait, hwait, fwait, hangle, fangle)
+    bin_data = struct.pack("IIIIIIii", acc, dec, spd, cwait, hwait, fwait, hangle, fangle)
     resp = m.send(SET_PP_PARAMS, bin_data);
 
 

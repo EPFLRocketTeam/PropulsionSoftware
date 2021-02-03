@@ -29,12 +29,15 @@
 #define DEBUG_UART huart3
 
 
-#define PP_PARAMS_LEN (36)
+#define PP_PARAMS_LEN (32)
 #define PP_MOVE_LEN (6)
 
 
 #define ERROR_LO	(0xce)
 #define ERROR_HI	(0xec)
+
+#define CRC_ERROR_LO	(0xbe)
+#define CRC_ERROR_HI	(0xeb)
 
 #define OK_LO	(0xc5)
 #define OK_HI	(0x5c)
@@ -79,7 +82,13 @@ static void (*debug_fcn[]) (uint8_t *, uint16_t, uint8_t *, uint16_t *) = {
 		debug_set_pp_params,	//0x01
 		debug_get_pp_params, 	//0x02
 		debug_pp_move,			//0x03
-		debug_pp_home			//0x04
+		debug_pp_home,			//0x04
+		debug_calibrate,		//0x05
+		debug_arm,				//0x06
+		debug_ignite,			//0x07
+		debug_abort,			//0x08
+		debug_get_sensor,		//0x09
+		debug_get_status		//0x0A
 };
 
 static uint16_t debug_fcn_max = sizeof(debug_fcn) / sizeof(void *);
@@ -97,18 +106,20 @@ SERIAL_RET_t debug_decode_fcn(void * inst, uint8_t data) {
 	DEBUG_INST_t * debug = (DEBUG_INST_t *) inst;
 	MSV2_ERROR_t tmp = msv2_decode_fragment(&debug->msv2, data);
 
-	if(tmp == MSV2_SUCCESS && debug->msv2.rx.opcode < debug_fcn_max) {
+	if(tmp == MSV2_SUCCESS) {
+		if(debug->msv2.rx.opcode < debug_fcn_max) {
 
-		debug_fcn[debug->msv2.rx.opcode](debug->msv2.rx.data, debug->msv2.rx.length, send_data, &length);
-		//length is in words
-		bin_length = msv2_create_frame(&debug->msv2, debug->msv2.rx.opcode, length/2, send_data);
-		serial_send(&debug->ser, msv2_tx_data(&debug->msv2), bin_length);
-	} else {
-		send_data[0] = ERROR_LO;
-		send_data[1] = ERROR_HI;
-		length = 1; //in words
-		bin_length = msv2_create_frame(&debug->msv2, debug->msv2.rx.opcode, length, send_data);
-		serial_send(&debug->ser, msv2_tx_data(&debug->msv2), bin_length);
+			debug_fcn[debug->msv2.rx.opcode](debug->msv2.rx.data, debug->msv2.rx.length, send_data, &length);
+			//length is in words
+			bin_length = msv2_create_frame(&debug->msv2, debug->msv2.rx.opcode, length/2, send_data);
+			serial_send(&debug->ser, msv2_tx_data(&debug->msv2), bin_length);
+		} else {
+			send_data[0] = CRC_ERROR_LO;
+			send_data[1] = CRC_ERROR_HI;
+			length = 2;
+			bin_length = msv2_create_frame(&debug->msv2, debug->msv2.rx.opcode, length/2, send_data);
+			serial_send(&debug->ser, msv2_tx_data(&debug->msv2), bin_length);
+		}
 	}
 
 	return tmp;
@@ -134,12 +145,11 @@ static void debug_set_pp_params(uint8_t * data, uint16_t data_len, uint8_t * res
 		params.acc = util_decode_u32(data);
 		params.dec = util_decode_u32(data+4);
 		params.speed = util_decode_u32(data+8);
-		params.half_speed = util_decode_u32(data+12);
-		params.countdown_wait = util_decode_u32(data+16);
-		params.half_wait = util_decode_u32(data+20);
-		params.full_wait = util_decode_u32(data+24);
-		params.half_angle = util_decode_i32(data+28);
-		params.full_angle = util_decode_i32(data+32);
+		params.countdown_wait = util_decode_u32(data+12);
+		params.half_wait = util_decode_u32(data+16);
+		params.full_wait = util_decode_u32(data+20);
+		params.half_angle = util_decode_i32(data+24);
+		params.full_angle = util_decode_i32(data+28);
 		control_set_pp_params(params);
 		resp[0] = OK_LO;
 		resp[1] = OK_HI;
@@ -156,12 +166,11 @@ static void debug_get_pp_params(uint8_t * data, uint16_t data_len, uint8_t * res
 	util_encode_u32(resp, params.acc);
 	util_encode_u32(resp+4, params.dec);
 	util_encode_u32(resp+8, params.speed);
-	util_encode_u32(resp+12, params.half_speed);
-	util_encode_u32(resp+16, params.countdown_wait);
-	util_encode_u32(resp+20, params.half_wait);
-	util_encode_u32(resp+24, params.full_wait);
-	util_encode_i32(resp+28, params.half_angle);
-	util_encode_i32(resp+32, params.full_angle);
+	util_encode_u32(resp+12, params.countdown_wait);
+	util_encode_u32(resp+16, params.half_wait);
+	util_encode_u32(resp+20, params.full_wait);
+	util_encode_i32(resp+24, params.half_angle);
+	util_encode_i32(resp+28, params.full_angle);
 	*resp_len = PP_PARAMS_LEN;
 }
 
@@ -188,26 +197,44 @@ static void debug_pp_home(uint8_t * data, uint16_t data_len, uint8_t * resp, uin
 
 static void debug_calibrate(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	//send calibrate trigger signal to control
+	resp[0] = ERROR_LO;
+	resp[1] = ERROR_HI;
+	*resp_len = 2;
 }
 
 static void debug_arm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	//send arm trigger signal to control
+	resp[0] = ERROR_LO;
+	resp[1] = ERROR_HI;
+	*resp_len = 2;
 }
 
 static void debug_ignite(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	//send ignite trigger signal to control
+	resp[0] = ERROR_LO;
+	resp[1] = ERROR_HI;
+	*resp_len = 2;
 }
 
 static void debug_abort(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	//send abort trigger signal to control
+	resp[0] = ERROR_LO;
+	resp[1] = ERROR_HI;
+	*resp_len = 2;
 }
 
 static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	//retrieve last sensor data
+	resp[0] = ERROR_LO;
+	resp[1] = ERROR_HI;
+	*resp_len = 2;
 }
 
 static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	//retrieve last status packet
+	resp[0] = ERROR_LO;
+	resp[1] = ERROR_HI;
+	*resp_len = 2;
 }
 
 /* END */

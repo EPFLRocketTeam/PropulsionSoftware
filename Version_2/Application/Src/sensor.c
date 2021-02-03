@@ -10,7 +10,7 @@
  *	INCLUDES
  **********************/
 
-#include "sensor.h"
+#include <sensor.h>
 #include <lut.h>
 #include <adc.h>
 #include <tim.h>
@@ -107,6 +107,8 @@ static SENSOR_DATA_t sample_buffer[SAMPLE_BUFFER_LEN];
 static UTIL_BUFFER_SENSOR_t filter_bfr;
 static SENSOR_DATA_t filter_buffer[FILTER_BUFFER_LEN] = {0};
 
+static SENSOR_DATA_t last_data = {0};
+
 //filter computations in 20.12 floating point
 static const uint32_t filter_coefficients[] = {	FLOAT_2_FIX_20_12(0.6),
 												FLOAT_2_FIX_20_12(0.2),
@@ -163,6 +165,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	}
 }
 
+
+
 static void sensor_init(void) {
 	SENSOR_TIMER.Instance->ARR = MS_2_SENSOR_TIMER(5);
 	HAL_TIM_OC_Start(&SENSOR_TIMER, TIM_CHANNEL_1);
@@ -176,6 +180,10 @@ static void sensor_init(void) {
 
 void sensor_calib(void) {
 
+}
+
+SENSOR_DATA_t sensor_get_last(void) {
+	return last_data;
 }
 
 void sensor_thread(void * arg) {
@@ -247,6 +255,9 @@ void sensor_thread(void * arg) {
 			filtered.temperature[1] += filter_data.temperature[1]*filter_coefficients[i] >> 12;
 			filtered.temperature[2] += filter_data.temperature[2]*filter_coefficients[i] >> 12;
 		}
+
+		// this is while I build the filtering functions
+		last_data = filtered;
 
 		//Predictor and wrong measurements rejector (Temperature only)
 

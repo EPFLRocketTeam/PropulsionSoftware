@@ -13,6 +13,7 @@
 #include <cmsis_os.h>
 #include <control.h>
 #include <epos4.h>
+#include <led.h>
 
 /**********************
  *	CONFIGURATION
@@ -90,7 +91,10 @@ void control_thread(void * arg) {
 
 	last_wake_time = xTaskGetTickCount();
 
+	led_init();
+
 	init_idle(&control);
+
 
 	static EPOS4_INST_t pp_epos4;
 	static EPOS4_INST_t ab_epos4;
@@ -98,7 +102,8 @@ void control_thread(void * arg) {
 	epos4_global_init();
 
 	epos4_init(&pp_epos4, 1);
-	//epos4_init(&ab_epos4, 2);
+	//epos4_init_bridged(&ab_epos4, &pp_epos4, 2);
+	//Bridged func not yet ready
 
 	control.pp_epos4 = &pp_epos4;
 	control.ab_epos4 = &ab_epos4;
@@ -161,6 +166,7 @@ static void control_update(CONTROL_INST_t * control) {
 
 static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
+	led_set_color(LED_GREEN);
 	for(uint16_t i = 0; i < CONTROL_SCHED_N; i++) {
 		control->sched[i] = 0;
 	}

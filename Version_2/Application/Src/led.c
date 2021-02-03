@@ -18,23 +18,19 @@
  *	CONFIGURATION
  **********************/
 
-#define LED_TIM			TIM8
-#define RED_CHANNEL		LL_TIM_CHANNEL_CH1N
-#define GREEN_CHANNEL	LL_TIM_CHANNEL_CH2N
-#define BLUE_CHANNEL	LL_TIM_CHANNEL_CH3N
+#define LED_TIM			htim8
 
 /**********************
  *	CONSTANTS
  **********************/
 
-#define LED_MAX			(0xff)
+#define LED_MAX			(0xfff)
 
 
 
 /**********************
  *	MACROS
  **********************/
-
 
 
 /**********************
@@ -60,16 +56,16 @@
  **********************/
 
 void led_init(void) {
-	LL_TIM_SetAutoReload(LED_TIM, LED_MAX);
-	LL_TIM_CC_EnableChannel(LED_TIM, RED_CHANNEL);
-	LL_TIM_CC_EnableChannel(LED_TIM, GREEN_CHANNEL);
-	LL_TIM_CC_EnableChannel(LED_TIM, BLUE_CHANNEL);
+	LED_TIM.Instance->ARR = LED_MAX;
+	HAL_TIMEx_PWMN_Start(&LED_TIM, TIM_CHANNEL_1);
+	HAL_TIMEx_PWMN_Start(&LED_TIM, TIM_CHANNEL_2);
+	HAL_TIMEx_PWMN_Start(&LED_TIM, TIM_CHANNEL_3);
 }
 
-void led_set_color(LED_COLOR_t color) {
-	LL_TIM_OC_SetCompareCH1(LED_TIM, color.r);
-	LL_TIM_OC_SetCompareCH2(LED_TIM, color.g);
-	LL_TIM_OC_SetCompareCH3(LED_TIM, color.b);
+void led_set_color(uint8_t r, uint8_t g, uint8_t b) {
+	LED_TIM.Instance->CCR1 = r;
+	LED_TIM.Instance->CCR2 = g;
+	LED_TIM.Instance->CCR3 = b;
 }
 
 

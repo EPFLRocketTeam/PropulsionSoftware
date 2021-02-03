@@ -111,8 +111,6 @@
  **********************/
 
 //semaphore (allows )
-static SemaphoreHandle_t epos4_busy_sem = NULL;
-static StaticSemaphore_t epos4_busy_sem_buffer;
 
 static SemaphoreHandle_t epos4_rx_sem = NULL;
 static StaticSemaphore_t epos4_rx_sem_buffer;
@@ -140,12 +138,8 @@ static StaticSemaphore_t epos4_rx_sem_buffer;
 
 
 void epos4_global_init() {
-	//create global epos4 mutex to avoid simultaneous access.
-	epos4_busy_sem = xSemaphoreCreateMutexStatic(&epos4_busy_sem_buffer);
-
 	//create rx mutex
 	epos4_rx_sem = xSemaphoreCreateBinaryStatic(&epos4_rx_sem_buffer);
-
 }
 
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
@@ -159,80 +153,73 @@ void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
 	epos4->msv2 = &msv2;
 
 	static SERIAL_INST_t ser;
-	serial_init(&ser, &EPOS4_UART, &msv2, epos4_decode_fcn);
+	serial_init(&ser, &EPOS4_UART, epos4, epos4_decode_fcn);
 	epos4->ser = &ser;
+
+}
+
+void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * bridge, uint8_t id) {
 
 }
 
 
 
 EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
-	if (xSemaphoreTake(epos4_busy_sem, COMM_TIMEOUT) == pdTRUE) { //only one transmission at the same time
-		static uint8_t send_data[READ_OBJECT_LEN*2];
-		static uint16_t length = 0;
-		send_data[0] = epos4->id; //node ID
-		send_data[1] = index & 0xff;
-		send_data[2] = index >> 8;
-		send_data[3] = subindex;
+	static uint8_t send_data[READ_OBJECT_LEN*2];
+	static uint16_t length = 0;
+	send_data[0] = epos4->id; //node ID
+	send_data[1] = index & 0xff;
+	send_data[2] = index >> 8;
+	send_data[3] = subindex;
+	for(uint8_t i = 0; i < DATA_SIZE; i++){
+		send_data[4+i] = data[i];
+	}
+	length = msv2_create_frame(epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
+	serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
+	if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
+		uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
+		*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 		for(uint8_t i = 0; i < DATA_SIZE; i++){
-			send_data[4+i] = data[i];
+			data[i] = recieved_data[4+i];
 		}
-		length = msv2_create_frame(epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
-		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
-		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
-			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
-			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
-			for(uint8_t i = 0; i < DATA_SIZE; i++){
-				data[i] = recieved_data[4+i];
-			}
-			xSemaphoreGive(epos4_busy_sem); //release the sem to allow another transmission
-			if(*err == 0) {
-				return EPOS4_SUCCESS;
-			} else {
-				return EPOS4_REMOTE_ERROR;
-			}
+		if(*err == 0) {
+			return EPOS4_SUCCESS;
 		} else {
-			xSemaphoreGive(epos4_busy_sem); //release the sem to allow another transmission
-			return EPOS4_TIMEOUT;
+			return EPOS4_REMOTE_ERROR;
 		}
 	} else {
-		return EPOS4_ERROR;
+		return EPOS4_TIMEOUT;
 	}
 }
 
 EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
-	if (xSemaphoreTake(epos4_busy_sem, COMM_TIMEOUT) == pdTRUE) { //only one transmission at the same time
-		static uint8_t send_data[WRITE_OBJECT_LEN*2];
-		static uint16_t length = 0;
-		send_data[0] = epos4->id; //node ID
-		send_data[1] = index & 0xff;
-		send_data[2] = index >> 8;
-		send_data[3] = subindex;
-		for(uint8_t i = 0; i < DATA_SIZE; i++){
-			send_data[4+i] = data[i];
-		}
-		length = msv2_create_frame(epos4->msv2, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
-		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
-		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
-			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
-			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
-			xSemaphoreGive(epos4_busy_sem); //release the sem to allow another transmission
-			if(*err == 0) {
-				return EPOS4_SUCCESS;
-			} else {
-				return EPOS4_REMOTE_ERROR;
-			}
+	static uint8_t send_data[WRITE_OBJECT_LEN*2];
+	static uint16_t length = 0;
+	send_data[0] = epos4->id; //node ID
+	send_data[1] = index & 0xff;
+	send_data[2] = index >> 8;
+	send_data[3] = subindex;
+	for(uint8_t i = 0; i < DATA_SIZE; i++){
+		send_data[4+i] = data[i];
+	}
+	length = msv2_create_frame(epos4->msv2, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
+	serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
+	if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
+		uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
+		*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+		if(*err == 0) {
+			return EPOS4_SUCCESS;
 		} else {
-			xSemaphoreGive(epos4_busy_sem); //release the sem to allow another transmission
-			return EPOS4_TIMEOUT;
+			return EPOS4_REMOTE_ERROR;
 		}
 	} else {
-		return EPOS4_ERROR;
+		return EPOS4_TIMEOUT;
 	}
 }
 
 SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data) {
-	MSV2_ERROR_t tmp = msv2_decode_fragment((MSV2_INST_t *) inst, data);
+	EPOS4_INST_t * epos4 = (EPOS4_INST_t * ) inst;
+	MSV2_ERROR_t tmp = msv2_decode_fragment(epos4->msv2, data);
 	if(!tmp) {
 		xSemaphoreGive(epos4_rx_sem); // one frame has been received!
 	}

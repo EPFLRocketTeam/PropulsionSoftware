@@ -86,6 +86,12 @@ void threads_init(void) {
 	debug_init(&debug);
 
 	/*
+	 *  Feedback thread
+	 *  Lowest priority
+	 *  Handle blinking led and sound effects
+	 */
+
+	/*
 	 *  Serial RX processing thread (Bottom half)
 	 *  low priority
 	 */
