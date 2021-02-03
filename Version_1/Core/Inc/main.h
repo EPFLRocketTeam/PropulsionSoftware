@@ -58,7 +58,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define ADC_HEART_BEAT 1125
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
