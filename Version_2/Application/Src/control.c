@@ -44,8 +44,6 @@
  **********************/
 
 static CONTROL_INST_t control;
-static EPOS4_INST_t pp_epos4;
-static EPOS4_INST_t ab_epos4;
 
 
 /**********************
@@ -77,6 +75,10 @@ static void glide(CONTROL_INST_t * control);
 static void _abort(CONTROL_INST_t * control);
 static void error(CONTROL_INST_t * control);
 
+//scheduling
+
+static uint8_t control_sched_should_run(CONTROL_INST_t * control, uint16_t num);
+
 /**********************
  *	DECLARATIONS
  **********************/
@@ -90,8 +92,16 @@ void control_thread(void * arg) {
 
 	init_idle(&control);
 
+	static EPOS4_INST_t pp_epos4;
+	static EPOS4_INST_t ab_epos4;
+
+	epos4_global_init();
+
 	epos4_init(&pp_epos4, 1);
-	epos4_init(&ab_epos4, 2);
+	//epos4_init(&ab_epos4, 2);
+
+	control.pp_epos4 = &pp_epos4;
+	control.ab_epos4 = &ab_epos4;
 
 
 	for(;;) {
@@ -151,8 +161,8 @@ static void control_update(CONTROL_INST_t * control) {
 
 static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
-	for(uint16_t i = 0; i < CONTROL_SCHED_LEN; i++) {
-		control->sched_list[i] = 0;
+	for(uint16_t i = 0; i < CONTROL_SCHED_N; i++) {
+		control->sched[i] = 0;
 	}
 }
 
@@ -163,6 +173,15 @@ static void idle(CONTROL_INST_t * control) {
 	//motor movements for manual homing
 
 	//if a move is scheduled, perform it
+	if(control_sched_should_run(control, CONTROL_SCHED_MOVE)) {
+		EPOS4_PPM_CONFIG_t ppm_config;
+		ppm_config.profile_acceleration = control->pp_params.acc;
+		ppm_config.profile_deceleration = control->pp_params.dec;
+		ppm_config.profile_velocity = control->pp_params.speed;
+		epos4_ppm_config(control->pp_epos4, ppm_config);
+		epos4_ppm_prep(control->pp_epos4);
+		epos4_ppm_move(control->pp_epos4, control->mov_type, control->mov_target);
+	}
 
 	//if recv calibration command -> calib init
 	//if recv arm command -> arm
@@ -280,9 +299,23 @@ void control_set_pp_params(CONTROL_PP_PARAMS_t params) {
 }
 
 void control_move(EPOS4_MOV_t mov_type, int32_t target) {
-	control.sched.move = 1;
+	control.sched[CONTROL_SCHED_MOVE] = 1;
 	control.mov_type = mov_type;
 	control.mov_target = target;
+}
+
+static uint8_t control_sched_should_run(CONTROL_INST_t * control, uint16_t num) {
+	for(uint16_t i = 0; i < num; i++) {
+		if(control->sched[i]) {
+			return 0;
+		}
+	}
+	if(control->sched[num]) {
+		control->sched[num] = 0;
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 

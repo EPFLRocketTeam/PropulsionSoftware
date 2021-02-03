@@ -144,7 +144,8 @@ void epos4_global_init() {
 	epos4_busy_sem = xSemaphoreCreateMutexStatic(&epos4_busy_sem_buffer);
 
 	//create rx mutex
-	epos4_rx_sem = xSemaphoreCreateMutexStatic(&epos4_rx_sem_buffer);
+	epos4_rx_sem = xSemaphoreCreateBinaryStatic(&epos4_rx_sem_buffer);
+
 }
 
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
@@ -160,6 +161,7 @@ void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
 	static SERIAL_INST_t ser;
 	serial_init(&ser, &EPOS4_UART, &msv2, epos4_decode_fcn);
 	epos4->ser = &ser;
+
 }
 
 

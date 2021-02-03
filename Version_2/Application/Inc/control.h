@@ -20,8 +20,6 @@
  *  CONSTANTS
  **********************/
 
-#define CONTROL_SCHED_LEN sizeof(CONTROL_SCHED_t)
-
 
 
 /**********************
@@ -61,9 +59,10 @@ typedef struct CONTROL_PP_PARAMS {
 
 
 //schedule: higher in the list -> higher priority
-typedef struct CONTROL_SCHED{
-	uint8_t abort;
-	uint8_t move;
+typedef enum CONTROL_SCHED{
+	CONTROL_SCHED_ABORT = 0x00,
+	CONTROL_SCHED_MOVE,
+	CONTROL_SCHED_N
 }CONTROL_SCHED_t;
 
 
@@ -71,13 +70,12 @@ typedef struct CONTROL_INST{
 	CONTROL_STATE_t state;
 	uint32_t time;
 	uint32_t iter;
+	EPOS4_INST_t * pp_epos4;
+	EPOS4_INST_t * ab_epos4;
 	CONTROL_PP_PARAMS_t pp_params;
 	EPOS4_MOV_t mov_type;
 	int32_t mov_target;
-	union SCHED{
-		CONTROL_SCHED_t sched;
-		uint8_t sched_list[CONTROL_SCHED_LEN];
-	};
+	uint8_t sched[CONTROL_SCHED_N];
 }CONTROL_INST_t;
 
 //action scheduling
