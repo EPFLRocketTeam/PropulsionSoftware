@@ -172,7 +172,10 @@ class msv2:
     def send(self, opcode, data):
         msg = self.encode(opcode, data)
         error = 0
-        self.ser.write(msg)
+        try:
+            self.ser.write(msg)
+        except:
+            print("ERROR")
         print('[{}]'.format(', '.join(hex(x) for x in msg)))
         try:
             while 1:

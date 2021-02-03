@@ -543,6 +543,9 @@
             <property name="text">
              <string>Absolute</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="2" column="3">

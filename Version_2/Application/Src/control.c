@@ -145,10 +145,15 @@ static void control_update(CONTROL_INST_t * control) {
 
 	//read motors parameters
 	//init error if there is an issue with a motor
+
+	//init abort if abort trigger signal received
 }
 
 static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
+	for(uint16_t i = 0; i < CONTROL_SCHED_LEN; i++) {
+		control->sched_list[i] = 0;
+	}
 }
 
 static void idle(CONTROL_INST_t * control) {
@@ -156,6 +161,8 @@ static void idle(CONTROL_INST_t * control) {
 	//launch calib
 	//arm
 	//motor movements for manual homing
+
+	//if a move is scheduled, perform it
 
 	//if recv calibration command -> calib init
 	//if recv arm command -> arm
@@ -270,6 +277,12 @@ CONTROL_PP_PARAMS_t control_get_pp_params() {
 
 void control_set_pp_params(CONTROL_PP_PARAMS_t params) {
 	control.pp_params = params;
+}
+
+void control_move(EPOS4_MOV_t mov_type, int32_t target) {
+	control.sched.move = 1;
+	control.mov_type = mov_type;
+	control.mov_target = target;
 }
 
 

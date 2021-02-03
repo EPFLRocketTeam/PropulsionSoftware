@@ -30,6 +30,7 @@
 
 
 #define PP_PARAMS_LEN (36)
+#define PP_MOVE_LEN (6)
 
 
 #define ERROR_LO	(0xce)
@@ -59,25 +60,29 @@
 
 //debug routines
 static void debug_read_state(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
-static void debug_move_abs(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
-static void debug_move_rel(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
-static void debug_move_abs_imm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
-static void debug_move_rel_imm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_set_pp_params(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_get_pp_params(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_pp_move(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_pp_home(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_calibrate(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_arm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_ignite(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_abort(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 
 /**********************
  *	DEBUG FCN ARRAY
  **********************/
-void (*debug_fcn[]) (uint8_t *, uint16_t, uint8_t *, uint16_t *) = {
-		debug_read_state,	//0x00
-		debug_move_abs,		//0x01
-		debug_move_rel,		//0x02
-		debug_move_abs_imm,	//0x03
-		debug_move_rel_imm,	//0x04
-		debug_set_pp_params,//0x05
-		debug_get_pp_params //0x06
+static void (*debug_fcn[]) (uint8_t *, uint16_t, uint8_t *, uint16_t *) = {
+		debug_read_state,		//0x00
+		debug_set_pp_params,	//0x01
+		debug_get_pp_params, 	//0x02
+		debug_pp_move,			//0x03
+		debug_pp_home			//0x04
 };
+
+static uint16_t debug_fcn_max = sizeof(debug_fcn) / sizeof(void *);
 
 /**********************
  *	DECLARATIONS
@@ -92,15 +97,13 @@ SERIAL_RET_t debug_decode_fcn(void * inst, uint8_t data) {
 	DEBUG_INST_t * debug = (DEBUG_INST_t *) inst;
 	MSV2_ERROR_t tmp = msv2_decode_fragment(&debug->msv2, data);
 
-	if(tmp == MSV2_SUCCESS) {
+	if(tmp == MSV2_SUCCESS && debug->msv2.rx.opcode < debug_fcn_max) {
 
 		debug_fcn[debug->msv2.rx.opcode](debug->msv2.rx.data, debug->msv2.rx.length, send_data, &length);
 		//length is in words
 		bin_length = msv2_create_frame(&debug->msv2, debug->msv2.rx.opcode, length/2, send_data);
 		serial_send(&debug->ser, msv2_tx_data(&debug->msv2), bin_length);
-	}
-
-	if(tmp == MSV2_WRONG_CRC) {
+	} else {
 		send_data[0] = ERROR_LO;
 		send_data[1] = ERROR_HI;
 		length = 1; //in words
@@ -123,22 +126,6 @@ static void debug_read_state(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 	resp[0] = state;
 	resp[1] = 0x00;
 	*resp_len = 2;
-}
-
-static void debug_move_abs(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-
-}
-
-static void debug_move_rel(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-
-}
-
-static void debug_move_abs_imm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-
-}
-
-static void debug_move_rel_imm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-
 }
 
 static void debug_set_pp_params(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
@@ -176,6 +163,51 @@ static void debug_get_pp_params(uint8_t * data, uint16_t data_len, uint8_t * res
 	util_encode_i32(resp+28, params.half_angle);
 	util_encode_i32(resp+32, params.full_angle);
 	*resp_len = PP_PARAMS_LEN;
+}
+
+static void debug_pp_move(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	if(data_len == PP_MOVE_LEN) {
+		int32_t target = util_decode_i32(data);
+		uint16_t mode = util_decode_u16(data+4);
+		control_move(mode, target);
+		resp[0] = OK_LO;
+		resp[1] = OK_HI;
+		*resp_len = 2;
+	} else {
+		resp[0] = ERROR_LO;
+		resp[1] = ERROR_HI;
+		*resp_len = 2;
+	}
+}
+
+static void debug_pp_home(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	resp[0] = ERROR_LO;
+	resp[1] = ERROR_HI;
+	*resp_len = 2;
+}
+
+static void debug_calibrate(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	//send calibrate trigger signal to control
+}
+
+static void debug_arm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	//send arm trigger signal to control
+}
+
+static void debug_ignite(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	//send ignite trigger signal to control
+}
+
+static void debug_abort(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	//send abort trigger signal to control
+}
+
+static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	//retrieve last sensor data
+}
+
+static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	//retrieve last status packet
 }
 
 /* END */
