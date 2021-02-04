@@ -114,11 +114,14 @@ EPOS4_ERROR_t epos4_write_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subi
 
 #define epos4_control_shutdown(epos4, err)			epos4_write_controlword(epos4, EPOS4_CW_SHUTDOWN, err)
 #define epos4_control_soenable(epos4, err)			epos4_write_controlword(epos4, EPOS4_CW_SOENABLE, err)
+#define epos4_control_disable(epos4, err)			epos4_write_controlword(epos4, EPOS4_CW_DISABLE, err)
 
 #define epos4_control_ppm_start_abs(epos4, err)		epos4_write_controlword(epos4, EPOS4_CW_PPM_ABSOLUTE, err)
 #define epos4_control_ppm_start_abs_imm(epos4, err)	epos4_write_controlword(epos4, EPOS4_CW_PPM_ABSOLUTE_I, err)
 #define epos4_control_ppm_start_rel(epos4, err)		epos4_write_controlword(epos4, EPOS4_CW_PPM_RELATIVE, err)
 #define epos4_control_ppm_start_rel_imm(epos4, err)	epos4_write_controlword(epos4, EPOS4_CW_PPM_RELATIVE_I, err)
+
+
 
 
 //HIGH LEVEL

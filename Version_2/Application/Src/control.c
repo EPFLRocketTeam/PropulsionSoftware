@@ -178,6 +178,12 @@ static void idle(CONTROL_INST_t * control) {
 	//arm
 	//motor movements for manual homing
 
+	//if a move is in progress, disable torque when done
+
+	if(control->mov_started) {
+
+	}
+
 	//if a move is scheduled, perform it
 	if(control_sched_should_run(control, CONTROL_SCHED_MOVE)) {
 		EPOS4_PPM_CONFIG_t ppm_config;
@@ -187,6 +193,7 @@ static void idle(CONTROL_INST_t * control) {
 		epos4_ppm_config(control->pp_epos4, ppm_config);
 		epos4_ppm_prep(control->pp_epos4);
 		epos4_ppm_move(control->pp_epos4, control->mov_type, control->mov_target);
+		control.mov_started = 1;
 	}
 
 	//if recv calibration command -> calib init
@@ -308,6 +315,7 @@ void control_move(EPOS4_MOV_t mov_type, int32_t target) {
 	control.sched[CONTROL_SCHED_MOVE] = 1;
 	control.mov_type = mov_type;
 	control.mov_target = target;
+	control.mov_started = 0;
 }
 
 static uint8_t control_sched_should_run(CONTROL_INST_t * control, uint16_t num) {
@@ -317,11 +325,14 @@ static uint8_t control_sched_should_run(CONTROL_INST_t * control, uint16_t num) 
 		}
 	}
 	if(control->sched[num]) {
-		control->sched[num] = 0;
 		return 1;
 	} else {
 		return 0;
 	}
+}
+
+static uint8_t control_sched_done(CONTROL_INST_t * control, uint16_t num) {
+	control->sched[num] = 0;
 }
 
 

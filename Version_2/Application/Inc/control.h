@@ -75,6 +75,7 @@ typedef struct CONTROL_INST{
 	CONTROL_PP_PARAMS_t pp_params;
 	EPOS4_MOV_t mov_type;
 	int32_t mov_target;
+	uint8_t mov_started;
 	uint8_t sched[CONTROL_SCHED_N];
 }CONTROL_INST_t;
 

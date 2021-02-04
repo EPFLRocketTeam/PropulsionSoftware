@@ -1,6 +1,8 @@
 # File: main.py
 import sys
 import os
+import platform
+import re
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QFile, QIODevice
@@ -136,6 +138,23 @@ if __name__ == "__main__":
     if not window:
         print(loader.errorString())
         sys.exit(-1)
+
+    if platform.system() == 'Darwin':
+        dev_dir = os.listdir('/dev');
+        res = None
+        for d in dev_dir:
+            res = re.search(r'cu.usbmodem[0-9]', d), d
+            if(res[0] is not None):
+                res = "/dev/{}".format(d)
+                break
+
+    if(res[0] is not None):
+        COM_PORT = res
+    else:
+        COM_PORT = '/dev/cu.usbmodem144303'
+
+    window.connect_device.clear()
+    window.connect_device.insert(COM_PORT)
 
 
     #connect all the callbacks

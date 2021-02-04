@@ -220,7 +220,7 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data) {
 	EPOS4_INST_t * epos4 = (EPOS4_INST_t * ) inst;
 	MSV2_ERROR_t tmp = msv2_decode_fragment(epos4->msv2, data);
-	if(!tmp) {
+	if(tmp == MSV2_SUCCESS) {
 		xSemaphoreGive(epos4_rx_sem); // one frame has been received!
 	}
 	return tmp;
@@ -393,7 +393,7 @@ EPOS4_ERROR_t epos4_ppm_prep(EPOS4_INST_t * epos4) {
 
 EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t target) {
 	EPOS4_ERROR_t error = 0;
-	uint32_t err;
+	uint32_t err = 0;
 
 	uint16_t status;
 
