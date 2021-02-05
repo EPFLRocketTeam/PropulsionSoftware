@@ -140,6 +140,7 @@ static StaticSemaphore_t epos4_rx_sem_buffer;
 void epos4_global_init() {
 	//create rx mutex
 	epos4_rx_sem = xSemaphoreCreateBinaryStatic(&epos4_rx_sem_buffer);
+	//this semaphore will be epos specific
 }
 
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
@@ -158,8 +159,10 @@ void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
 
 }
 
-void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * bridge, uint8_t id) {
-
+void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * parent, uint8_t id) {
+	// add a "clause" to the serial decode of the bridge that it checks
+	// which board is communicating then take that into account
+	// when providing "answer" to the requesting driver
 }
 
 
@@ -220,6 +223,7 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data) {
 	EPOS4_INST_t * epos4 = (EPOS4_INST_t * ) inst;
 	MSV2_ERROR_t tmp = msv2_decode_fragment(epos4->msv2, data);
+	//this should release the semaphore corresponding the the right epos board if bridged
 	if(tmp == MSV2_SUCCESS) {
 		xSemaphoreGive(epos4_rx_sem); // one frame has been received!
 	}
@@ -431,6 +435,22 @@ EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config) 
 	error |= epos4_write_u32(epos4, EPOS4_PROFILE_ACCELERATION, config.profile_acceleration, &err);
 
 	error |= epos4_write_u32(epos4, EPOS4_PROFILE_DECELERATION, config.profile_deceleration, &err);
+
+	return error;
+}
+
+EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+
+	uint16_t status;
+
+	error |= epos4_read_statusword(epos4, &status, &err);
+
+
+	if(!EPOS4_SW_ENABLED(status)) {
+		return EPOS4_ERROR;
+	}
 
 	return error;
 }

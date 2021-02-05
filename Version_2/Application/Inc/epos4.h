@@ -24,6 +24,8 @@
  *  CONSTANTS
  **********************/
 
+#define EPOS4_MAX_CHILDREN	(16)
+
 
 
 /**********************
@@ -49,15 +51,20 @@ typedef enum EPOS4_MOV {
 	EPOS4_RELATIVE_IMMEDIATE = 0x03
 }EPOS4_MOV_t;
 
-typedef struct EPOS4_INST{
+typedef struct EPOS4_INST EPOS4_INST_t;
+
+struct EPOS4_INST{
 	uint32_t id;
 	uint8_t can_id; //CAN ID for communication and gateway to other boards
 	MSV2_INST_t * msv2;
 	SERIAL_INST_t * ser;
+	EPOS4_INST_t * parent;
+	uint8_t nb_chilren;
+	EPOS4_INST_t * children[EPOS4_MAX_CHILDREN];
 	//semaphore for sync
 	//main board in case of bridged
 
-}EPOS4_INST_t;
+};
 
 typedef struct EPOS4_PPM_CONFIG {
 	uint32_t profile_velocity;
@@ -90,7 +97,7 @@ extern "C"{
 //MISC
 void epos4_global_init();
 void epos4_init(EPOS4_INST_t * epos4, uint8_t id);
-void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * bridge, uint8_t id);
+void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * parent, uint8_t id);
 
 SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data);
 
@@ -132,6 +139,7 @@ EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4);
 EPOS4_ERROR_t epos4_ppm_prep(EPOS4_INST_t * epos4);
 EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t target);
 EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config);
+EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4);
 
 EPOS4_ERROR_t epos4_csp_move(EPOS4_INST_t * epos4, int32_t target);
 EPOS4_ERROR_t epos4_csp_config(EPOS4_INST_t * epos4, EPOS4_CSP_CONFIG_t config);

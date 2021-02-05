@@ -112,6 +112,11 @@ void control_thread(void * arg) {
 	for(;;) {
 
 		control_update(&control);
+		//read status
+		//read motor pos
+		//read error register
+		//??
+		//For PP and AB
 
 		switch(control.state) {
 		case CS_IDLE:
@@ -193,7 +198,7 @@ static void idle(CONTROL_INST_t * control) {
 		epos4_ppm_config(control->pp_epos4, ppm_config);
 		epos4_ppm_prep(control->pp_epos4);
 		epos4_ppm_move(control->pp_epos4, control->mov_type, control->mov_target);
-		control.mov_started = 1;
+		control->mov_started = 1;
 	}
 
 	//if recv calibration command -> calib init
