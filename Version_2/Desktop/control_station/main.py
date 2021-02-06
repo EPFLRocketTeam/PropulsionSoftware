@@ -231,7 +231,20 @@ if __name__ == "__main__":
     #timer.moveToThread(thread)
 
 
+    '''
+    all the serial communication should be in a separate thread,
+    Some signals from the gui indicate what needs to be sent to the HOSTBOARD
+    Some signals from the serial comm thread indicate what needs to be changed
 
+    The communication can be implemented using two queues:
+    One queue for data [each field string preferably, ....]
+    One queue for commands one command at a time using the command codes
+
+    the buttons callbacks just signal the serial
+    There is one main timer function which updates the gui each 0.2sec or something like that
+
+    the periodic access for status and sensor data is done in the serial comm thread
+    '''
 
 
 
