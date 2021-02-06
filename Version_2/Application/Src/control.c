@@ -28,11 +28,13 @@
 
 
 
+#define SCHED_ALLOWED_WIDTH	(5)
+
 /**********************
  *	MACROS
  **********************/
 
-
+#define DEG2INC(deg)	((int32_t)(((float)-(deg))*4*1024*66/1/360))
 
 /**********************
  *	TYPEDEFS
@@ -45,6 +47,19 @@
  **********************/
 
 static CONTROL_INST_t control;
+
+static CONTROL_SCHED_t sched_allowed[][SCHED_ALLOWED_WIDTH] = {
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_MOVE, CONTROL_SCHED_CALIBRATE, CONTROL_SCHED_ARM, CONTROL_SCHED_NOTHING}, 		//IDLE
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//CALIBRATION
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_IGNITE, CONTROL_SCHED_DISARM, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//ARMED
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//COUNTDOWN
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//IGNITION
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//THRUST
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//SHUTDOWN
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//GLIDE
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_RECOVER, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//ABORT
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_RECOVER, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING} 	//ERROR
+};
 
 
 /**********************
@@ -78,7 +93,9 @@ static void error(CONTROL_INST_t * control);
 
 //scheduling
 
-static uint8_t control_sched_should_run(CONTROL_INST_t * control, uint16_t num);
+static uint8_t control_sched_should_run(CONTROL_INST_t * control, CONTROL_SCHED_t num);
+static void control_sched_done(CONTROL_INST_t * control, CONTROL_SCHED_t num);
+static void control_sched_set(CONTROL_INST_t * control, CONTROL_SCHED_t num);
 
 /**********************
  *	DECLARATIONS
@@ -164,17 +181,33 @@ static void control_update(CONTROL_INST_t * control) {
 	control->iter++;
 
 	//read motors parameters
+
+	//Error register
+	//motor position
+	//psu voltage
+
 	//init error if there is an issue with a motor
 
-	//init abort if abort trigger signal received
+	if(control_sched_should_run(control, CONTROL_SCHED_ABORT)) {
+		init_abort(control);
+		control_sched_done(control, CONTROL_SCHED_ABORT);
+	}
 }
 
 static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
 	led_set_color(LED_GREEN);
-	for(uint16_t i = 0; i < CONTROL_SCHED_N; i++) {
-		control->sched[i] = 0;
-	}
+	control->sched = CONTROL_SCHED_NOTHING;
+
+
+	control->pp_params.acc = 50000;
+	control->pp_params.dec = 50000;
+	control->pp_params.speed = 8000;
+	control->pp_params.countdown_wait = 2000;
+	control->pp_params.half_wait = 2500;
+	control->pp_params.full_wait = 20000;
+	control->pp_params.half_angle = DEG2INC(27);
+	control->pp_params.full_angle = DEG2INC(90);
 }
 
 static void idle(CONTROL_INST_t * control) {
@@ -186,11 +219,16 @@ static void idle(CONTROL_INST_t * control) {
 	//if a move is in progress, disable torque when done
 
 	if(control->mov_started) {
-
+		uint8_t terminated = 0;
+		epos4_ppm_terminate(control->pp_epos4, &terminated);
+		if(terminated) {
+			control->mov_started = 0;
+			control_sched_done(control, CONTROL_SCHED_MOVE);
+		}
 	}
 
 	//if a move is scheduled, perform it
-	if(control_sched_should_run(control, CONTROL_SCHED_MOVE)) {
+	if(control_sched_should_run(control, CONTROL_SCHED_MOVE) && !control->mov_started) {
 		EPOS4_PPM_CONFIG_t ppm_config;
 		ppm_config.profile_acceleration = control->pp_params.acc;
 		ppm_config.profile_deceleration = control->pp_params.dec;
@@ -201,8 +239,16 @@ static void idle(CONTROL_INST_t * control) {
 		control->mov_started = 1;
 	}
 
-	//if recv calibration command -> calib init
-	//if recv arm command -> arm
+	if(control_sched_should_run(control, CONTROL_SCHED_CALIBRATE)) {
+		init_calibration(control);
+		control_sched_done(control, CONTROL_SCHED_CALIBRATE);
+	}
+
+	if(control_sched_should_run(control, CONTROL_SCHED_ARM)) {
+		init_armed(control);
+		control_sched_done(control, CONTROL_SCHED_ARM);
+	}
+
 
 }
 
@@ -220,10 +266,16 @@ static void init_armed(CONTROL_INST_t * control) {
 }
 
 static void armed(CONTROL_INST_t * control) {
-	//react to external commands:
-	//disarm -> back to idle
-	//launch -> countdown
-	//no motor movements allowed
+
+	if(control_sched_should_run(control, CONTROL_SCHED_IGNITE)) {
+		init_ignition(control);
+		control_sched_done(control, CONTROL_SCHED_IGNITE);
+	}
+
+	if(control_sched_should_run(control, CONTROL_SCHED_DISARM)) {
+		init_idle(control);
+		control_sched_done(control, CONTROL_SCHED_DISARM);
+	}
 }
 
 static void init_countdown(CONTROL_INST_t * control) {
@@ -292,7 +344,10 @@ static void _abort(CONTROL_INST_t * control) {
 	//close main valve
 	//close airbrakes
 	//wait for user release
-	//if user release -> IDLE
+	if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
+		init_idle(control);
+		control_sched_done(control, CONTROL_SCHED_RECOVER);
+	}
 }
 
 static void init_error(CONTROL_INST_t * control) {
@@ -301,7 +356,10 @@ static void init_error(CONTROL_INST_t * control) {
 
 static void error(CONTROL_INST_t * control) {
 	//wait for user release
-	//if user release -> IDLE
+	if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
+		init_idle(control);
+		control_sched_done(control, CONTROL_SCHED_RECOVER);
+	}
 }
 
 CONTROL_STATE_t control_get_state() {
@@ -317,29 +375,59 @@ void control_set_pp_params(CONTROL_PP_PARAMS_t params) {
 }
 
 void control_move(EPOS4_MOV_t mov_type, int32_t target) {
-	control.sched[CONTROL_SCHED_MOVE] = 1;
+	control_sched_set(&control, CONTROL_SCHED_MOVE);
 	control.mov_type = mov_type;
 	control.mov_target = target;
 	control.mov_started = 0;
 }
 
-static uint8_t control_sched_should_run(CONTROL_INST_t * control, uint16_t num) {
-	for(uint16_t i = 0; i < num; i++) {
-		if(control->sched[i]) {
-			return 0;
+void control_calibrate() {
+	control_sched_set(&control, CONTROL_SCHED_CALIBRATE);
+}
+
+void control_arm() {
+	control_sched_set(&control, CONTROL_SCHED_ARM);
+}
+
+void control_disarm() {
+	control_sched_set(&control, CONTROL_SCHED_DISARM);
+}
+
+void control_ignite() {
+	control_sched_set(&control, CONTROL_SCHED_IGNITE);
+}
+
+void control_abort() {
+	control_sched_set(&control, CONTROL_SCHED_ABORT);
+}
+
+void control_recover() {
+	control_sched_set(&control, CONTROL_SCHED_RECOVER);
+}
+
+
+static uint8_t control_sched_should_run(CONTROL_INST_t * control, CONTROL_SCHED_t num) {
+	return control->sched == num;
+}
+
+static void control_sched_done(CONTROL_INST_t * control, CONTROL_SCHED_t num) {
+	if(control->sched == num) {
+		control->sched = CONTROL_SCHED_NOTHING;
+	} else {
+		init_error(control);
+	}
+}
+
+static void control_sched_set(CONTROL_INST_t * control, CONTROL_SCHED_t num) {
+	if(control->sched == CONTROL_SCHED_NOTHING) {
+		for(uint8_t i = 0; i < SCHED_ALLOWED_WIDTH; i++) {
+			if(sched_allowed[control->state][i] == num) {
+				control->sched = num;
+				return;
+			}
 		}
 	}
-	if(control->sched[num]) {
-		return 1;
-	} else {
-		return 0;
-	}
 }
-
-static uint8_t control_sched_done(CONTROL_INST_t * control, uint16_t num) {
-	control->sched[num] = 0;
-}
-
 
 /* END */
 

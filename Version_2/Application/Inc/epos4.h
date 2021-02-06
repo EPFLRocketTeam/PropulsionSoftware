@@ -7,6 +7,9 @@
  *  Careful Only one board supported for now
  *  Bridged boards support comming soon
  *  Multiboard support comming soon aswell :)
+ *
+ *  THERE ARE NO CHECKS ON POINTERS !!!!!
+ *  NEVER PASS AN UNVALID POINTER !!!!!!
  */
 
 #ifndef EPOS4_H
@@ -61,6 +64,10 @@ struct EPOS4_INST{
 	EPOS4_INST_t * parent;
 	uint8_t nb_chilren;
 	EPOS4_INST_t * children[EPOS4_MAX_CHILDREN];
+	uint16_t status;
+	uint16_t error;
+	int32_t position;
+	uint16_t psu_voltage;
 	//semaphore for sync
 	//main board in case of bridged
 
@@ -112,6 +119,14 @@ EPOS4_ERROR_t epos4_write_i8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subin
 EPOS4_ERROR_t epos4_write_i16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int16_t data, uint32_t * err);
 EPOS4_ERROR_t epos4_write_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int32_t data, uint32_t * err);
 
+EPOS4_ERROR_t epos4_read_u8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err);
+EPOS4_ERROR_t epos4_read_u16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint16_t * data, uint32_t * err);
+EPOS4_ERROR_t epos4_read_u32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint32_t * data, uint32_t * err);
+EPOS4_ERROR_t epos4_read_i8(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int8_t * data, uint32_t * err);
+EPOS4_ERROR_t epos4_read_i16(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int16_t * data, uint32_t * err);
+EPOS4_ERROR_t epos4_read_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, int32_t * data, uint32_t * err);
+
+
 //MEDIUM LEVEL
 
 
@@ -133,13 +148,15 @@ EPOS4_ERROR_t epos4_write_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subi
 
 //HIGH LEVEL
 
+EPOS4_ERROR_t epos4_sync(EPOS4_INST_t * epos4);
+
 EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4);
 
 
 EPOS4_ERROR_t epos4_ppm_prep(EPOS4_INST_t * epos4);
 EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t target);
 EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config);
-EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4);
+EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4, uint8_t * terminated);
 
 EPOS4_ERROR_t epos4_csp_move(EPOS4_INST_t * epos4, int32_t target);
 EPOS4_ERROR_t epos4_csp_config(EPOS4_INST_t * epos4, EPOS4_CSP_CONFIG_t config);

@@ -28,6 +28,8 @@
 
 
 
+
+
 /**********************
  *  TYPEDEFS
  **********************/
@@ -49,7 +51,6 @@ typedef struct CONTROL_PP_PARAMS {
 	uint32_t acc;
 	uint32_t dec;
 	uint32_t speed;
-	uint32_t half_speed;
 	uint32_t countdown_wait;
 	uint32_t half_wait;
 	uint32_t full_wait;
@@ -58,10 +59,19 @@ typedef struct CONTROL_PP_PARAMS {
 }CONTROL_PP_PARAMS_t;
 
 
+
+//action scheduling
+//
 //schedule: higher in the list -> higher priority
 typedef enum CONTROL_SCHED{
-	CONTROL_SCHED_ABORT = 0x00,
+	CONTROL_SCHED_NOTHING = 0x00,
+	CONTROL_SCHED_ABORT,
 	CONTROL_SCHED_MOVE,
+	CONTROL_SCHED_CALIBRATE,
+	CONTROL_SCHED_ARM,
+	CONTROL_SCHED_DISARM,
+	CONTROL_SCHED_IGNITE,
+	CONTROL_SCHED_RECOVER,
 	CONTROL_SCHED_N
 }CONTROL_SCHED_t;
 
@@ -76,11 +86,9 @@ typedef struct CONTROL_INST{
 	EPOS4_MOV_t mov_type;
 	int32_t mov_target;
 	uint8_t mov_started;
-	uint8_t sched[CONTROL_SCHED_N];
+	CONTROL_SCHED_t sched;
 }CONTROL_INST_t;
 
-//action scheduling
-//
 
 
 
@@ -106,6 +114,19 @@ CONTROL_PP_PARAMS_t control_get_pp_params();
 void control_set_pp_params(CONTROL_PP_PARAMS_t params);
 
 void control_move(EPOS4_MOV_t mov_type, int32_t target);
+
+void control_calibrate();
+
+void control_arm();
+
+void control_disarm();
+
+void control_ignite();
+
+void control_abort();
+
+void control_recover();
+
 
 
 #ifdef __cplusplus

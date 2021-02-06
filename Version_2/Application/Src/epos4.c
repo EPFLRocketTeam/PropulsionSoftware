@@ -97,6 +97,8 @@
  **********************/
 
 
+
+
 /**********************
  *	TYPEDEFS
  **********************/
@@ -309,6 +311,19 @@ EPOS4_ERROR_t epos4_read_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subin
 	return tmp;
 }
 
+EPOS4_ERROR_t epos4_sync(EPOS4_INST_t * epos4) {
+	uint32_t err;
+	EPOS4_ERROR_t error = 0;
+
+	error |= epos4_read_statusword(epos4, &epos4->status, &err);
+
+	error |= epos4_read_u16(epos4, EPOS4_ERROR_WORD, &epos4->error, &err);
+
+	error |= epos4_read_i32(epos4, EPOS4_ACTUAL_POSITION, &epos4->position, &err);
+
+	error |= epos4_read_u16(epos4, EPOS4_PSU_VOLTAGE, &epos4->psu_voltage, &err);
+}
+
 
 EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4) {
 	uint32_t err;
@@ -439,17 +454,19 @@ EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config) 
 	return error;
 }
 
-EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4) {
+EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 	EPOS4_ERROR_t error = 0;
 	uint32_t err;
+	*terminated = 0;
 
 	uint16_t status;
 
 	error |= epos4_read_statusword(epos4, &status, &err);
 
 
-	if(!EPOS4_SW_ENABLED(status)) {
-		return EPOS4_ERROR;
+	if(!EPOS4_SW_TARGET_REACHED(status)) {
+		epos4_control_disable(epos4, &err);
+		*terminated = 1;
 	}
 
 	return error;
