@@ -58,6 +58,17 @@ typedef struct CONTROL_PP_PARAMS {
 	int32_t full_angle;
 }CONTROL_PP_PARAMS_t;
 
+typedef struct CONTROL_STATUS {
+	CONTROL_STATE_t state;
+	uint16_t pp_psu_voltage;
+	uint16_t pp_error;
+	int32_t pp_position;
+	uint16_t pp_status;
+	uint16_t ab_psu_voltage;
+	uint16_t ab_error;
+	int32_t ab_position;
+	uint16_t ab_status;
+}CONTROL_STATUS_t;
 
 
 //action scheduling
@@ -126,6 +137,8 @@ void control_ignite();
 void control_abort();
 
 void control_recover();
+
+CONTROL_STATUS_t control_get_status();
 
 
 

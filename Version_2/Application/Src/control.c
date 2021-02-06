@@ -405,6 +405,15 @@ void control_recover() {
 	control_sched_set(&control, CONTROL_SCHED_RECOVER);
 }
 
+CONTROL_STATUS_t control_get_status() {
+	CONTROL_STATUS_t status;
+	status.state = control.state;
+	status.pp_error = control.pp_epos4->error;
+	status.pp_psu_voltage = control.pp_epos4->psu_voltage;
+	status.pp_position = control.pp_epos4->position;
+	status.pp_status = control.pp_epos4->status;
+	return status;
+}
 
 static uint8_t control_sched_should_run(CONTROL_INST_t * control, CONTROL_SCHED_t num) {
 	return control->sched == num;

@@ -31,6 +31,7 @@
 
 #define PP_PARAMS_LEN (32)
 #define PP_MOVE_LEN (6)
+#define STATUS_LEN (12)
 
 
 #define ERROR_LO	(0xce)
@@ -66,11 +67,12 @@ static void debug_read_state(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 static void debug_set_pp_params(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_get_pp_params(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_pp_move(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
-static void debug_pp_home(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_calibrate(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_arm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_disarm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_ignite(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_abort(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_recover(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 
@@ -82,13 +84,14 @@ static void (*debug_fcn[]) (uint8_t *, uint16_t, uint8_t *, uint16_t *) = {
 		debug_set_pp_params,	//0x01
 		debug_get_pp_params, 	//0x02
 		debug_pp_move,			//0x03
-		debug_pp_home,			//0x04
 		debug_calibrate,		//0x05
 		debug_arm,				//0x06
+		debug_disarm,			//0x04
 		debug_ignite,			//0x07
 		debug_abort,			//0x08
-		debug_get_sensor,		//0x09
-		debug_get_status		//0x0A
+		debug_recover,			//0x09
+		debug_get_sensor,		//0x0A
+		debug_get_status		//0x0B
 };
 
 static uint16_t debug_fcn_max = sizeof(debug_fcn) / sizeof(void *);
@@ -189,52 +192,67 @@ static void debug_pp_move(uint8_t * data, uint16_t data_len, uint8_t * resp, uin
 	}
 }
 
-static void debug_pp_home(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	resp[0] = ERROR_LO;
-	resp[1] = ERROR_HI;
-	*resp_len = 2;
-}
-
 static void debug_calibrate(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	//send calibrate trigger signal to control
-	resp[0] = ERROR_LO;
-	resp[1] = ERROR_HI;
+	control_calibrate();
+	resp[0] = OK_LO;
+	resp[1] = OK_HI;
 	*resp_len = 2;
 }
 
 static void debug_arm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	//send arm trigger signal to control
-	resp[0] = ERROR_LO;
-	resp[1] = ERROR_HI;
+	control_arm();
+	resp[0] = OK_LO;
+	resp[1] = OK_HI;
+	*resp_len = 2;
+}
+
+static void debug_disarm(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	control_disarm();
+	resp[0] = OK_LO;
+	resp[1] = OK_HI;
 	*resp_len = 2;
 }
 
 static void debug_ignite(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	//send ignite trigger signal to control
-	resp[0] = ERROR_LO;
-	resp[1] = ERROR_HI;
+	control_ignite();
+	resp[0] = OK_LO;
+	resp[1] = OK_HI;;
 	*resp_len = 2;
 }
 
 static void debug_abort(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	//send abort trigger signal to control
-	resp[0] = ERROR_LO;
-	resp[1] = ERROR_HI;
+	control_abort();
+	resp[0] = OK_LO;
+	resp[1] = OK_HI;
+	*resp_len = 2;
+}
+
+static void debug_recover(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	control_recover();
+	resp[0] = OK_LO;
+	resp[1] = OK_HI;
 	*resp_len = 2;
 }
 
 static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	//retrieve last sensor data
-	resp[0] = ERROR_LO;
-	resp[1] = ERROR_HI;
-	*resp_len = 2;
+	SENSOR_DATA_t sensor = sensor_get_last();
+	util_encode_u32(resp, sensor.pressure_1);
+	util_encode_u32(resp+4, sensor.pressure_2);
+	util_encode_i32(resp+8, sensor.temperature[0]);
+	util_encode_i32(resp+12, sensor.temperature[1]);
+	util_encode_i32(resp+16, sensor.temperature[2]);
+	*resp_len = 20;
 }
 
 static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	//retrieve last status packet
-	resp[0] = ERROR_LO;
-	resp[1] = ERROR_HI;
-	*resp_len = 2;
+	CONTROL_STATUS_t status = control_get_status();
+	util_encode_u8(resp, status.state);
+	util_encode_u16(resp+1, status.pp_psu_voltage);
+	util_encode_u16(resp+3, status.pp_error);
+	util_encode_i32(resp+5, status.pp_position);
+	util_encode_u16(resp+9, status.pp_status);
+	resp[11] = 0;
+	*resp_len = 12;
 }
 
 /* END */
