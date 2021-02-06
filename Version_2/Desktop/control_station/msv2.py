@@ -1,7 +1,10 @@
 # This Python file uses the following encoding: utf-8
 
+
 import serial
 import serial.tools.list_ports
+
+from PySide6.QtCore import QThread
 
 BAUDRATE = 115200
 
@@ -170,37 +173,38 @@ class msv2:
         return MSV2_PROGRESS
 
     def send(self, opcode, data):
-        msg = self.encode(opcode, data)
-        error = 0
-        try:
-            self.ser.write(msg)
-        except:
-            print("WRITE ERROR")
-        print('[{}]'.format(', '.join(hex(x) for x in msg)))
-        try:
-            while 1:
-                byte = self.ser.read(1)
-                #print("dta: {}".format(hex(ord(byte))))
-                if not byte:
-                    print("error")
-                    break
-                res = self.decode(byte)
-                #print("res:", res)
-                if not res == MSV2_PROGRESS:
-                    break
-            print('[{}]'.format(', '.join(hex(x) for x in self.data)))
-            resp = 1
-            while resp:
-                resp = self.ser.read(1)
-            if self.data == [0xce, 0xec] or self.data == [0xbe, 0xeb]:
+        if self.connected:
+            msg = self.encode(opcode, data)
+            error = 0
+            try:
+                self.ser.write(msg)
+            except:
+                print("WRITE ERROR")
+            #print('[{}]'.format(', '.join(hex(x) for x in msg)))
+            try:
+                while 1:
+                    byte = self.ser.read(1)
+                    #print("dta: {}".format(hex(ord(byte))))
+                    if not byte:
+                        print("error")
+                        break
+                    res = self.decode(byte)
+                    #print("res:", res)
+                    if not res == MSV2_PROGRESS:
+                        break
+                #print('[{}]'.format(', '.join(hex(x) for x in self.data)))
+                resp = 1
+                while resp:
+                    resp = self.ser.read(1)
+                if self.data == [0xce, 0xec] or self.data == [0xbe, 0xeb]:
+                    return None
+                else:
+                    return self.data
+            except:
+                print("READ ERROR")
+                while resp:
+                    resp = self.ser.read(1)
                 return None
-            else:
-                return self.data
-        except:
-            print("READ ERROR")
-            while resp:
-                resp = self.ser.read(1)
-            return None
 
 
 

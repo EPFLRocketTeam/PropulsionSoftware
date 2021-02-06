@@ -84,9 +84,9 @@ static void (*debug_fcn[]) (uint8_t *, uint16_t, uint8_t *, uint16_t *) = {
 		debug_set_pp_params,	//0x01
 		debug_get_pp_params, 	//0x02
 		debug_pp_move,			//0x03
-		debug_calibrate,		//0x05
-		debug_arm,				//0x06
-		debug_disarm,			//0x04
+		debug_calibrate,		//0x04
+		debug_arm,				//0x05
+		debug_disarm,			//0x06
 		debug_ignite,			//0x07
 		debug_abort,			//0x08
 		debug_recover,			//0x09
@@ -246,12 +246,11 @@ static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 
 static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	CONTROL_STATUS_t status = control_get_status();
-	util_encode_u8(resp, status.state);
-	util_encode_u16(resp+1, status.pp_psu_voltage);
-	util_encode_u16(resp+3, status.pp_error);
-	util_encode_i32(resp+5, status.pp_position);
-	util_encode_u16(resp+9, status.pp_status);
-	resp[11] = 0;
+	util_encode_u16(resp, status.state);
+	util_encode_u16(resp+2, status.pp_psu_voltage);
+	util_encode_u16(resp+4, status.pp_error);
+	util_encode_u16(resp+6, status.pp_status);
+	util_encode_i32(resp+8, status.pp_position);
 	*resp_len = 12;
 }
 

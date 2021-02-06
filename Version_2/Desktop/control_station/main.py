@@ -5,7 +5,7 @@ import platform
 import re
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QFile, QIODevice
+from PySide6.QtCore import QFile, QIODevice, QTimer, QThread, QThreadPool, QRunnable
 
 import struct
 import msv2
@@ -36,6 +36,8 @@ ABSOLUTE_IMMEDIATE  = 0x01
 RELATIVE            = 0x02
 RELATIVE_IMMEDIATE  = 0x03
 
+status_state = 0;
+
 def safe_int(d):
     try:
         return int(d)
@@ -64,12 +66,12 @@ def read():
     if(data and len(data) >= 1):
         state = data[0]
         window.status_state.clear()
-        state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
+        state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
         window.status_state.insert(state_text[state])
 
 def pp_motor_get():
-    bin_data = m.send(GET_PP_PARAMS, [0x00, 0x00]);
-    if(bin_data and len(bin_data) >= 32):
+    bin_data = m.send(GET_PP_PARAMS, [0x00, 0x00])
+    if(bin_data and len(bin_data) == 32):
         data = struct.unpack("IIIIIIii", bytes(bin_data))
 
         window.pp_motor_acc.clear()
@@ -119,9 +121,68 @@ def pp_motor_move():
     bin_data = struct.pack("iH", target, mode)
     resp = m.send(PP_MOVE, bin_data)
 
+def calibrate():
+    m.send(CALIBRATE, [0x00, 0x00])
 
-def pp_motor_home():
-    resp = m.send(PP_HOME, [0x00, 0x00]);
+def arm():
+    print(status_state)
+    if status_state == 2: # if armed
+        m.send(DISARM, [0x00, 0x00])
+    else:
+        m.send(ARM, [0x00, 0x00])
+
+def ignite():
+    m.send(IGNITE, [0x00, 0x00])
+
+def abort():
+    m.send(ABORT, [0x00, 0x00])
+
+def recover():
+    m.send(RECOVER, [0x00, 0x00])
+
+def ping():
+    global status_state
+    bin_data = m.send(GET_STATUS, [0x00, 0x00])
+    if(bin_data and len(bin_data) == 12):
+        data = struct.unpack("HHHHi", bytes(bin_data))
+        state = data[0]
+        status_state = state
+        window.status_state.clear()
+        state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
+        window.status_state.insert(state_text[state])
+
+def ping2():
+    worker = Worker(ping)
+    threadpool.start(worker)
+
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and
+                     kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+        self.fn(*self.args, **self.kwargs)
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -140,6 +201,8 @@ if __name__ == "__main__":
         print(loader.errorString())
         sys.exit(-1)
 
+    res = None
+
     if platform.system() == 'Darwin':
         dev_dir = os.listdir('/dev');
         res = None
@@ -149,22 +212,40 @@ if __name__ == "__main__":
                 res = "/dev/{}".format(d)
                 break
 
-    if(res[0] is not None):
+    if(res is not None):
         COM_PORT = res
     else:
-        COM_PORT = '/dev/cu.usbmodem144303'
+        COM_PORT = 'COM18'
+
 
     window.connect_device.clear()
     window.connect_device.insert(COM_PORT)
 
+    threadpool = QThreadPool()
+
+    thread = QThread()
+    timer = QTimer()
+    timer.setInterval(500) #use multithreading to remove GUI overhead
+    timer.timeout.connect(ping)
+    timer.start()
+    #timer.moveToThread(thread)
+
+
+
+
+
+
 
     #connect all the callbacks
     window.connect_btn.clicked.connect(connect)
-    window.status_read.clicked.connect(read)
     window.pp_motor_get.clicked.connect(pp_motor_get)
     window.pp_motor_set.clicked.connect(pp_motor_set)
     window.pp_motor_move.clicked.connect(pp_motor_move)
-    window.pp_motor_home.clicked.connect(pp_motor_home)
+    window.status_calibrate.clicked.connect(calibrate)
+    window.status_arm.clicked.connect(arm)
+    window.status_ignite.clicked.connect(ignite)
+    window.status_abort.clicked.connect(abort)
+    window.status_recover.clicked.connect(recover)
 
     window.show()
 

@@ -65,7 +65,7 @@ static CONTROL_SCHED_t sched_allowed[][SCHED_ALLOWED_WIDTH] = {
 /**********************
  *	PROTOTYPES
  **********************/
-
+static void init_control(CONTROL_INST_t * control);
 static void control_update(CONTROL_INST_t * control);
 
 // Enter state functions
@@ -110,7 +110,7 @@ void control_thread(void * arg) {
 
 	led_init();
 
-	init_idle(&control);
+	init_control(&control);
 
 
 	static EPOS4_INST_t pp_epos4;
@@ -194,9 +194,7 @@ static void control_update(CONTROL_INST_t * control) {
 	}
 }
 
-static void init_idle(CONTROL_INST_t * control) {
-	control->state = CS_IDLE;
-	led_set_color(LED_GREEN);
+static void init_control(CONTROL_INST_t * control) {
 	control->sched = CONTROL_SCHED_NOTHING;
 
 
@@ -208,6 +206,11 @@ static void init_idle(CONTROL_INST_t * control) {
 	control->pp_params.full_wait = 20000;
 	control->pp_params.half_angle = DEG2INC(27);
 	control->pp_params.full_angle = DEG2INC(90);
+}
+
+static void init_idle(CONTROL_INST_t * control) {
+	control->state = CS_IDLE;
+	led_set_color(LED_GREEN);
 }
 
 static void idle(CONTROL_INST_t * control) {
@@ -254,6 +257,7 @@ static void idle(CONTROL_INST_t * control) {
 
 static void init_calibration(CONTROL_INST_t * control) {
 	control->state = CS_CALIBRATION;
+	led_set_color(LED_BLUE);
 	//send calibration command to sensors
 }
 
@@ -263,12 +267,13 @@ static void calibration(CONTROL_INST_t * control) {
 
 static void init_armed(CONTROL_INST_t * control) {
 	control->state = CS_ARMED;
+	led_set_color(LED_TEAL);
 }
 
 static void armed(CONTROL_INST_t * control) {
 
 	if(control_sched_should_run(control, CONTROL_SCHED_IGNITE)) {
-		init_ignition(control);
+		init_countdown(control);
 		control_sched_done(control, CONTROL_SCHED_IGNITE);
 	}
 
@@ -279,6 +284,7 @@ static void armed(CONTROL_INST_t * control) {
 }
 
 static void init_countdown(CONTROL_INST_t * control) {
+	led_set_color(LED_ORANGE);
 	control->state = CS_COUNTDOWN;
 }
 
@@ -337,6 +343,7 @@ static void glide(CONTROL_INST_t * control) {
 }
 
 static void init_abort(CONTROL_INST_t * control) {
+	led_set_color(LED_PINK);
 	control->state = CS_ABORT;
 }
 
@@ -351,6 +358,7 @@ static void _abort(CONTROL_INST_t * control) {
 }
 
 static void init_error(CONTROL_INST_t * control) {
+	led_set_color(LED_RED);
 	control->state = CS_ERROR;
 }
 
