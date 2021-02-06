@@ -20,13 +20,14 @@ READ_STATE =    0x00
 SET_PP_PARAMS = 0x01
 GET_PP_PARAMS = 0x02
 PP_MOVE =       0x03
-PP_HOME =       0x04
-CALIBRATE =     0x05
-ARM =           0x06
+CALIBRATE =     0x04
+ARM =           0x05
+DISARM =        0x06
 IGNITE =        0x07
 ABORT =         0x08
-GET_SENSOR =    0x09
-GET_STATUS =    0x0A
+RECOVER =       0x09
+GET_SENSOR =    0x0A
+GET_STATUS =    0x0B
 
 #MOVE MODES
 
