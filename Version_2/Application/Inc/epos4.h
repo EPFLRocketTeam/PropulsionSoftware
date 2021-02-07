@@ -54,6 +54,10 @@ typedef enum EPOS4_MOV {
 	EPOS4_RELATIVE_IMMEDIATE = 0x03
 }EPOS4_MOV_t;
 
+typedef enum EPOS4_HOM {
+	EPOS4_ACTUAL_POSITION = 37
+}EPOS4_HOM_t;
+
 typedef struct EPOS4_INST EPOS4_INST_t;
 
 struct EPOS4_INST{
@@ -84,7 +88,8 @@ typedef struct EPOS4_CSP_CONFIG {
 }EPOS4_CSP_CONFIG_t;
 
 typedef struct EPOS4_HOM_CONFIG {
-
+	EPOS4_HOM_t method;
+	int32_t home_offset;
 }EPOS4_HOM_CONFIG_t;
 
 
@@ -143,6 +148,8 @@ EPOS4_ERROR_t epos4_read_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subin
 #define epos4_control_ppm_start_rel(epos4, err)		epos4_write_controlword(epos4, EPOS4_CW_PPM_RELATIVE, err)
 #define epos4_control_ppm_start_rel_imm(epos4, err)	epos4_write_controlword(epos4, EPOS4_CW_PPM_RELATIVE_I, err)
 
+#define epos4_control_hom_start(epos4, err)			epos4_write_controlword(epos4, EPOS4_CW_HOM_START, err)
+
 
 
 
@@ -157,12 +164,14 @@ EPOS4_ERROR_t epos4_ppm_prep(EPOS4_INST_t * epos4);
 EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t target);
 EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config);
 EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4, uint8_t * terminated);
+EPOS4_ERROR_t epos4_ppm_unprep(EPOS4_INST_t * epos4);
 
 EPOS4_ERROR_t epos4_csp_move(EPOS4_INST_t * epos4, int32_t target);
 EPOS4_ERROR_t epos4_csp_config(EPOS4_INST_t * epos4, EPOS4_CSP_CONFIG_t config);
 
-EPOS4_ERROR_t epos4_hom_move(EPOS4_INST_t * epos4);
 EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config);
+EPOS4_ERROR_t epos4_hom_move(EPOS4_INST_t * epos4);
+
 
 
 #ifdef __cplusplus

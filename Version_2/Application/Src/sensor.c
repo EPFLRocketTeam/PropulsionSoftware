@@ -25,11 +25,13 @@
 #define SENSOR_TIMER	htim3
 #define SENSOR_ADC		hadc1
 
-#define SENSOR_HEART_BEAT 10  /* ms */
+#define SENSOR_HEART_BEAT 5  /* ms */
 
 /**********************
  *	CONSTANTS
  **********************/
+
+#define DT_THRESH		500 /* 0.1deg */
 
 #define SAMPLING_TIME 	20 //ms
 #define ADC_FREQ		3200 //Hz
@@ -40,6 +42,8 @@
 #define FILTER_BUFFER_LEN	(16)
 
 #define SEND_RATE	20
+
+#define CALIBRATION_CYCLES		(64)
 
 //this needs to be done correctly
 #define MS_2_SENSOR_TIMER(ms)	72e6/32*(ms)/1000
@@ -54,10 +58,10 @@
 #define R4_VAL	4700
 
 #define KULITE_322_CAL			64341	//uV/bar
-#define KULITE_322_DECODE(val)	((uint64_t)(val) * (R3_VAL+R4_VAL) * 3300 * 1000000 / KULITE_322_CAL / 4096 / R4_VAL)
+#define KULITE_322_DECODE(val)	((int64_t)(val) * (R3_VAL+R4_VAL) * 3300 * 1000000 / KULITE_322_CAL / 4096 / R4_VAL)
 
 #define KULITE_323_CAL			64271	//uV/bar
-#define KULITE_323_DECODE(val)	((uint64_t)(val) * (R1_VAL+R2_VAL) * 3300 * 1000000 / KULITE_323_CAL / 4096 / R2_VAL)
+#define KULITE_323_DECODE(val)	((int64_t)(val) * (R1_VAL+R2_VAL) * 3300 * 1000000 / KULITE_323_CAL / 4096 / R2_VAL)
 
 
 #define FILTER_LEN	5
@@ -109,12 +113,10 @@ static SENSOR_DATA_t filter_buffer[FILTER_BUFFER_LEN] = {0};
 
 static SENSOR_DATA_t last_data = {0};
 
-//filter computations in 20.12 floating point
-static const uint32_t filter_coefficients[] = {	FLOAT_2_FIX_20_12(0.6),
-												FLOAT_2_FIX_20_12(0.2),
-												FLOAT_2_FIX_20_12(0.1),
-												FLOAT_2_FIX_20_12(0.07),
-												FLOAT_2_FIX_20_12(0.03)};
+static SENSOR_DATA_t offset = {0};
+
+static uint8_t calib = 0;
+static uint16_t calib_counter = 0;
 
 
 /**********************
@@ -139,10 +141,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	if(hadc->Instance == SENSOR_ADC.Instance) {
 		//put samples into a fifo buffer
 		//samples are preprocessed
-		SENSOR_DATA_t data = {
-				adc_buffer[PRESSURE_1],
-				adc_buffer[PRESSURE_2]
-		};
+		SENSOR_DATA_t data;
+		data.pressure_1 = KULITE_322_DECODE(adc_buffer[PRESSURE_1])-offset.pressure_1;
+		data.pressure_2 = KULITE_323_DECODE(adc_buffer[PRESSURE_2])-offset.pressure_2;
+
 		if(adc_buffer[TEMPERATURE_1] >= LUT_TEMP_MIN && adc_buffer[TEMPERATURE_1] < LUT_TEMP_MAX) {
 				data.temperature[0] = lut_temp[adc_buffer[TEMPERATURE_1]-LUT_TEMP_MIN];
 				data.temperature_valid[0] = 1;
@@ -179,7 +181,12 @@ static void sensor_init(void) {
 }
 
 void sensor_calib(void) {
+	calib_counter = 0;
+	calib = 1;
+}
 
+uint8_t sensor_calib_done(void) {
+	return !calib;
 }
 
 SENSOR_DATA_t sensor_get_last(void) {
@@ -210,7 +217,7 @@ void sensor_thread(void * arg) {
 		uint16_t temp_count[3] = {0};
 		int32_t temp_val[3] = {0};
 		uint16_t pres_count = 0;
-		uint32_t pres_val[2] = {0};
+		int32_t pres_val[2] = {0};
 		while(!util_buffer_SENSOR_isempty(&sample_bfr)) {
 			SENSOR_DATA_t data = util_buffer_SENSOR_get(&sample_bfr);
 			pres_val[0] += data.pressure_1;
@@ -226,15 +233,23 @@ void sensor_thread(void * arg) {
 		if(pres_count != 0) {
 			pres_val[0] /= pres_count;
 			pres_val[1] /= pres_count;
+		}else{
+			//pressure error
 		}
 		if(temp_count[0] != 0) {
 			temp_val[0] /= temp_count[0];
+		} else {
+			//temp 1 error
 		}
 		if(temp_count[1] != 0) {
 			temp_val[1] /= temp_count[1];
+		} else {
+			//temp 2 error
 		}
 		if(temp_count[2] != 0) {
 			temp_val[2] /= temp_count[2];
+		} else {
+			//temp 3 error
 		}
 		SENSOR_DATA_t data = {
 				pres_val[0],
@@ -245,19 +260,56 @@ void sensor_thread(void * arg) {
 						temp_val[2]
 				}
 		};
-		util_buffer_SENSOR_add(&filter_bfr, data);
+
+		data.time = HAL_GetTick();
 
 
 
 		// this is while I build the filtering functions
-		last_data = util_buffer_SENSOR_access(&filter_bfr, 0);
-		last_data.time = HAL_GetTick();
+		static uint16_t h = 0;
+		static int32_t d_temperature[3] = {0};
+
+		h = last_data.time - data.time;
+		if(h) {
+			for(uint8_t i = 0; i < 3; i++) {
+				int32_t next = last_data.temperature[i] + d_temperature[i]*h;
+				if(util_abs(data.temperature[i])>DT_THRESH) {
+					data.temperature[i] = next;
+				}
+				//compute next
+				d_temperature[i] = (data.temperature[i] - last_data.temperature[i])/h;
+			}
+		}
+
+		util_buffer_SENSOR_add(&filter_bfr, data);
+		last_data = data;
 
 		//Predictor and wrong measurements rejector (Temperature only)
 
 		//predict next state according to the derivative
 		//if measurement is too far, use an estimation from the derivative and the time to get the next measurement
 
+		//CALIBRATION (PRESSURE)
+		static uint32_t pressure_1 = 0;
+		static uint32_t pressure_2 = 0;
+		if(calib) {
+			if(calib_counter == 0) {
+				offset.pressure_1 = 0;
+				offset.pressure_2 = 0;
+				pressure_1 = 0;
+				pressure_2 = 0;
+			} else {
+				pressure_1 += data.pressure_1;
+				pressure_2 += data.pressure_2;
+				if(calib_counter >= CALIBRATION_CYCLES) {
+					offset.pressure_1 = pressure_1 / CALIBRATION_CYCLES;
+					offset.pressure_2 = pressure_2 / CALIBRATION_CYCLES;
+					calib = 0;
+					calib_counter = 0;
+				}
+			}
+			calib_counter++;
+		}
 
 
 		//Notify CAN for transfer

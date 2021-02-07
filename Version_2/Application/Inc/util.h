@@ -58,6 +58,9 @@ static inline uint8_t util_buffer_##name##_isempty(UTIL_BUFFER_##name##_t * bfr)
 	return bfr->l_ix == bfr->c_ix;                                                                   \
 }
 
+
+#define util_abs(a)	((a)<0?-(a):(a))
+
 /**********************
  *  TYPEDEFS
  **********************/

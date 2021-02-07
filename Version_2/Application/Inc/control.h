@@ -102,6 +102,9 @@ typedef struct CONTROL_INST{
 	int32_t mov_target;
 	uint8_t mov_started;
 	CONTROL_SCHED_t sched;
+	uint8_t pp_motor_prepped;
+	uint8_t pp_close_mov_started;
+	uint8_t pp_abort_mov_started;
 }CONTROL_INST_t;
 
 

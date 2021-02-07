@@ -240,8 +240,8 @@ static void debug_recover(uint8_t * data, uint16_t data_len, uint8_t * resp, uin
 
 static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
 	SENSOR_DATA_t sensor = sensor_get_last();
-	util_encode_u32(resp, sensor.pressure_1);
-	util_encode_u32(resp+4, sensor.pressure_2);
+	util_encode_i32(resp, sensor.pressure_1);
+	util_encode_i32(resp+4, sensor.pressure_2);
 	util_encode_i32(resp+8, sensor.temperature[0]);
 	util_encode_i32(resp+12, sensor.temperature[1]);
 	util_encode_i32(resp+16, sensor.temperature[2]);

@@ -66,6 +66,15 @@ RELATIVE_IMMEDIATE  = 0x03
 connection_status = "DISCONNECTED"
 status_state = 0;
 
+
+#recording
+recording = 0
+rec_file = None
+start_rec = None
+
+data_labels = ['pres_1 [mBar]', 'pres_2 [mBar]', 'temp_1 [0.1deC]', 'temp_2 [0.1deC]', 'temp_3 [0.1degC]', 'sensor_time [ms]']
+
+
 def safe_int(d):
     try:
         return int(d)
@@ -91,6 +100,7 @@ def connect_trig():
         serial_worker.ser_disconnect()
     else:
         serial_worker.ser_connect(device)
+        serial_worker.send_generic(GET_PP_PARAMS, [0x00, 0x00])
 
 @Slot(str)
 def connect_cb(stat):
@@ -194,11 +204,21 @@ def ping_cb(stat, sens):
         state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
         window.status_state.insert(state_text[state])
         window.pp_motor_current.insert(str(stat[4]))
+        if state == 1:
+            temperature_data_1.clear()
+            temperature_data_2.clear()
+            temperature_data_3.clear()
+            pressure_data_1.clear()
+            pressure_data_2.clear()
+            time_data.clear()
+            counter = 0;
 
     if(sens and len(sens) == 24):
 
-        data = struct.unpack("IIiiiI", bytes(sens))
+        data = struct.unpack("iiiiiI", bytes(sens))
         #print(data)
+
+        record_sample(data)
 
         temperature_data_1.append(data[2])
         temperature_data_2.append(data[3])
@@ -224,7 +244,7 @@ def ping_cb(stat, sens):
         pressure_axes.clear()
         pressure_axes.set_xticks([])
         pressure_axes.set_ylabel("Pressure [mBar]")
-        temperature_axes.set_ylabel("Temperature [°C]")
+        temperature_axes.set_ylabel("Temperature [0.1degC]")
         temperature_axes.set_xlabel("Time [ms]")
 
         time_vec = (np.array(time_data)-time_current)/1000
@@ -241,7 +261,41 @@ def ping_cb(stat, sens):
         pressure_axes.figure.canvas.draw()
 
 
+def write_csv(file, data):
+    for i, d in enumerate(data):
+        file.write(str(d))
+        if i == len(data)-1:
+            file.write('\n')
+        else:
+            file.write(';')
 
+def start_record():
+    global recording
+    global rec_file
+    global start_rec
+    if recording:
+        recording=0
+        window.local_record_stat.setText("")
+        rec_file.close()
+    else:
+        recording=1
+        window.local_record_stat.setText("Recording...")
+        fn = window.local_record_fn.text()
+        if(fn == ''):
+            fn = 'local'
+        num = 0
+        fnam = "{}{}.csv".format(fn, num);
+        while(os.path.isfile(fnam)):
+            num += 1
+            fnam = "{}{}.csv".format(fn, num);
+        rec_file = open(fnam, 'w')
+        write_csv(rec_file, data_labels)
+
+
+def record_sample(data):
+    if recording:
+        write_csv(rec_file, data)
+        data_sampled = 0
 
 
 class Serial_worker(QObject):
@@ -406,6 +460,8 @@ if __name__ == "__main__":
     window.status_ignite.clicked.connect(ignite_trig)
     window.status_abort.clicked.connect(abort_trig)
     window.status_recover.clicked.connect(recover_trig)
+
+    window.local_record.clicked.connect(start_record)
 
 
     window.show()

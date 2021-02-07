@@ -462,6 +462,62 @@ EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 
 	uint16_t status;
 
+	osDelay(1); //wait 1ms to let sw update itself
+
+	error |= epos4_read_statusword(epos4, &status, &err);
+
+
+	if(!EPOS4_SW_TARGET_REACHED(status)) {
+		epos4_control_disable(epos4, &err);
+		*terminated = 1;
+	}
+
+	return error;
+}
+
+EPOS4_ERROR_t epos4_ppm_unprep(EPOS4_INST_t * epos4) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+	error |= epos4_control_disable(epos4, &err);
+
+	return error;
+}
+
+EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+
+	error |= epos4_write_i8(epos4, EPOS4_MODE_OF_OPERATION, EPOS4_MODE_HOMING, &err);
+
+	error |= epos4_write_i32(epos4, EPOS4_HOME_OFFSET, config.home_offset, &err);
+
+	error |= epos4_write_i8(epos4, EPOS4_HOMING_METHOD, config.method, &err);
+
+	return error;
+}
+
+EPOS4_ERROR_t epos4_hom_move(EPOS4_INST_t * epos4) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+
+	error |= epos4_control_shutdown(epos4, &err);
+
+	error |= epos4_control_soenable(epos4, &err);
+
+	error |= epos4_control_hom_start(epos4, &err);
+
+	return error;
+}
+
+EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+	*terminated = 0;
+
+	uint16_t status;
+
+	osDelay(1); //wait 1ms to let sw update itself
+
 	error |= epos4_read_statusword(epos4, &status, &err);
 
 

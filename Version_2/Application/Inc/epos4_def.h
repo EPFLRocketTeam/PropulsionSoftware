@@ -95,6 +95,8 @@
 #define EPOS4_CW_PPM_ABSOLUTE_I		0x003F	//start absolute immediately
 #define EPOS4_CW_PPM_RELATIVE_I		0x005F  //start relative immediately
 
+#define EPOS4_CW_HOM_START			0x001F	//start homing
+
 
 
 //STATUSWORD BIT TESTS

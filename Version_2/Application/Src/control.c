@@ -215,6 +215,10 @@ static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
 	led_set_color(LED_GREEN);
 	control->counter_active = 0;
+	control->mov_started = 0;
+	control->pp_close_mov_started = 0;
+	control->pp_abort_mov_started = 0;
+	control->pp_motor_prepped = 0;
 }
 
 static void idle(CONTROL_INST_t * control) {
@@ -256,13 +260,25 @@ static void idle(CONTROL_INST_t * control) {
 static void init_calibration(CONTROL_INST_t * control) {
 	control->state = CS_CALIBRATION;
 	led_set_color(LED_BLUE);
-	//send calibration command to sensors
+	sensor_calib();
+	EPOS4_HOM_CONFIG_t config;
+	config.method = EPOS4_ACTUAL_POSITION;
+	config.home_offset = 0;
+	epos4_hom_config(control->pp_epos4, config);
+	epos4_hom_move(control->pp_epos4);
 }
 
 static void calibration(CONTROL_INST_t * control) {
 	//Wait for the calibration ack to come from the sensors
 	//perform motor homing --> current position as home
 	//perform sensor calibration
+
+	uint8_t terminated = 0;
+	epos4_hom_terminate(control->pp_epos4, &terminated);
+
+	if(sensor_calib_done() && terminated) {
+		init_idle(control);
+	}
 }
 
 static void init_armed(CONTROL_INST_t * control) {
@@ -272,12 +288,28 @@ static void init_armed(CONTROL_INST_t * control) {
 
 static void armed(CONTROL_INST_t * control) {
 
+	if(!control->pp_motor_prepped) {
+		EPOS4_PPM_CONFIG_t ppm_config;
+		ppm_config.profile_acceleration = control->pp_params.acc;
+		ppm_config.profile_deceleration = control->pp_params.dec;
+		ppm_config.profile_velocity = control->pp_params.speed;
+		epos4_ppm_config(control->pp_epos4, ppm_config);
+		if(epos4_ppm_prep(control->pp_epos4) == EPOS4_SUCCESS) {
+			control->pp_motor_prepped = 1;
+		} else {
+			//disabled for testing at home
+			//init_error(control);  //error state in case of motor failure
+		}
+	}
+
 	if(control_sched_should_run(control, CONTROL_SCHED_IGNITE)) {
 		init_countdown(control);
 		control_sched_done(control, CONTROL_SCHED_IGNITE);
 	}
 
 	if(control_sched_should_run(control, CONTROL_SCHED_DISARM)) {
+		epos4_ppm_unprep(control->pp_epos4);
+		control->pp_motor_prepped = 0;
 		init_idle(control);
 		control_sched_done(control, CONTROL_SCHED_DISARM);
 	}
@@ -302,19 +334,15 @@ static void init_ignition(CONTROL_INST_t * control) {
 	led_set_color(LED_LILA);
 	control->counter = control->pp_params.half_wait-CONTROL_HEART_BEAT;
 	control->counter_active = 1;
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.half_angle);
 }
 
 static void ignition(CONTROL_INST_t * control) {
-	//send first motor movement command
 
 	if(control->counter <= 0) {
 		control->counter_active = 0;
 		init_thrust(control);
 	}
-
-	//send second movement command
-	//wait for the target reached
-	//init thrust
 
 }
 
@@ -323,11 +351,14 @@ static void init_thrust(CONTROL_INST_t * control) {
 	led_set_color(LED_TEAL);
 	control->counter = control->pp_params.full_wait-CONTROL_HEART_BEAT;
 	control->counter_active = 1;
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.full_angle);
 }
 
 static void thrust(CONTROL_INST_t * control) {
-	//thrust control algorithm drives the motor
-	//successive motor ppm moves with the immediate flag set!
+
+	//THRUST CONTROL HERE
+
+
 	if(control->counter <= 0) {
 		control->counter_active = 0;
 		init_shutdown(control);
@@ -338,11 +369,20 @@ static void thrust(CONTROL_INST_t * control) {
 
 static void init_shutdown(CONTROL_INST_t * control) {
 	control->state = CS_SHUTDOWN;
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, 0);
+	control->pp_close_mov_started = 1;
 	//start motor movement to close valve
 }
 
 static void shutdown(CONTROL_INST_t * control) {
-	//wait for the ack
+	if(control->pp_close_mov_started) {
+		uint8_t terminated = 0;
+		epos4_ppm_terminate(control->pp_epos4, &terminated);
+		if(terminated) {
+			control->pp_close_mov_started = 0;
+			control->pp_motor_prepped = 0;
+		}
+	}
 	init_idle(control);
 }
 
@@ -361,12 +401,23 @@ static void init_abort(CONTROL_INST_t * control) {
 	led_set_color(LED_PINK);
 	control->state = CS_ABORT;
 	control->counter_active = 0;
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, 0);
+	control->pp_abort_mov_started = 1;
 }
 
 static void _abort(CONTROL_INST_t * control) {
 	//close main valve
 	//close airbrakes
 	//wait for user release
+	if(control->pp_abort_mov_started) {
+		uint8_t terminated = 0;
+		epos4_ppm_terminate(control->pp_epos4, &terminated);
+		if(terminated) {
+			control->pp_abort_mov_started = 0;
+			control->pp_motor_prepped = 0;
+		}
+	}
+
 	if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
 		init_idle(control);
 		control_sched_done(control, CONTROL_SCHED_RECOVER);
