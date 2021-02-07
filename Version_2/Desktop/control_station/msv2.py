@@ -62,10 +62,22 @@ class msv2:
          return [x.device for x in list]
 
     def connect(self, port):
+        self.port = port
         self.ser.baudrate = BAUDRATE
         self.ser.port = port
-        self.ser.timeout = 0.5
+        self.ser.timeout = 0.2
         try:
+            self.ser.open()
+            self.connected = 1
+            print("connected")
+            return 1
+        except:
+            return 0
+    def reconnect(self):
+        try:
+            self.ser.port = self.port
+            self.ser.baudrate = BAUDRATE
+            self.ser.timeout = 0.2
             self.ser.open()
             self.connected = 1
             print("connected")
@@ -107,6 +119,7 @@ class msv2:
         bin_data.append(crc & 0x00ff)
         bin_data.append(crc >> 8)
         return bin_data
+
 
     def decode(self, d):
         #print("decode state:", self.state)
@@ -182,6 +195,8 @@ class msv2:
                 self.ser.write(msg)
             except:
                 print("WRITE ERROR")
+                self.mutex.unlock()
+                return None
             #print('[{}]'.format(', '.join(hex(x) for x in msg)))
             try:
                 while 1:
@@ -195,9 +210,6 @@ class msv2:
                     if not res == MSV2_PROGRESS:
                         break
                 #print('[{}]'.format(', '.join(hex(x) for x in self.data)))
-                resp = 1
-                while resp:
-                    resp = self.ser.read(1)
                 if self.data == [0xce, 0xec] or self.data == [0xbe, 0xeb]:
                     self.mutex.unlock()
                     return None
@@ -206,10 +218,10 @@ class msv2:
                     return self.data
             except:
                 print("READ ERROR")
-                while resp:
-                    resp = self.ser.read(1)
                 self.mutex.unlock()
                 return None
+        else:
+              return None
 
 
 

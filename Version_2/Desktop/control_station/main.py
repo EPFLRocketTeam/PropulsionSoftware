@@ -24,8 +24,8 @@ pressure_axes = None
 temperature_axes = None
 
 
-DATA_BUFFER_LEN = 100
-HEART_BEAT = 500
+DATA_BUFFER_LEN = 500
+HEART_BEAT = 100
 
 
 SENSOR_REMOTE_BUFFER = 5
@@ -72,7 +72,17 @@ def safe_int(d):
     except:
         return 0
 
+def safe_float(d):
+    try:
+        return float(d)
+    except:
+        return 0
 
+def inc2deg(inc):
+    return round(-inc/4/1024/66*1*360, 2)
+
+def deg2inc(deg):
+    return int(round(-deg*4*1024*66/1/360))
 
 @Slot()
 def connect_trig():
@@ -112,8 +122,8 @@ def pp_motor_get_cb(bin_data):
         window.pp_motor_cwait.insert(str(data[3]))
         window.pp_motor_hwait.insert(str(data[4]))
         window.pp_motor_fwait.insert(str(data[5]))
-        window.pp_motor_hangle.insert(str(data[6]))
-        window.pp_motor_fangle.insert(str(data[7]))
+        window.pp_motor_hangle.insert(str(inc2deg(data[6])))
+        window.pp_motor_fangle.insert(str(inc2deg(data[7])))
 
 
 def pp_motor_set_trig():
@@ -123,14 +133,14 @@ def pp_motor_set_trig():
     cwait = safe_int(window.pp_motor_cwait.text())
     hwait = safe_int(window.pp_motor_hwait.text())
     fwait = safe_int(window.pp_motor_fwait.text())
-    hangle = safe_int(window.pp_motor_hangle.text())
-    fangle = safe_int(window.pp_motor_fangle.text())
+    hangle = deg2inc(safe_float(window.pp_motor_hangle.text()))
+    fangle = deg2inc(safe_float(window.pp_motor_fangle.text()))
     bin_data = struct.pack("IIIIIIii", acc, dec, spd, cwait, hwait, fwait, hangle, fangle)
     serial_worker.send_generic(SET_PP_PARAMS, bin_data);
 
 
 def pp_motor_move_trig():
-    target = safe_int(window.pp_motor_target.text())
+    target = deg2inc(safe_float(window.pp_motor_target.text()))
     imm = window.pp_motor_immediate.isChecked()
     rel = window.pp_motor_relative.isChecked()
     if(rel and imm):
@@ -172,13 +182,19 @@ def ping_trig():
 def ping_cb(stat, sens):
     global status_state
     global counter
-    if(stat and len(stat) == 12):
-        data = struct.unpack("HHHHi", bytes(stat))
+
+    if(stat and len(stat) == 16):
+        data = struct.unpack("HHHHii", bytes(stat))
         state = data[0]
         status_state = state
         window.status_state.clear()
+        window.status_counter.setText(str(round(float(data[5])/1000, 1)))
+        #window.status_counter.display(round(float(data[5])/1000, 1))
+        window.pp_motor_current.clear()
         state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
         window.status_state.insert(state_text[state])
+        window.pp_motor_current.insert(str(stat[4]))
+
     if(sens and len(sens) == 24):
 
         data = struct.unpack("IIiiiI", bytes(sens))
@@ -211,9 +227,9 @@ def ping_cb(stat, sens):
         temperature_axes.set_ylabel("Temperature [°C]")
         temperature_axes.set_xlabel("Time [ms]")
 
-        time_vec = np.array(time_data)-time_current
-        pressure_axes.set_xlim(-HEART_BEAT*DATA_BUFFER_LEN-100, 100)
-        temperature_axes.set_xlim(-HEART_BEAT*DATA_BUFFER_LEN-100, 100)
+        time_vec = (np.array(time_data)-time_current)/1000
+        pressure_axes.set_xlim(-(HEART_BEAT*DATA_BUFFER_LEN-100)/1000, 0.1)
+        temperature_axes.set_xlim(-(HEART_BEAT*DATA_BUFFER_LEN-100)/1000, 0.1)
 
 
         temperature_axes.plot(time_vec, temperature_data_1, label='1')
@@ -252,18 +268,31 @@ class Serial_worker(QObject):
 
     @Slot(int, list)
     def send_generic(self, opcode, data):
-        print("ACTION")
-        resp = self.msv2.send(opcode, data)
-        print("AFTER")
+        if self.msv2.is_connected():
+            print("ACTION")
+            resp = self.msv2.send(opcode, data)
+            print("AFTER")
+            if(not resp):
+                if(self.msv2.reconnect()):
+                    self.connect_sig.emit("CONNECTED")
+                else:
+                    self.connect_sig.emit("RECONNECTING...")
 
-        if opcode == GET_PP_PARAMS:
-            self.update_pp_params_sig.emit(resp)
+            if opcode == GET_PP_PARAMS:
+                self.update_pp_params_sig.emit(resp)
 
     @Slot()
     def send_ping(self):
-        stat = self.msv2.send(GET_STATUS, [0x00, 0x00])
-        sens = self.msv2.send(GET_SENSOR, [0x00, 0x00])
-        self.update_status_sig.emit(stat, sens)
+        if self.msv2.is_connected():
+            stat = self.msv2.send(GET_STATUS, [0x00, 0x00])
+            sens = self.msv2.send(GET_SENSOR, [0x00, 0x00])
+            if(not sens):
+                print("reconnect")
+                if(self.msv2.reconnect()):
+                    self.connect_sig.emit("CONNECTED")
+                else:
+                    self.connect_sig.emit("RECONNECTING...")
+            self.update_status_sig.emit(stat, sens)
 
     @Slot()
     def start_ping(self, period):
@@ -350,13 +379,13 @@ if __name__ == "__main__":
 
     #CREATE OSCILLO GRAPH
 
-    pressure_figure = Figure(figsize=(3, 3), dpi=100)
+    pressure_figure = Figure(figsize=(3, 4), dpi=70)
     pressure_axes = pressure_figure.add_subplot(111)
     pressure_canvas = FigureCanvas(pressure_figure)
     window.sensors_layout.addWidget(pressure_canvas)
 
 
-    temperature_figure = Figure(figsize=(3, 3), dpi=100)
+    temperature_figure = Figure(figsize=(3, 4), dpi=70)
     temperature_axes = temperature_figure.add_subplot(111)
     temperature_canvas = FigureCanvas(temperature_figure)
     window.sensors_layout.addWidget(temperature_canvas)

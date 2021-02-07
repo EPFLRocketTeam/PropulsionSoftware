@@ -181,7 +181,9 @@ static void control_update(CONTROL_INST_t * control) {
 	control->time = HAL_GetTick();
 	control->iter++;
 
-	control->usr_time += control->time - control->last_time;
+	if(control->counter_active) {
+		control->counter -= (control->time - control->last_time);
+	}
 
 
 	//read motors parameters
@@ -197,7 +199,7 @@ static void control_update(CONTROL_INST_t * control) {
 
 static void init_control(CONTROL_INST_t * control) {
 	control->sched = CONTROL_SCHED_NOTHING;
-
+	control->counter_active = 0;
 
 	control->pp_params.acc = 50000;
 	control->pp_params.dec = 50000;
@@ -212,6 +214,7 @@ static void init_control(CONTROL_INST_t * control) {
 static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
 	led_set_color(LED_GREEN);
+	control->counter_active = 0;
 }
 
 static void idle(CONTROL_INST_t * control) {
@@ -283,11 +286,13 @@ static void armed(CONTROL_INST_t * control) {
 static void init_countdown(CONTROL_INST_t * control) {
 	led_set_color(LED_ORANGE);
 	control->state = CS_COUNTDOWN;
-	control->usr_time = 0;
+	control->counter = control->pp_params.countdown_wait-CONTROL_HEART_BEAT;
+	control->counter_active = 1;
 }
 
 static void countdown(CONTROL_INST_t * control) {
-	if(control->usr_time >= control->pp_params.countdown_wait-CONTROL_HEART_BEAT) {
+	if(control->counter <= 0) {
+		control->counter_active = 0;
 		init_ignition(control);
 	}
 }
@@ -295,13 +300,15 @@ static void countdown(CONTROL_INST_t * control) {
 static void init_ignition(CONTROL_INST_t * control) {
 	control->state = CS_IGNITION;
 	led_set_color(LED_LILA);
-	control->usr_time = 0;
+	control->counter = control->pp_params.half_wait-CONTROL_HEART_BEAT;
+	control->counter_active = 1;
 }
 
 static void ignition(CONTROL_INST_t * control) {
 	//send first motor movement command
 
-	if(control->usr_time >= control->pp_params.half_wait-CONTROL_HEART_BEAT) {
+	if(control->counter <= 0) {
+		control->counter_active = 0;
 		init_thrust(control);
 	}
 
@@ -314,13 +321,15 @@ static void ignition(CONTROL_INST_t * control) {
 static void init_thrust(CONTROL_INST_t * control) {
 	control->state = CS_THRUST;
 	led_set_color(LED_TEAL);
-	control->usr_time = 0;
+	control->counter = control->pp_params.full_wait-CONTROL_HEART_BEAT;
+	control->counter_active = 1;
 }
 
 static void thrust(CONTROL_INST_t * control) {
 	//thrust control algorithm drives the motor
 	//successive motor ppm moves with the immediate flag set!
-	if(control->usr_time >= control->pp_params.full_wait-CONTROL_HEART_BEAT) {
+	if(control->counter <= 0) {
+		control->counter_active = 0;
 		init_shutdown(control);
 	}
 	//detect flameout (pressure lower than flameout threshold)
@@ -351,6 +360,7 @@ static void glide(CONTROL_INST_t * control) {
 static void init_abort(CONTROL_INST_t * control) {
 	led_set_color(LED_PINK);
 	control->state = CS_ABORT;
+	control->counter_active = 0;
 }
 
 static void _abort(CONTROL_INST_t * control) {
@@ -366,6 +376,7 @@ static void _abort(CONTROL_INST_t * control) {
 static void init_error(CONTROL_INST_t * control) {
 	led_set_color(LED_RED);
 	control->state = CS_ERROR;
+	control->counter_active = 0;
 }
 
 static void error(CONTROL_INST_t * control) {
@@ -426,6 +437,7 @@ CONTROL_STATUS_t control_get_status() {
 	status.pp_psu_voltage = control.pp_epos4->psu_voltage;
 	status.pp_position = control.pp_epos4->position;
 	status.pp_status = control.pp_epos4->status;
+	status.counter = control.counter;
 	return status;
 }
 

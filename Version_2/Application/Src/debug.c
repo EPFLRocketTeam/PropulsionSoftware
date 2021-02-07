@@ -31,7 +31,7 @@
 
 #define PP_PARAMS_LEN (32)
 #define PP_MOVE_LEN (6)
-#define STATUS_LEN (12)
+#define STATUS_LEN (16)
 #define SENSOR_LEN (24)
 
 #define SENSOR_BFR	(5)
@@ -256,6 +256,7 @@ static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 	util_encode_u16(resp+4, status.pp_error);
 	util_encode_u16(resp+6, status.pp_status);
 	util_encode_i32(resp+8, status.pp_position);
+	util_encode_i32(resp+12, status.counter);
 	*resp_len = STATUS_LEN;
 }
 

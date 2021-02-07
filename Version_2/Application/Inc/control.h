@@ -68,6 +68,7 @@ typedef struct CONTROL_STATUS {
 	uint16_t ab_error;
 	int32_t ab_position;
 	uint16_t ab_status;
+	int32_t counter;
 }CONTROL_STATUS_t;
 
 
@@ -91,7 +92,8 @@ typedef struct CONTROL_INST{
 	CONTROL_STATE_t state;
 	uint32_t time;
 	uint32_t last_time;
-	uint32_t usr_time;
+	int32_t counter;
+	uint8_t counter_active;
 	uint32_t iter;
 	EPOS4_INST_t * pp_epos4;
 	EPOS4_INST_t * ab_epos4;

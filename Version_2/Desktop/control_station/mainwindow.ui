@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>PEGASUS CONTROL</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -113,6 +113,13 @@
        </item>
        <item row="0" column="1" colspan="2">
         <widget class="QLineEdit" name="status_state"/>
+       </item>
+       <item row="0" column="3">
+        <widget class="QLabel" name="status_counter">
+         <property name="text">
+          <string>0.0</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
