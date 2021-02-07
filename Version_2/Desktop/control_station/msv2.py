@@ -4,7 +4,7 @@
 import serial
 import serial.tools.list_ports
 
-from PySide6.QtCore import QThread
+from PySide6.QtCore import QMutex
 
 BAUDRATE = 115200
 
@@ -55,6 +55,7 @@ class msv2:
         self.state = WAITING_DLE
         self.crc_data = []
         self.data = []
+        self.mutex = QMutex()
 
     def explore(self):
          list = serial.tools.list_ports.comports(include_links=False)
@@ -174,6 +175,7 @@ class msv2:
 
     def send(self, opcode, data):
         if self.connected:
+            self.mutex.lock()
             msg = self.encode(opcode, data)
             error = 0
             try:
@@ -197,13 +199,16 @@ class msv2:
                 while resp:
                     resp = self.ser.read(1)
                 if self.data == [0xce, 0xec] or self.data == [0xbe, 0xeb]:
+                    self.mutex.unlock()
                     return None
                 else:
+                    self.mutex.unlock()
                     return self.data
             except:
                 print("READ ERROR")
                 while resp:
                     resp = self.ser.read(1)
+                self.mutex.unlock()
                 return None
 
 

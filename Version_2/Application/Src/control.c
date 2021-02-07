@@ -128,6 +128,7 @@ void control_thread(void * arg) {
 
 	for(;;) {
 
+
 		control_update(&control);
 		//read status
 		//read motor pos
@@ -170,21 +171,21 @@ void control_thread(void * arg) {
 			control.state = CS_ERROR;
 			break;
 		}
-
 		vTaskDelayUntil( &last_wake_time, period );
 	}
 }
 
 
 static void control_update(CONTROL_INST_t * control) {
+	control->last_time = control->time;
 	control->time = HAL_GetTick();
 	control->iter++;
 
-	//read motors parameters
+	control->usr_time += control->time - control->last_time;
 
-	//Error register
-	//motor position
-	//psu voltage
+
+	//read motors parameters
+	epos4_sync(control->pp_epos4);
 
 	//init error if there is an issue with a motor
 
@@ -214,12 +215,6 @@ static void init_idle(CONTROL_INST_t * control) {
 }
 
 static void idle(CONTROL_INST_t * control) {
-	//React to external commands:
-	//launch calib
-	//arm
-	//motor movements for manual homing
-
-	//if a move is in progress, disable torque when done
 
 	if(control->mov_started) {
 		uint8_t terminated = 0;
@@ -263,11 +258,13 @@ static void init_calibration(CONTROL_INST_t * control) {
 
 static void calibration(CONTROL_INST_t * control) {
 	//Wait for the calibration ack to come from the sensors
+	//perform motor homing --> current position as home
+	//perform sensor calibration
 }
 
 static void init_armed(CONTROL_INST_t * control) {
 	control->state = CS_ARMED;
-	led_set_color(LED_TEAL);
+	led_set_color(LED_YELLOW);
 }
 
 static void armed(CONTROL_INST_t * control) {
@@ -286,23 +283,27 @@ static void armed(CONTROL_INST_t * control) {
 static void init_countdown(CONTROL_INST_t * control) {
 	led_set_color(LED_ORANGE);
 	control->state = CS_COUNTDOWN;
+	control->usr_time = 0;
 }
 
 static void countdown(CONTROL_INST_t * control) {
-	//Wait for the right time to ellapse
-	//number of "loop iteration"
-	//osDelay for the last remaining time
+	if(control->usr_time >= control->pp_params.countdown_wait-CONTROL_HEART_BEAT) {
+		init_ignition(control);
+	}
 }
 
 static void init_ignition(CONTROL_INST_t * control) {
 	control->state = CS_IGNITION;
+	led_set_color(LED_LILA);
+	control->usr_time = 0;
 }
 
 static void ignition(CONTROL_INST_t * control) {
 	//send first motor movement command
 
-	//wait for the half time in nb of cycles
-	//and osdelay for the remaining time
+	if(control->usr_time >= control->pp_params.half_wait-CONTROL_HEART_BEAT) {
+		init_thrust(control);
+	}
 
 	//send second movement command
 	//wait for the target reached
@@ -312,13 +313,17 @@ static void ignition(CONTROL_INST_t * control) {
 
 static void init_thrust(CONTROL_INST_t * control) {
 	control->state = CS_THRUST;
+	led_set_color(LED_TEAL);
+	control->usr_time = 0;
 }
 
 static void thrust(CONTROL_INST_t * control) {
 	//thrust control algorithm drives the motor
 	//successive motor ppm moves with the immediate flag set!
-
-	//detect flameout (pressure)
+	if(control->usr_time >= control->pp_params.full_wait-CONTROL_HEART_BEAT) {
+		init_shutdown(control);
+	}
+	//detect flameout (pressure lower than flameout threshold)
 	//-> init shutdown
 }
 
@@ -329,6 +334,7 @@ static void init_shutdown(CONTROL_INST_t * control) {
 
 static void shutdown(CONTROL_INST_t * control) {
 	//wait for the ack
+	init_idle(control);
 }
 
 static void init_glide(CONTROL_INST_t * control) {

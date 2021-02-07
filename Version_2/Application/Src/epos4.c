@@ -5,6 +5,7 @@
  *	Version		: 0.1
  *	Description	: maxon epos4 driver all the epos4 boards must be attached to the same serial port.
  *				  Access to multiple boards can only be done by gateway.
+ *				  NOT THREAD SAFE
  */
 
 /**********************
@@ -42,7 +43,7 @@
 #define NODE_ID 0x01
 #define DATA_SIZE 4
 
-#define COMM_TIMEOUT pdMS_TO_TICKS(1000)
+#define COMM_TIMEOUT pdMS_TO_TICKS(1)
 #define LONG_TIME 0xffff
 
 #define MAX_FRAME_LEN	64
@@ -168,7 +169,7 @@ void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * parent, uint8_t id)
 }
 
 
-
+//mutex for only one access at the same time per serial port
 EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
 	static uint8_t send_data[READ_OBJECT_LEN*2];
 	static uint16_t length = 0;

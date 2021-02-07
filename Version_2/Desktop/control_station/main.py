@@ -3,19 +3,47 @@ import sys
 import os
 import platform
 import re
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QFile, QIODevice, QTimer, QThread, QThreadPool, QRunnable
+from PySide2.QtUiTools import QUiLoader
+from PySide2.QtWidgets import QApplication, QWidget
+from PySide2.QtCore import QFile, QIODevice, QThread, QObject, Slot, Signal, QTimer
+
+from matplotlib.backends.qt_compat import QtWidgets
+
+import matplotlib
+
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+import numpy as np
 
 import struct
 import msv2
 
-window = []
-m = msv2.msv2()
 
+pressure_axes = None
+temperature_axes = None
+
+
+DATA_BUFFER_LEN = 100
+HEART_BEAT = 500
+
+
+SENSOR_REMOTE_BUFFER = 5
+
+counter = 0
+
+pressure_data_1 = []
+pressure_data_2 = []
+temperature_data_1 = []
+temperature_data_2 = []
+temperature_data_3 = []
+
+time_data = []
+window = []
+#m = msv2.msv2()
+worker = []
 
 #COMMANDS
-
 READ_STATE =    0x00
 SET_PP_PARAMS = 0x01
 GET_PP_PARAMS = 0x02
@@ -30,12 +58,12 @@ GET_SENSOR =    0x0A
 GET_STATUS =    0x0B
 
 #MOVE MODES
-
 ABSOLUTE            = 0x00
 ABSOLUTE_IMMEDIATE  = 0x01
 RELATIVE            = 0x02
 RELATIVE_IMMEDIATE  = 0x03
 
+connection_status = "DISCONNECTED"
 status_state = 0;
 
 def safe_int(d):
@@ -44,33 +72,28 @@ def safe_int(d):
     except:
         return 0
 
-def connect():
+
+
+@Slot()
+def connect_trig():
     device = window.connect_device.text()
-    window.connect_status.clear()
-    if(m.is_connected()):
-        if(m.disconnect()):
-            window.connect_status.insert("")
-            window.connect_btn.setText("Connect")
-        else:
-            window.connect_status.insert("Error")
+    if connection_status == "CONNECTED":
+        serial_worker.ser_disconnect()
     else:
+        serial_worker.ser_connect(device)
 
-        if(m.connect(device)):
-            window.connect_status.insert("Connected")
-            window.connect_btn.setText("Disconect")
-        else:
-            window.connect_status.insert("Error")
+@Slot(str)
+def connect_cb(stat):
+    global connection_status
+    connection_status = stat
+    window.connect_status.clear()
+    window.connect_status.insert(stat)
 
-def read():
-    data = m.send(READ_STATE, [0x00, 0x00])
-    if(data and len(data) >= 1):
-        state = data[0]
-        window.status_state.clear()
-        state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
-        window.status_state.insert(state_text[state])
 
-def pp_motor_get():
-    bin_data = m.send(GET_PP_PARAMS, [0x00, 0x00])
+def pp_motor_get_trig():
+   serial_worker.send_generic(GET_PP_PARAMS, [0x00, 0x00])
+
+def pp_motor_get_cb(bin_data):
     if(bin_data and len(bin_data) == 32):
         data = struct.unpack("IIIIIIii", bytes(bin_data))
 
@@ -93,7 +116,7 @@ def pp_motor_get():
         window.pp_motor_fangle.insert(str(data[7]))
 
 
-def pp_motor_set():
+def pp_motor_set_trig():
     acc = safe_int(window.pp_motor_acc.text())
     dec = safe_int(window.pp_motor_dec.text())
     spd = safe_int(window.pp_motor_speed.text())
@@ -103,10 +126,10 @@ def pp_motor_set():
     hangle = safe_int(window.pp_motor_hangle.text())
     fangle = safe_int(window.pp_motor_fangle.text())
     bin_data = struct.pack("IIIIIIii", acc, dec, spd, cwait, hwait, fwait, hangle, fangle)
-    resp = m.send(SET_PP_PARAMS, bin_data);
+    serial_worker.send_generic(SET_PP_PARAMS, bin_data);
 
 
-def pp_motor_move():
+def pp_motor_move_trig():
     target = safe_int(window.pp_motor_target.text())
     imm = window.pp_motor_immediate.isChecked()
     rel = window.pp_motor_relative.isChecked()
@@ -119,69 +142,138 @@ def pp_motor_move():
     if(not rel and not imm):
         mode = ABSOLUTE
     bin_data = struct.pack("iH", target, mode)
-    resp = m.send(PP_MOVE, bin_data)
+    serial_worker.send_generic(PP_MOVE, bin_data)
 
-def calibrate():
-    m.send(CALIBRATE, [0x00, 0x00])
+def calibrate_trig():
+    serial_worker.send_generic(CALIBRATE, [0x00, 0x00])
 
-def arm():
-    print(status_state)
+def arm_trig():
+    print("arm")
     if status_state == 2: # if armed
-        m.send(DISARM, [0x00, 0x00])
+        serial_worker.send_generic(DISARM, [0x00, 0x00])
     else:
-        m.send(ARM, [0x00, 0x00])
+        serial_worker.send_generic(ARM, [0x00, 0x00])
 
-def ignite():
-    m.send(IGNITE, [0x00, 0x00])
+def ignite_trig():
+    serial_worker.send_generic(IGNITE, [0x00, 0x00])
 
-def abort():
-    m.send(ABORT, [0x00, 0x00])
+def abort_trig():
+    serial_worker.send_generic(ABORT, [0x00, 0x00])
 
-def recover():
-    m.send(RECOVER, [0x00, 0x00])
+def recover_trig():
+    serial_worker.send_generic(RECOVER, [0x00, 0x00])
 
-def ping():
+def ping_trig():
+    serial_worker.send_ping()
+
+
+
+
+def ping_cb(stat, sens):
     global status_state
-    bin_data = m.send(GET_STATUS, [0x00, 0x00])
-    if(bin_data and len(bin_data) == 12):
-        data = struct.unpack("HHHHi", bytes(bin_data))
+    global counter
+    if(stat and len(stat) == 12):
+        data = struct.unpack("HHHHi", bytes(stat))
         state = data[0]
         status_state = state
         window.status_state.clear()
         state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
         window.status_state.insert(state_text[state])
+    if(sens and len(sens) == 24):
 
-def ping2():
-    worker = Worker(ping)
-    threadpool.start(worker)
+        data = struct.unpack("IIiiiI", bytes(sens))
+        #print(data)
 
-class Worker(QRunnable):
-    '''
-    Worker thread
+        temperature_data_1.append(data[2])
+        temperature_data_2.append(data[3])
+        temperature_data_3.append(data[4])
+        pressure_data_1.append(data[0])
+        pressure_data_2.append(data[1])
+        time_current = data[5]
+        time_data.append(data[5])
+        counter = counter + 1
 
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+        if counter == DATA_BUFFER_LEN:
+            temperature_data_1.pop(0)
+            temperature_data_2.pop(0)
+            temperature_data_3.pop(0)
+            pressure_data_1.pop(0)
+            pressure_data_2.pop(0)
+            time_data.pop(0)
 
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
 
-    '''
 
-    def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
 
-    def run(self):
-        '''
-        Initialise the runner function with passed args, kwargs.
-        '''
-        self.fn(*self.args, **self.kwargs)
+        temperature_axes.clear()
+        pressure_axes.clear()
+        pressure_axes.set_xticks([])
+        pressure_axes.set_ylabel("Pressure [mBar]")
+        temperature_axes.set_ylabel("Temperature [°C]")
+        temperature_axes.set_xlabel("Time [ms]")
 
+        time_vec = np.array(time_data)-time_current
+        pressure_axes.set_xlim(-HEART_BEAT*DATA_BUFFER_LEN-100, 100)
+        temperature_axes.set_xlim(-HEART_BEAT*DATA_BUFFER_LEN-100, 100)
+
+
+        temperature_axes.plot(time_vec, temperature_data_1, label='1')
+        temperature_axes.plot(time_vec, temperature_data_2, label='2')
+        temperature_axes.plot(time_vec, temperature_data_3, label='3')
+        pressure_axes.plot(time_vec, pressure_data_1, label='1')
+        pressure_axes.plot(time_vec, pressure_data_2, label='2')
+        temperature_axes.figure.canvas.draw()
+        pressure_axes.figure.canvas.draw()
+
+
+
+
+
+class Serial_worker(QObject):
+    update_status_sig = Signal(list, list) #status, sensor
+    update_pp_params_sig = Signal(list)
+    connect_sig = Signal(str)
+
+    def __init__(self):
+        QObject.__init__(self)
+        self.msv2 = msv2.msv2()
+
+    @Slot(str)
+    def ser_connect(self, port):
+        if(self.msv2.connect(port)):
+            self.connect_sig.emit("CONNECTED")
+        else:
+            self.connect_sig.emit("ERROR")
+    @Slot()
+    def ser_disconnect(self):
+        if(self.msv2.disconnect()):
+            self.connect_sig.emit("DISCONNECETD")
+        else:
+            self.connect_sig.emit("ERROR")
+
+    @Slot(int, list)
+    def send_generic(self, opcode, data):
+        print("ACTION")
+        resp = self.msv2.send(opcode, data)
+        print("AFTER")
+
+        if opcode == GET_PP_PARAMS:
+            self.update_pp_params_sig.emit(resp)
+
+    @Slot()
+    def send_ping(self):
+        stat = self.msv2.send(GET_STATUS, [0x00, 0x00])
+        sens = self.msv2.send(GET_SENSOR, [0x00, 0x00])
+        self.update_status_sig.emit(stat, sens)
+
+    @Slot()
+    def start_ping(self, period):
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.send_ping)
+        self.timer.start(period)
+
+
+def clean_quit():
+    worker_thread.quit()
 
 
 if __name__ == "__main__":
@@ -221,15 +313,25 @@ if __name__ == "__main__":
     window.connect_device.clear()
     window.connect_device.insert(COM_PORT)
 
-    threadpool = QThreadPool()
+    #CONNECT THREADED CALLBACKS
 
-    thread = QThread()
-    timer = QTimer()
-    timer.setInterval(500) #use multithreading to remove GUI overhead
-    timer.timeout.connect(ping)
-    timer.start()
-    #timer.moveToThread(thread)
+    #create worker and thread
+    worker_thread = QThread()
+    serial_worker = Serial_worker()
+    serial_worker.moveToThread(worker_thread)
 
+    #CONNECT CB SIGNALS
+
+
+    serial_worker.connect_sig.connect(connect_cb)
+    serial_worker.update_pp_params_sig.connect(pp_motor_get_cb)
+    serial_worker.update_status_sig.connect(ping_cb)
+
+    #start worker thread
+    worker_thread.start()
+    worker_thread.setPriority(QThread.TimeCriticalPriority)
+
+    serial_worker.start_ping(HEART_BEAT)
 
     '''
     all the serial communication should be in a separate thread,
@@ -246,19 +348,36 @@ if __name__ == "__main__":
     the periodic access for status and sensor data is done in the serial comm thread
     '''
 
+    #CREATE OSCILLO GRAPH
+
+    pressure_figure = Figure(figsize=(3, 3), dpi=100)
+    pressure_axes = pressure_figure.add_subplot(111)
+    pressure_canvas = FigureCanvas(pressure_figure)
+    window.sensors_layout.addWidget(pressure_canvas)
+
+
+    temperature_figure = Figure(figsize=(3, 3), dpi=100)
+    temperature_axes = temperature_figure.add_subplot(111)
+    temperature_canvas = FigureCanvas(temperature_figure)
+    window.sensors_layout.addWidget(temperature_canvas)
+
+    pressure_axes.set_xticks([])
+    pressure_axes.set_ylabel("Pressure [mBar]")
+    temperature_axes.set_ylabel("Temperature [°C]")
+    temperature_axes.set_xlabel("Time [ms]")
 
 
 
-    #connect all the callbacks
-    window.connect_btn.clicked.connect(connect)
-    window.pp_motor_get.clicked.connect(pp_motor_get)
-    window.pp_motor_set.clicked.connect(pp_motor_set)
-    window.pp_motor_move.clicked.connect(pp_motor_move)
-    window.status_calibrate.clicked.connect(calibrate)
-    window.status_arm.clicked.connect(arm)
-    window.status_ignite.clicked.connect(ignite)
-    window.status_abort.clicked.connect(abort)
-    window.status_recover.clicked.connect(recover)
+    window.connect_btn.clicked.connect(connect_trig)
+    window.pp_motor_get.clicked.connect(pp_motor_get_trig)
+    window.pp_motor_set.clicked.connect(pp_motor_set_trig)
+    window.pp_motor_move.clicked.connect(pp_motor_move_trig)
+    window.status_calibrate.clicked.connect(calibrate_trig)
+    window.status_arm.clicked.connect(arm_trig)
+    window.status_ignite.clicked.connect(ignite_trig)
+    window.status_abort.clicked.connect(abort_trig)
+    window.status_recover.clicked.connect(recover_trig)
+
 
     window.show()
 

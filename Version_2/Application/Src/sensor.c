@@ -186,6 +186,10 @@ SENSOR_DATA_t sensor_get_last(void) {
 	return last_data;
 }
 
+SENSOR_DATA_t sensor_get_last_bfr(uint8_t n) {
+	return util_buffer_SENSOR_access(&filter_bfr, n);
+}
+
 void sensor_thread(void * arg) {
 	//perform averaging on the fifo contents
 	//perform data processing (Kalman??)
@@ -245,19 +249,9 @@ void sensor_thread(void * arg) {
 
 
 
-		//Low pass filter
-		SENSOR_DATA_t filtered = {0};
-		for(uint8_t i = 0; i < FILTER_LEN; i++) {
-			SENSOR_DATA_t filter_data = util_buffer_SENSOR_access(&filter_bfr, i);
-			filtered.pressure_1 += filter_data.pressure_1*filter_coefficients[i] >> 12;
-			filtered.pressure_2 += filter_data.pressure_2*filter_coefficients[i] >> 12;
-			filtered.temperature[0] += filter_data.temperature[0]*filter_coefficients[i] >> 12;
-			filtered.temperature[1] += filter_data.temperature[1]*filter_coefficients[i] >> 12;
-			filtered.temperature[2] += filter_data.temperature[2]*filter_coefficients[i] >> 12;
-		}
-
 		// this is while I build the filtering functions
-		last_data = filtered;
+		last_data = util_buffer_SENSOR_access(&filter_bfr, 0);
+		last_data.time = HAL_GetTick();
 
 		//Predictor and wrong measurements rejector (Temperature only)
 

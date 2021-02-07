@@ -90,6 +90,8 @@ typedef enum CONTROL_SCHED{
 typedef struct CONTROL_INST{
 	CONTROL_STATE_t state;
 	uint32_t time;
+	uint32_t last_time;
+	uint32_t usr_time;
 	uint32_t iter;
 	EPOS4_INST_t * pp_epos4;
 	EPOS4_INST_t * ab_epos4;

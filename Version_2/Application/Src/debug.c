@@ -32,6 +32,10 @@
 #define PP_PARAMS_LEN (32)
 #define PP_MOVE_LEN (6)
 #define STATUS_LEN (12)
+#define SENSOR_LEN (24)
+
+#define SENSOR_BFR	(5)
+#define SENSOR_BFR_LEN SENSOR_BFR*SENSOR_LEN
 
 
 #define ERROR_LO	(0xce)
@@ -241,7 +245,8 @@ static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 	util_encode_i32(resp+8, sensor.temperature[0]);
 	util_encode_i32(resp+12, sensor.temperature[1]);
 	util_encode_i32(resp+16, sensor.temperature[2]);
-	*resp_len = 20;
+	util_encode_u32(resp+20, sensor.time);
+	*resp_len = SENSOR_LEN;
 }
 
 static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
@@ -251,8 +256,9 @@ static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 	util_encode_u16(resp+4, status.pp_error);
 	util_encode_u16(resp+6, status.pp_status);
 	util_encode_i32(resp+8, status.pp_position);
-	*resp_len = 12;
+	*resp_len = STATUS_LEN;
 }
+
 
 /* END */
 

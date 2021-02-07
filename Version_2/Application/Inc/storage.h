@@ -1,13 +1,14 @@
-/*  Title       : Sensor
- *  Filename    : sensor.h
+/*  Title       : Template
+ *  Filename    : template.h
  *  Author      : iacopo sprenger
- *  Date        : 28.01.2021
+ *  Date        : 07.02.2021
  *  Version     : 0.1
- *  Description : Sensor acquisition and processing
+ *  Description : storage on the onboard flash memory
+ *  			  Requires FlashAPI
  */
 
-#ifndef SENSOR_H
-#define SENSOR_H
+#ifndef STORAGE_H
+#define STORAGE_H
 
 
 
@@ -31,14 +32,6 @@
  *  TYPEDEFS
  **********************/
 
-typedef struct SENSOR_DATA{
-	uint32_t pressure_1;
-	uint32_t pressure_2;
-	int32_t temperature[3];
-	uint8_t temperature_valid[3];
-	uint32_t time;
-}SENSOR_DATA_t;
-
 
 /**********************
  *  VARIABLES
@@ -53,18 +46,27 @@ typedef struct SENSOR_DATA{
 extern "C"{
 #endif
 
-void sensor_calib(void);
 
-SENSOR_DATA_t sensor_get_last(void);
-SENSOR_DATA_t sensor_get_last_bfr(uint8_t n);
+uint32_t storage_read_mem(uint32_t address);
 
-void sensor_thread(void * arg);
+void storage_get_32_samples(uint16_t sample_id, uint8_t * out);
+
+uint32_t storage_get_data_count(void);
+
+uint32_t sorage_get_used_subsectors(void);
+
+void storage_init();
+
+//WRITE sample
+//Read sample(s)
+//Mutex for only one storage access at the same time !
+
 
 
 #ifdef __cplusplus
 } // extern "C"
 #endif /* __cplusplus */
 
-#endif /* SENSOR_H */
+#endif /* STORAGE_H */
 
 /* END */
