@@ -43,7 +43,7 @@
 #define NODE_ID 0x01
 #define DATA_SIZE 4
 
-#define COMM_TIMEOUT pdMS_TO_TICKS(1)
+#define COMM_TIMEOUT pdMS_TO_TICKS(50)
 #define LONG_TIME 0xffff
 
 #define MAX_FRAME_LEN	64
@@ -318,11 +318,15 @@ EPOS4_ERROR_t epos4_sync(EPOS4_INST_t * epos4) {
 
 	error |= epos4_read_statusword(epos4, &epos4->status, &err);
 
+	if(error) return error;
+
 	error |= epos4_read_u16(epos4, EPOS4_ERROR_WORD, &epos4->error, &err);
 
 	error |= epos4_read_i32(epos4, EPOS4_ACTUAL_POSITION, &epos4->position, &err);
 
 	error |= epos4_read_u16(epos4, EPOS4_PSU_VOLTAGE, &epos4->psu_voltage, &err);
+
+	return error;
 }
 
 
@@ -331,6 +335,8 @@ EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4) {
 	EPOS4_ERROR_t error = 0;
 
 	error |= epos4_write_u16(epos4, EPOS4_MOTOR_TYPE, MOTOR_TYPE, &err);
+
+	if(error) return error;
 
 	error |= epos4_write_u32(epos4, EPOS4_MOTOR_NOMINAL_CURRENT, MOTOR_NOM_CUR, &err);
 
@@ -419,6 +425,8 @@ EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t tar
 
 	error |= epos4_read_statusword(epos4, &status, &err);
 
+	if(error) return error;
+
 	if(!EPOS4_SW_ENABLED(status)) {
 		return EPOS4_ERROR;
 	}
@@ -427,16 +435,16 @@ EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t tar
 
 	switch(type) {
 	case EPOS4_ABSOLUTE:
-		error |= epos4_control_ppm_start_rel(epos4, &err);
-		break;
-	case EPOS4_ABSOLUTE_IMMEDIATE:
-		error |= epos4_control_ppm_start_rel_imm(epos4, &err);
-		break;
-	case EPOS4_RELATIVE:
 		error |= epos4_control_ppm_start_abs(epos4, &err);
 		break;
-	case EPOS4_RELATIVE_IMMEDIATE:
+	case EPOS4_ABSOLUTE_IMMEDIATE:
 		error |= epos4_control_ppm_start_abs_imm(epos4, &err);
+		break;
+	case EPOS4_RELATIVE:
+		error |= epos4_control_ppm_start_rel(epos4, &err);
+		break;
+	case EPOS4_RELATIVE_IMMEDIATE:
+		error |= epos4_control_ppm_start_rel_imm(epos4, &err);
 		break;
 	}
 	return error;
@@ -447,6 +455,8 @@ EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config) 
 	uint32_t err;
 
 	error |= epos4_write_u32(epos4, EPOS4_PROFILE_VELOCITY, config.profile_velocity, &err);
+
+	if(error) return error;
 
 	error |= epos4_write_u32(epos4, EPOS4_PROFILE_ACCELERATION, config.profile_acceleration, &err);
 
@@ -466,9 +476,11 @@ EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 
 	error |= epos4_read_statusword(epos4, &status, &err);
 
+	if(error) return error;
 
-	if(!EPOS4_SW_TARGET_REACHED(status)) {
-		epos4_control_disable(epos4, &err);
+
+	if(EPOS4_SW_TARGET_REACHED(status)) {
+		//epos4_control_disable(epos4, &err);
 		*terminated = 1;
 	}
 
@@ -489,6 +501,8 @@ EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config) 
 
 	error |= epos4_write_i8(epos4, EPOS4_MODE_OF_OPERATION, EPOS4_MODE_HOMING, &err);
 
+	if(error) return error;
+
 	error |= epos4_write_i32(epos4, EPOS4_HOME_OFFSET, config.home_offset, &err);
 
 	error |= epos4_write_i8(epos4, EPOS4_HOMING_METHOD, config.method, &err);
@@ -501,6 +515,8 @@ EPOS4_ERROR_t epos4_hom_move(EPOS4_INST_t * epos4) {
 	uint32_t err;
 
 	error |= epos4_control_shutdown(epos4, &err);
+
+	if(error) return error;
 
 	error |= epos4_control_soenable(epos4, &err);
 
@@ -519,6 +535,8 @@ EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 	osDelay(1); //wait 1ms to let sw update itself
 
 	error |= epos4_read_statusword(epos4, &status, &err);
+
+	if(error) return error;
 
 
 	if(!EPOS4_SW_TARGET_REACHED(status)) {

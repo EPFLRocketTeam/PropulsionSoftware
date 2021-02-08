@@ -26,7 +26,7 @@
  **********************/
 
 
-
+#define TARGET_REACHED_DELAY_CYCLES	(10)
 
 #define SCHED_ALLOWED_WIDTH	(5)
 
@@ -224,11 +224,14 @@ static void init_idle(CONTROL_INST_t * control) {
 static void idle(CONTROL_INST_t * control) {
 
 	if(control->mov_started) {
-		uint8_t terminated = 0;
-		epos4_ppm_terminate(control->pp_epos4, &terminated);
-		if(terminated) {
-			control->mov_started = 0;
-			control_sched_done(control, CONTROL_SCHED_MOVE);
+		control->mov_started++;
+		if(control->mov_started > TARGET_REACHED_DELAY_CYCLES) {
+			uint8_t terminated = 0;
+			epos4_ppm_terminate(control->pp_epos4, &terminated);
+			if(terminated) {
+				control->mov_started = 0;
+				control_sched_done(control, CONTROL_SCHED_MOVE);
+			}
 		}
 	}
 

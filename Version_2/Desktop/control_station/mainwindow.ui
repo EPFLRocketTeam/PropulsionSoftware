@@ -30,16 +30,6 @@
        <string>Connection</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_4">
-       <item row="1" column="2">
-        <widget class="QLineEdit" name="connect_status">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="1">
         <widget class="QLineEdit" name="connect_device">
          <property name="sizePolicy">
@@ -64,7 +54,7 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QLabel" name="label">
+        <widget class="QLabel" name="connect_status">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -86,13 +76,20 @@
           <enum>Qt::LeftToRight</enum>
          </property>
          <property name="text">
-          <string>Status</string>
+          <string/>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
          <property name="margin">
           <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QPushButton" name="quit">
+         <property name="text">
+          <string>Quit</string>
          </property>
         </widget>
        </item>
@@ -181,7 +178,7 @@
          <x>10</x>
          <y>20</y>
          <width>399</width>
-         <height>82</height>
+         <height>121</height>
         </rect>
        </property>
        <property name="sizePolicy">
