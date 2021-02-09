@@ -43,7 +43,8 @@
 #define NODE_ID 0x01
 #define DATA_SIZE 4
 
-#define COMM_TIMEOUT pdMS_TO_TICKS(50)
+#define COMM_TIMEOUT pdMS_TO_TICKS(100)
+#define DRIV_TIMEOUT pdMS_TO_TICKS(200)
 #define LONG_TIME 0xffff
 
 #define MAX_FRAME_LEN	64
@@ -118,6 +119,9 @@
 static SemaphoreHandle_t epos4_rx_sem = NULL;
 static StaticSemaphore_t epos4_rx_sem_buffer;
 
+static SemaphoreHandle_t epos4_busy_sem = NULL;
+static StaticSemaphore_t epos4_busy_sem_buffer;
+
 
 
 
@@ -143,6 +147,7 @@ static StaticSemaphore_t epos4_rx_sem_buffer;
 void epos4_global_init() {
 	//create rx mutex
 	epos4_rx_sem = xSemaphoreCreateBinaryStatic(&epos4_rx_sem_buffer);
+	epos4_busy_sem = xSemaphoreCreateMutexStatic(&epos4_busy_sem_buffer);
 	//this semaphore will be epos specific
 }
 
@@ -171,55 +176,71 @@ void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * parent, uint8_t id)
 
 //mutex for only one access at the same time per serial port
 EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
-	static uint8_t send_data[READ_OBJECT_LEN*2];
-	static uint16_t length = 0;
-	send_data[0] = epos4->id; //node ID
-	send_data[1] = index & 0xff;
-	send_data[2] = index >> 8;
-	send_data[3] = subindex;
-	for(uint8_t i = 0; i < DATA_SIZE; i++){
-		send_data[4+i] = data[i];
-	}
-	length = msv2_create_frame(epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
-	serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
-	if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
-		uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
-		*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+	osDelay(1);
+	if (xSemaphoreTake(epos4_busy_sem, DRIV_TIMEOUT) == pdTRUE) {
+		static uint8_t send_data[READ_OBJECT_LEN*2];
+		static uint16_t length = 0;
+		send_data[0] = epos4->id; //node ID
+		send_data[1] = index & 0xff;
+		send_data[2] = index >> 8;
+		send_data[3] = subindex;
 		for(uint8_t i = 0; i < DATA_SIZE; i++){
-			data[i] = recieved_data[4+i];
+			send_data[4+i] = data[i];
 		}
-		if(*err == 0) {
-			return EPOS4_SUCCESS;
+		length = msv2_create_frame(epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
+		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
+		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
+			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
+			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+			for(uint8_t i = 0; i < DATA_SIZE; i++){
+				data[i] = recieved_data[4+i];
+			}
+			if(*err == 0) {
+				xSemaphoreGive(epos4_busy_sem);
+				return EPOS4_SUCCESS;
+			} else {
+				xSemaphoreGive(epos4_busy_sem);
+				return EPOS4_REMOTE_ERROR;
+			}
 		} else {
-			return EPOS4_REMOTE_ERROR;
+			xSemaphoreGive(epos4_busy_sem);
+			return EPOS4_TIMEOUT;
 		}
 	} else {
-		return EPOS4_TIMEOUT;
+		return EPOS4_BUSY;
 	}
 }
 
 EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
-	static uint8_t send_data[WRITE_OBJECT_LEN*2];
-	static uint16_t length = 0;
-	send_data[0] = epos4->id; //node ID
-	send_data[1] = index & 0xff;
-	send_data[2] = index >> 8;
-	send_data[3] = subindex;
-	for(uint8_t i = 0; i < DATA_SIZE; i++){
-		send_data[4+i] = data[i];
-	}
-	length = msv2_create_frame(epos4->msv2, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
-	serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
-	if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
-		uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
-		*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
-		if(*err == 0) {
-			return EPOS4_SUCCESS;
+	osDelay(1);
+	if (xSemaphoreTake(epos4_busy_sem, DRIV_TIMEOUT) == pdTRUE) {
+		static uint8_t send_data[WRITE_OBJECT_LEN*2];
+		static uint16_t length = 0;
+		send_data[0] = epos4->id; //node ID
+		send_data[1] = index & 0xff;
+		send_data[2] = index >> 8;
+		send_data[3] = subindex;
+		for(uint8_t i = 0; i < DATA_SIZE; i++){
+			send_data[4+i] = data[i];
+		}
+		length = msv2_create_frame(epos4->msv2, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
+		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
+		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
+			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
+			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+			if(*err == 0) {
+				xSemaphoreGive(epos4_busy_sem);
+				return EPOS4_SUCCESS;
+			} else {
+				xSemaphoreGive(epos4_busy_sem);
+				return EPOS4_REMOTE_ERROR;
+			}
 		} else {
-			return EPOS4_REMOTE_ERROR;
+			xSemaphoreGive(epos4_busy_sem);
+			return EPOS4_TIMEOUT;
 		}
 	} else {
-		return EPOS4_TIMEOUT;
+		return EPOS4_BUSY;
 	}
 }
 
@@ -318,8 +339,6 @@ EPOS4_ERROR_t epos4_sync(EPOS4_INST_t * epos4) {
 
 	error |= epos4_read_statusword(epos4, &epos4->status, &err);
 
-	if(error) return error;
-
 	error |= epos4_read_u16(epos4, EPOS4_ERROR_WORD, &epos4->error, &err);
 
 	error |= epos4_read_i32(epos4, EPOS4_ACTUAL_POSITION, &epos4->position, &err);
@@ -335,8 +354,6 @@ EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4) {
 	EPOS4_ERROR_t error = 0;
 
 	error |= epos4_write_u16(epos4, EPOS4_MOTOR_TYPE, MOTOR_TYPE, &err);
-
-	if(error) return error;
 
 	error |= epos4_write_u32(epos4, EPOS4_MOTOR_NOMINAL_CURRENT, MOTOR_NOM_CUR, &err);
 
@@ -425,8 +442,6 @@ EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t tar
 
 	error |= epos4_read_statusword(epos4, &status, &err);
 
-	if(error) return error;
-
 	if(!EPOS4_SW_ENABLED(status)) {
 		return EPOS4_ERROR;
 	}
@@ -456,8 +471,6 @@ EPOS4_ERROR_t epos4_ppm_config(EPOS4_INST_t * epos4, EPOS4_PPM_CONFIG_t config) 
 
 	error |= epos4_write_u32(epos4, EPOS4_PROFILE_VELOCITY, config.profile_velocity, &err);
 
-	if(error) return error;
-
 	error |= epos4_write_u32(epos4, EPOS4_PROFILE_ACCELERATION, config.profile_acceleration, &err);
 
 	error |= epos4_write_u32(epos4, EPOS4_PROFILE_DECELERATION, config.profile_deceleration, &err);
@@ -475,8 +488,6 @@ EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 	osDelay(1); //wait 1ms to let sw update itself
 
 	error |= epos4_read_statusword(epos4, &status, &err);
-
-	if(error) return error;
 
 
 	if(EPOS4_SW_TARGET_REACHED(status)) {
@@ -501,8 +512,6 @@ EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config) 
 
 	error |= epos4_write_i8(epos4, EPOS4_MODE_OF_OPERATION, EPOS4_MODE_HOMING, &err);
 
-	if(error) return error;
-
 	error |= epos4_write_i32(epos4, EPOS4_HOME_OFFSET, config.home_offset, &err);
 
 	error |= epos4_write_i8(epos4, EPOS4_HOMING_METHOD, config.method, &err);
@@ -515,8 +524,6 @@ EPOS4_ERROR_t epos4_hom_move(EPOS4_INST_t * epos4) {
 	uint32_t err;
 
 	error |= epos4_control_shutdown(epos4, &err);
-
-	if(error) return error;
 
 	error |= epos4_control_soenable(epos4, &err);
 
@@ -535,8 +542,6 @@ EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 	osDelay(1); //wait 1ms to let sw update itself
 
 	error |= epos4_read_statusword(epos4, &status, &err);
-
-	if(error) return error;
 
 
 	if(!EPOS4_SW_TARGET_REACHED(status)) {

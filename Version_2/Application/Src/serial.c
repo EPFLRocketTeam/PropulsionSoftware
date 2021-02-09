@@ -90,6 +90,7 @@ void serial_init(SERIAL_INST_t * ser, UART_HandleTypeDef * uart, void * inst, SE
 
 void serial_send(SERIAL_INST_t * ser, uint8_t * data, uint16_t length) {
 	HAL_UART_Transmit_DMA(ser->uart, data, length);
+	//HAL_UART_Transmit(ser->uart, data, length, 500);
 }
 
 
