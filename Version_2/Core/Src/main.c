@@ -31,6 +31,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <threads.h>
+#include <led.h>
 
 /* USER CODE END Includes */
 

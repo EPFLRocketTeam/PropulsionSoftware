@@ -44,6 +44,7 @@ typedef enum EPOS4_ERROR {
 	EPOS4_SUCCESS = 0,
 	EPOS4_TIMEOUT = 0b001,
 	EPOS4_REMOTE_ERROR = 0b010,
+	EPOS4_BUSY = 0b100,
 	EPOS4_ERROR
 }EPOS4_ERROR_t;
 
@@ -63,8 +64,8 @@ typedef struct EPOS4_INST EPOS4_INST_t;
 struct EPOS4_INST{
 	uint32_t id;
 	uint8_t can_id; //CAN ID for communication and gateway to other boards
-	MSV2_INST_t * msv2;
-	SERIAL_INST_t * ser;
+	MSV2_INST_t msv2;
+	SERIAL_INST_t ser;
 	EPOS4_INST_t * parent;
 	uint8_t nb_chilren;
 	EPOS4_INST_t * children[EPOS4_MAX_CHILDREN];
@@ -171,7 +172,8 @@ EPOS4_ERROR_t epos4_csp_config(EPOS4_INST_t * epos4, EPOS4_CSP_CONFIG_t config);
 
 EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config);
 EPOS4_ERROR_t epos4_hom_move(EPOS4_INST_t * epos4);
-
+EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated)
+;
 
 
 #ifdef __cplusplus

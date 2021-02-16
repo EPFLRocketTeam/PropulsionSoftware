@@ -118,6 +118,7 @@ uint16_t msv2_create_frame(MSV2_INST_t * msv2, uint8_t opcode, uint8_t data_len,
 SERIAL_RET_t msv2_decode_func(void * inst, uint8_t data) {
 	return msv2_decode_fragment((MSV2_INST_t *) inst, data);
 }
+
 /*
  * 	d: received byte
  *

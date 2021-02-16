@@ -106,8 +106,7 @@ def connect_trig():
 def connect_cb(stat):
     global connection_status
     connection_status = stat
-    window.connect_status.clear()
-    window.connect_status.insert(stat)
+    window.connect_status.setText(stat)
 
 
 def pp_motor_get_trig():
@@ -203,7 +202,7 @@ def ping_cb(stat, sens):
         window.pp_motor_current.clear()
         state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
         window.status_state.insert(state_text[state])
-        window.pp_motor_current.insert(str(stat[4]))
+        window.pp_motor_current.insert(str(inc2deg(data[4])))
         if state == 1:
             temperature_data_1.clear()
             temperature_data_2.clear()
@@ -357,6 +356,7 @@ class Serial_worker(QObject):
 
 def clean_quit():
     worker_thread.quit()
+    sys.exit(0)
 
 
 if __name__ == "__main__":
@@ -460,7 +460,7 @@ if __name__ == "__main__":
     window.status_ignite.clicked.connect(ignite_trig)
     window.status_abort.clicked.connect(abort_trig)
     window.status_recover.clicked.connect(recover_trig)
-
+    window.quit.clicked.connect(clean_quit)
     window.local_record.clicked.connect(start_record)
 
 
