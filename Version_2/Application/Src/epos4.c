@@ -155,15 +155,11 @@ void epos4_init(EPOS4_INST_t * epos4, uint8_t id) {
 	static uint32_t id_counter = 0;
 	epos4->id = id_counter++;
 
-	static MSV2_INST_t msv2;
-	msv2_init(&msv2);
+	msv2_init(&epos4->msv2);
 
 	epos4->can_id = id;
-	epos4->msv2 = &msv2;
 
-	static SERIAL_INST_t ser;
-	serial_init(&ser, &EPOS4_UART, epos4, epos4_decode_fcn);
-	epos4->ser = &ser;
+	serial_init(&epos4->ser, &EPOS4_UART, epos4, epos4_decode_fcn);
 
 }
 
@@ -187,10 +183,10 @@ EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t sub
 		for(uint8_t i = 0; i < DATA_SIZE; i++){
 			send_data[4+i] = data[i];
 		}
-		length = msv2_create_frame(epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
-		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
+		length = msv2_create_frame(&epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
+		serial_send(&epos4->ser, msv2_tx_data(&epos4->msv2), length);
 		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
-			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
+			uint8_t * recieved_data = msv2_rx_data(&epos4->msv2);
 			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 			for(uint8_t i = 0; i < DATA_SIZE; i++){
 				data[i] = recieved_data[4+i];
@@ -223,10 +219,10 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 		for(uint8_t i = 0; i < DATA_SIZE; i++){
 			send_data[4+i] = data[i];
 		}
-		length = msv2_create_frame(epos4->msv2, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
-		serial_send(epos4->ser, msv2_tx_data(epos4->msv2), length);
+		length = msv2_create_frame(&epos4->msv2, WRITE_OBJECT, WRITE_OBJECT_LEN, send_data);
+		serial_send(&epos4->ser, msv2_tx_data(&epos4->msv2), length);
 		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
-			uint8_t * recieved_data = msv2_rx_data(epos4->msv2);
+			uint8_t * recieved_data = msv2_rx_data(&epos4->msv2);
 			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
 			if(*err == 0) {
 				xSemaphoreGive(epos4_busy_sem);
@@ -246,7 +242,7 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 
 SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data) {
 	EPOS4_INST_t * epos4 = (EPOS4_INST_t * ) inst;
-	MSV2_ERROR_t tmp = msv2_decode_fragment(epos4->msv2, data);
+	MSV2_ERROR_t tmp = msv2_decode_fragment(&epos4->msv2, data);
 	//this should release the semaphore corresponding the the right epos board if bridged
 	if(tmp == MSV2_SUCCESS) {
 		xSemaphoreGive(epos4_rx_sem); // one frame has been received!

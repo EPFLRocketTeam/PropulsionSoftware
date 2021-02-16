@@ -27,6 +27,9 @@
 #define SERIAL_FIFO_LEN	(128)
 
 
+#define SERIAL_USE_GENERIC 1
+
+
 /**********************
  *  MACROS
  **********************/
@@ -73,6 +76,15 @@ void serial_init(SERIAL_INST_t * ser, UART_HandleTypeDef * uart, void * inst, SE
 void serial_send(SERIAL_INST_t * ser, uint8_t * data, uint16_t length);
 
 void serial_thread(void * arg);
+
+void serial_epos4_thread(void * arg);
+
+void serial_debug_thread(void * arg);
+
+void serial_epos4_init(SERIAL_INST_t * ser, UART_HandleTypeDef * uart, void * inst, SERIAL_RET_t (*decode_fcn)(void *, uint8_t));
+
+void serial_debug_init(SERIAL_INST_t * ser, UART_HandleTypeDef * uart, void * inst, SERIAL_RET_t (*decode_fcn)(void *, uint8_t));
+
 
 #ifdef __cplusplus
 } // extern "C"

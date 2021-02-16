@@ -64,8 +64,8 @@ typedef struct EPOS4_INST EPOS4_INST_t;
 struct EPOS4_INST{
 	uint32_t id;
 	uint8_t can_id; //CAN ID for communication and gateway to other boards
-	MSV2_INST_t * msv2;
-	SERIAL_INST_t * ser;
+	MSV2_INST_t msv2;
+	SERIAL_INST_t ser;
 	EPOS4_INST_t * parent;
 	uint8_t nb_chilren;
 	EPOS4_INST_t * children[EPOS4_MAX_CHILDREN];
