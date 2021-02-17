@@ -180,9 +180,6 @@ EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t sub
 		send_data[1] = index & 0xff;
 		send_data[2] = index >> 8;
 		send_data[3] = subindex;
-		for(uint8_t i = 0; i < DATA_SIZE; i++){
-			send_data[4+i] = data[i];
-		}
 		length = msv2_create_frame(&epos4->msv2, READ_OBJECT, READ_OBJECT_LEN, send_data);
 		serial_send(&epos4->ser, msv2_tx_data(&epos4->msv2), length);
 		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
@@ -244,7 +241,7 @@ SERIAL_RET_t epos4_decode_fcn(void * inst, uint8_t data) {
 	EPOS4_INST_t * epos4 = (EPOS4_INST_t * ) inst;
 	MSV2_ERROR_t tmp = msv2_decode_fragment(&epos4->msv2, data);
 	//this should release the semaphore corresponding the the right epos board if bridged
-	if(tmp == MSV2_SUCCESS) {
+	if(tmp == MSV2_SUCCESS || tmp == MSV2_WRONG_CRC) {
 		xSemaphoreGive(epos4_rx_sem); // one frame has been received!
 	}
 	return tmp;

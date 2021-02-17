@@ -301,7 +301,7 @@ static void armed(CONTROL_INST_t * control) {
 			control->pp_motor_prepped = 1;
 		} else {
 			//disabled for testing at home
-			//init_error(control);  //error state in case of motor failure
+			init_error(control);  //error state in case of motor failure
 		}
 	}
 

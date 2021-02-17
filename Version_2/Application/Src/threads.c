@@ -82,8 +82,11 @@ static TaskHandle_t serial_handle = NULL;
  */
 void threads_init(void) {
 
+
+	serial_global_init();
 	static DEBUG_INST_t debug;
 	debug_init(&debug);
+
 
 	/*
 	 *  Feedback thread
