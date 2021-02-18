@@ -32,6 +32,12 @@
  *  TYPEDEFS
  **********************/
 
+typedef struct STORAGE_INST {
+	uint32_t id;
+	uint32_t used_subsectors;
+	uint32_t data_counter;
+}STORAGE_INST_t;
+
 
 /**********************
  *  VARIABLES
@@ -47,19 +53,7 @@ extern "C"{
 #endif
 
 
-uint32_t storage_read_mem(uint32_t address);
-
-void storage_get_32_samples(uint16_t sample_id, uint8_t * out);
-
-uint32_t storage_get_data_count(void);
-
-uint32_t sorage_get_used_subsectors(void);
-
-void storage_init();
-
-//WRITE sample
-//Read sample(s)
-//Mutex for only one storage access at the same time !
+void storage_init(STORAGE_INST_t * store);
 
 
 

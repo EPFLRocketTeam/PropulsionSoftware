@@ -215,11 +215,15 @@ def ping_cb(stat, sens):
         state = data[0]
         status_state = state
         window.status_state.clear()
+        window.pp_error.clear()
+        window.pp_psu.clear()
         window.status_counter.setText(str(round(float(data[5])/1000, 1)))
         #window.status_counter.display(round(float(data[5])/1000, 1))
         window.pp_motor_current.clear()
         state_text = ['IDLE', 'CALIBRATION', 'ARMED', 'COUNTDOWN', 'IGNITION', 'THRUST', 'SHUTDOWN', 'GLIDE', 'ABORT', 'ERROR']
         window.status_state.insert(state_text[state])
+        window.pp_error.insert(hex(data[2]))
+        window.pp_psu.insert(str(data[1]/10))
         window.pp_motor_current.insert(str(inc2deg(data[4])))
         if state == 1:
             temperature_data_1.clear()
@@ -236,6 +240,13 @@ def ping_cb(stat, sens):
         #print(data)
 
         record_sample(data)
+
+        window.temp_1.setText("{:02.1f} °C".format(data[2]/10))
+        window.temp_2.setText("{:02.1f} °C".format(data[3]/10))
+        window.temp_3.setText("{:02.1f} °C".format(data[4]/10))
+
+        window.pres_1.setText("{:02.3f} Bar".format(data[0]/1000))
+        window.pres_2.setText("{:02.3f} Bar".format(data[1]/1000))
 
         temperature_data_1.append(data[2])
         temperature_data_2.append(data[3])
@@ -260,8 +271,8 @@ def ping_cb(stat, sens):
         temperature_axes.clear()
         pressure_axes.clear()
         pressure_axes.set_xticks([])
-        pressure_axes.set_ylabel("Pressure [mBar]")
-        temperature_axes.set_ylabel("Temperature [0.1degC]")
+        pressure_axes.set_ylabel("Pressure [Bar]")
+        temperature_axes.set_ylabel("Temperature [C]")
         temperature_axes.set_xlabel("Time [ms]")
 
         time_vec = (np.array(time_data)-time_current)/1000
@@ -269,11 +280,11 @@ def ping_cb(stat, sens):
         temperature_axes.set_xlim(-(HEART_BEAT*DATA_BUFFER_LEN-100)/1000, 0.1)
 
 
-        temperature_axes.plot(time_vec, temperature_data_1, label='1')
-        temperature_axes.plot(time_vec, temperature_data_2, label='2')
-        temperature_axes.plot(time_vec, temperature_data_3, label='3')
-        pressure_axes.plot(time_vec, pressure_data_1, label='1')
-        pressure_axes.plot(time_vec, pressure_data_2, label='2')
+        temperature_axes.plot(time_vec, np.array(temperature_data_1)/10, label='1')
+        temperature_axes.plot(time_vec, np.array(temperature_data_2)/10, label='2')
+        temperature_axes.plot(time_vec, np.array(temperature_data_3)/10, label='3')
+        pressure_axes.plot(time_vec, np.array(pressure_data_1)/1000, label='1')
+        pressure_axes.plot(time_vec, np.array(pressure_data_2)/1000, label='2')
         temperature_axes.figure.canvas.draw()
         pressure_axes.figure.canvas.draw()
 
