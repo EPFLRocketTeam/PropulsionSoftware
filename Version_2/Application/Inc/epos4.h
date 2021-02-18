@@ -146,6 +146,9 @@ EPOS4_ERROR_t epos4_read_i32(EPOS4_INST_t * epos4, uint16_t index, uint8_t subin
 
 #define epos4_control_new_pos(epos4, err)			epos4_write_controlword(epos4, EPOS4_CW_SOENABLE, err)
 
+
+#define epos4_control_fault_rst(epos4, err)			epos4_write_controlword(epos4, EPOS4_CW_FAULT_RST, err)
+
 #define epos4_control_ppm_start_abs(epos4, err)		epos4_write_controlword(epos4, EPOS4_CW_PPM_ABSOLUTE, err)
 #define epos4_control_ppm_start_abs_imm(epos4, err)	epos4_write_controlword(epos4, EPOS4_CW_PPM_ABSOLUTE_I, err)
 #define epos4_control_ppm_start_rel(epos4, err)		epos4_write_controlword(epos4, EPOS4_CW_PPM_RELATIVE, err)
@@ -162,6 +165,7 @@ EPOS4_ERROR_t epos4_sync(EPOS4_INST_t * epos4);
 
 EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4);
 
+EPOS4_ERROR_t epos4_recover(EPOS4_INST_t * epos4);
 
 EPOS4_ERROR_t epos4_ppm_prep(EPOS4_INST_t * epos4);
 EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t target);

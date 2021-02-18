@@ -56,6 +56,7 @@ ABORT =         0x08
 RECOVER =       0x09
 GET_SENSOR =    0x0A
 GET_STATUS =    0x0B
+VENTING =       0x0C
 
 #MOVE MODES
 ABSOLUTE            = 0x00
@@ -186,6 +187,23 @@ def ping_trig():
     serial_worker.send_ping()
 
 
+def vent_open_trig():
+    bin_data = struct.pack("H", 1)
+    serial_worker.send_generic(VENTING, bin_data)
+
+def vent_close_trig():
+    bin_data = struct.pack("H", 0)
+    serial_worker.send_generic(VENTING, bin_data)
+
+def vent_cb(stat):
+    if(stat and len(stat) == 2):
+        data = struct.unpack("H", bytes(stat))
+        window.vent_status.clear()
+        if(data[0]):
+            window.vent_status.setText("OPEN")
+        else:
+            window.vent_status.setText("CLOSED")
+
 
 
 def ping_cb(stat, sens):
@@ -300,6 +318,7 @@ def record_sample(data):
 class Serial_worker(QObject):
     update_status_sig = Signal(list, list) #status, sensor
     update_pp_params_sig = Signal(list)
+    update_venting_sig = Signal(list)
     connect_sig = Signal(str)
 
     def __init__(self):
@@ -333,6 +352,9 @@ class Serial_worker(QObject):
 
             if opcode == GET_PP_PARAMS:
                 self.update_pp_params_sig.emit(resp)
+
+            if opcode == VENTING:
+                self.update_venting_sig.emit(resp)
 
     @Slot()
     def send_ping(self):
@@ -409,6 +431,7 @@ if __name__ == "__main__":
     serial_worker.connect_sig.connect(connect_cb)
     serial_worker.update_pp_params_sig.connect(pp_motor_get_cb)
     serial_worker.update_status_sig.connect(ping_cb)
+    serial_worker.update_venting_sig.connect(vent_cb)
 
     #start worker thread
     worker_thread.start()
@@ -462,7 +485,8 @@ if __name__ == "__main__":
     window.status_recover.clicked.connect(recover_trig)
     window.quit.clicked.connect(clean_quit)
     window.local_record.clicked.connect(start_record)
-
+    window.vent_open.clicked.connect(vent_open_trig)
+    window.vent_close.clicked.connect(vent_close_trig)
 
     window.show()
 

@@ -145,6 +145,10 @@ void control_abort();
 
 void control_recover();
 
+uint8_t control_open_vent();
+
+uint8_t control_close_vent();
+
 CONTROL_STATUS_t control_get_status();
 
 

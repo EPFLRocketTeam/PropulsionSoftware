@@ -21,6 +21,10 @@
 
 #define CONTROL_HEART_BEAT	20 /* ms */
 
+#define VENTING_PIN		SOLENOID_Pin
+
+#define VENTING_PORT	SOLENOID_GPIO_Port
+
 /**********************
  *	CONSTANTS
  **********************/
@@ -189,6 +193,10 @@ static void control_update(CONTROL_INST_t * control) {
 
 	//read motors parameters
 	epos4_sync(control->pp_epos4);
+
+	if(control->pp_epos4->error && control->state != CS_ERROR) {
+		init_error(control);
+	}
 
 	//init error if there is an issue with a motor
 
@@ -443,6 +451,7 @@ static void init_error(CONTROL_INST_t * control) {
 static void error(CONTROL_INST_t * control) {
 	//wait for user release
 	if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
+		epos4_recover(control->pp_epos4);
 		init_idle(control);
 		control_sched_done(control, CONTROL_SCHED_RECOVER);
 	}
@@ -502,6 +511,16 @@ CONTROL_STATUS_t control_get_status() {
 	return status;
 }
 
+uint8_t control_open_vent() {
+	VENTING_PORT->BSRR |= VENTING_PIN;
+	return VENTING_PORT->IDR & VENTING_PIN;
+}
+
+uint8_t control_close_vent() {
+	VENTING_PORT->BSRR |= VENTING_PIN << 16;
+	return VENTING_PORT->IDR & VENTING_PIN;
+}
+
 static uint8_t control_sched_should_run(CONTROL_INST_t * control, CONTROL_SCHED_t num) {
 	return control->sched == num;
 }
@@ -524,6 +543,8 @@ static void control_sched_set(CONTROL_INST_t * control, CONTROL_SCHED_t num) {
 		}
 	}
 }
+
+
 
 /* END */
 

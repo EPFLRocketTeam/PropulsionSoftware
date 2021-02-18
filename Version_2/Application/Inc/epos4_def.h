@@ -89,6 +89,8 @@
 #define EPOS4_CW_SOENABLE			0x000F
 #define EPOS4_CW_DISABLE			0x0007
 
+#define EPOS4_CW_FAULT_RST			0x0080
+
 //PPM SPECIFIC START
 #define EPOS4_CW_PPM_ABSOLUTE		0x001F	//start absolute
 #define EPOS4_CW_PPM_RELATIVE		0x007F	//start relative
@@ -96,6 +98,7 @@
 #define EPOS4_CW_PPM_RELATIVE_I		0x005F  //start relative immediately
 
 #define EPOS4_CW_HOM_START			0x001F	//start homing
+
 
 
 

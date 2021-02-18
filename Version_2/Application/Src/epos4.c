@@ -519,8 +519,6 @@ EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 
 	uint16_t status;
 
-	osDelay(1); //wait 1ms to let sw update itself
-
 	error |= epos4_read_statusword(epos4, &status, &err);
 
 
@@ -532,7 +530,15 @@ EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 	return error;
 }
 
+EPOS4_ERROR_t epos4_recover(EPOS4_INST_t * epos4) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
 
+	error |= epos4_control_fault_rst(epos4, &err);
+
+
+	return error;
+}
 
 
 /* END */
