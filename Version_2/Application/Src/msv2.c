@@ -189,7 +189,7 @@ MSV2_ERROR_t msv2_decode_fragment(MSV2_INST_t * msv2, uint8_t d) {
     if (msv2->rx.state == WAITING_CRC2) {
     	msv2->rx.crc |= d<<8;
     	msv2->rx.state = WAITING_DLE;
-    	msv2->rx.crc_data[msv2->rx.counter] = 0;
+    	msv2->rx.crc_data[msv2->rx.data_len+1] = 0;
     	uint16_t crc = calc_field_CRC(msv2->rx.crc_data, msv2->rx.data_len+2);
     	if(msv2->rx.crc == crc) {
     		return MSV2_SUCCESS;

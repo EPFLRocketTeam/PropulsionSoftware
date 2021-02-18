@@ -43,7 +43,7 @@
 #define NODE_ID 0x01
 #define DATA_SIZE 4
 
-#define COMM_TIMEOUT pdMS_TO_TICKS(100)
+#define COMM_TIMEOUT pdMS_TO_TICKS(10)
 #define DRIV_TIMEOUT pdMS_TO_TICKS(200)
 #define LONG_TIME 0xffff
 
@@ -172,7 +172,6 @@ void epos4_init_bridged(EPOS4_INST_t * epos4, EPOS4_INST_t * parent, uint8_t id)
 
 //mutex for only one access at the same time per serial port
 EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
-	osDelay(1);
 	if (xSemaphoreTake(epos4_busy_sem, DRIV_TIMEOUT) == pdTRUE) {
 		static uint8_t send_data[READ_OBJECT_LEN*2];
 		static uint16_t length = 0;
@@ -205,7 +204,6 @@ EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t sub
 }
 
 EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t subindex, uint8_t * data, uint32_t * err) {
-	osDelay(1);
 	if (xSemaphoreTake(epos4_busy_sem, DRIV_TIMEOUT) == pdTRUE) {
 		static uint8_t send_data[WRITE_OBJECT_LEN*2];
 		static uint16_t length = 0;
@@ -406,23 +404,12 @@ EPOS4_ERROR_t epos4_config(EPOS4_INST_t * epos4) {
 EPOS4_ERROR_t epos4_ppm_prep(EPOS4_INST_t * epos4) {
 	EPOS4_ERROR_t error = 0;
 	uint32_t err;
-	uint16_t status;
 
 	error |= epos4_write_i8(epos4, EPOS4_MODE_OF_OPERATION, EPOS4_MODE_PPM, &err);
 
 	error |= epos4_control_shutdown(epos4, &err);
 
 	error |= epos4_control_soenable(epos4, &err);
-
-	osDelay(1); //Wait 1ms to let the statusword become valid
-
-	error |= epos4_read_statusword(epos4, &status, &err);
-
-
-	if(!EPOS4_SW_ENABLED(status)) {
-		return EPOS4_ERROR;
-	}
-
 
 	return error;
 }
@@ -455,6 +442,8 @@ EPOS4_ERROR_t epos4_ppm_move(EPOS4_INST_t * epos4, EPOS4_MOV_t type, int32_t tar
 		error |= epos4_control_ppm_start_rel_imm(epos4, &err);
 		break;
 	}
+
+	error |= epos4_control_new_pos(epos4, &err);
 	return error;
 }
 
@@ -478,13 +467,11 @@ EPOS4_ERROR_t epos4_ppm_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 
 	uint16_t status;
 
-	osDelay(1); //wait 1ms to let sw update itself
-
 	error |= epos4_read_statusword(epos4, &status, &err);
 
 
 	if(EPOS4_SW_TARGET_REACHED(status)) {
-		//epos4_control_disable(epos4, &err);
+		epos4_control_disable(epos4, &err);
 		*terminated = 1;
 	}
 
@@ -537,7 +524,7 @@ EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 	error |= epos4_read_statusword(epos4, &status, &err);
 
 
-	if(!EPOS4_SW_TARGET_REACHED(status)) {
+	if(!EPOS4_SW_HOMING_ATTAINED(status)) {
 		epos4_control_disable(epos4, &err);
 		*terminated = 1;
 	}

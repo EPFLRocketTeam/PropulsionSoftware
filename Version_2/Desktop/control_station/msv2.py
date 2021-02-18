@@ -116,8 +116,9 @@ class msv2:
         crc_data.append(0)
         crc_data.append(0)
         crc = crc16(crc_data)
+        
         bin_data.append(crc & 0x00ff)
-        bin_data.append(crc >> 8)
+        bin_data.append((crc >> 8) & 0x00ff)
         return bin_data
 
 

@@ -26,7 +26,7 @@
  **********************/
 
 
-#define TARGET_REACHED_DELAY_CYCLES	(10)
+#define TARGET_REACHED_DELAY_CYCLES	(50)
 
 #define SCHED_ALLOWED_WIDTH	(5)
 
@@ -76,6 +76,7 @@ static void init_countdown(CONTROL_INST_t * control);
 static void init_ignition(CONTROL_INST_t * control);
 static void init_thrust(CONTROL_INST_t * control);
 static void init_shutdown(CONTROL_INST_t * control);
+static void init_glide(CONTROL_INST_t * control);
 static void init_abort(CONTROL_INST_t * control);
 static void init_error(CONTROL_INST_t * control);
 
@@ -372,21 +373,24 @@ static void thrust(CONTROL_INST_t * control) {
 
 static void init_shutdown(CONTROL_INST_t * control) {
 	control->state = CS_SHUTDOWN;
-	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, 0);
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE, 0);
 	control->pp_close_mov_started = 1;
 	//start motor movement to close valve
 }
 
 static void shutdown(CONTROL_INST_t * control) {
 	if(control->pp_close_mov_started) {
-		uint8_t terminated = 0;
-		epos4_ppm_terminate(control->pp_epos4, &terminated);
-		if(terminated) {
-			control->pp_close_mov_started = 0;
-			control->pp_motor_prepped = 0;
+		control->pp_close_mov_started++;
+		if(control->pp_close_mov_started > TARGET_REACHED_DELAY_CYCLES) {
+			uint8_t terminated = 0;
+			epos4_ppm_terminate(control->pp_epos4, &terminated);
+			if(terminated) {
+				control->pp_close_mov_started = 0;
+				control->pp_motor_prepped = 0;
+				init_glide(control);
+			}
 		}
 	}
-	init_idle(control);
 }
 
 static void init_glide(CONTROL_INST_t * control) {
@@ -397,7 +401,7 @@ static void glide(CONTROL_INST_t * control) {
 	//AB algorithm controls the airbrakes motor
 
 	//expect a stop signal to go to idle
-	//back to idle
+	init_idle(control);
 }
 
 static void init_abort(CONTROL_INST_t * control) {
@@ -413,11 +417,14 @@ static void _abort(CONTROL_INST_t * control) {
 	//close airbrakes
 	//wait for user release
 	if(control->pp_abort_mov_started) {
-		uint8_t terminated = 0;
-		epos4_ppm_terminate(control->pp_epos4, &terminated);
-		if(terminated) {
-			control->pp_abort_mov_started = 0;
-			control->pp_motor_prepped = 0;
+		control->pp_abort_mov_started++;
+		if(control->pp_abort_mov_started > TARGET_REACHED_DELAY_CYCLES) {
+			uint8_t terminated = 0;
+			epos4_ppm_terminate(control->pp_epos4, &terminated);
+			if(terminated) {
+				control->pp_abort_mov_started = 0;
+				control->pp_motor_prepped = 0;
+			}
 		}
 	}
 
