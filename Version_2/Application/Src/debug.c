@@ -31,7 +31,7 @@
 
 #define PP_PARAMS_LEN (32)
 #define PP_MOVE_LEN (6)
-#define STATUS_LEN (16)
+#define STATUS_LEN (18)
 #define SENSOR_LEN (24)
 #define VENTING_LEN	(2)
 
@@ -81,6 +81,7 @@ static void debug_recover(uint8_t * data, uint16_t data_len, uint8_t * resp, uin
 static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_venting(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_download(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 
 /**********************
  *	DEBUG FCN ARRAY
@@ -98,8 +99,8 @@ static void (*debug_fcn[]) (uint8_t *, uint16_t, uint8_t *, uint16_t *) = {
 		debug_recover,			//0x09
 		debug_get_sensor,		//0x0A
 		debug_get_status,		//0x0B
-		debug_venting			//0x0C
-
+		debug_venting,			//0x0C
+		debug_download			//0x0D
 };
 
 static uint16_t debug_fcn_max = sizeof(debug_fcn) / sizeof(void *);
@@ -261,6 +262,8 @@ static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 	util_encode_u16(resp+6, status.pp_status);
 	util_encode_i32(resp+8, status.pp_position);
 	util_encode_i32(resp+12, status.counter);
+	uint16_t memory = storage_get_used();
+	util_encode_u16(resp+16, memory);
 	*resp_len = STATUS_LEN;
 }
 
@@ -279,6 +282,13 @@ static void debug_venting(uint8_t * data, uint16_t data_len, uint8_t * resp, uin
 		resp[0] = ERROR_LO;
 		resp[1] = ERROR_HI;
 		*resp_len = 2;
+	}
+}
+
+static void debug_download(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	//downloads 5 samples at a time
+	for(uint8_t i = 0; i < 5; i++) {
+
 	}
 }
 

@@ -17,6 +17,7 @@
 #include <main.h>
 #include <cmsis_os.h>
 #include <util.h>
+#include <storage.h>
 
 /**********************
  *	CONFIGURATION
@@ -209,6 +210,10 @@ void sensor_thread(void * arg) {
 
 	sensor_init();
 
+	STORAGE_INST_t * storage = storage_get_inst();
+
+
+
 	for(;;) {
 
 		//second processing i.e. empty buffer and average all samples
@@ -315,6 +320,9 @@ void sensor_thread(void * arg) {
 		//Notify CAN for transfer
 
 		//Notify storage for storage
+		if(storage->ready_sem) {
+			xSemaphoreGive(storage->ready_sem);
+		}
 
 		//Results accessible from DEBUG UART
 

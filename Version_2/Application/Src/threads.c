@@ -16,6 +16,7 @@
 #include <threads.h>
 #include <control.h>
 #include <sensor.h>
+#include <storage.h>
 #include <serial.h>
 #include <debug.h>
 #include <epos4.h>
@@ -34,7 +35,10 @@
 #define SENSOR_PRIO	(5)
 
 #define SERIAL_SZ	DEFAULT_SZ
-#define SERIAL_PRIO	(1)
+#define SERIAL_PRIO	(2)
+
+#define STORAGE_SZ	DEFAULT_SZ
+#define STORAGE_PRIO	(1)
 
 
 /**********************
@@ -66,6 +70,7 @@
 static TaskHandle_t sensor_handle = NULL;
 static TaskHandle_t control_handle = NULL;
 static TaskHandle_t serial_handle = NULL;
+static TaskHandle_t storage_handle = NULL;
 
 
 /**********************
@@ -93,6 +98,14 @@ void threads_init(void) {
 	 *  Lowest priority
 	 *  Handle blinking led and sound effects
 	 */
+
+
+	/*
+	 * Storage thread
+	 * lowest priority
+	 */
+
+	CREATE_THREAD(storage_handle, storage, storage_thread, STORAGE_SZ, STORAGE_PRIO);
 
 	/*
 	 *  Serial RX processing thread (Bottom half)

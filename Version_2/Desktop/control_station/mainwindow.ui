@@ -25,7 +25,7 @@
       </property>
       <layout class="QGridLayout" name="gridLayout_8">
        <item row="0" column="0">
-        <widget class="QLineEdit" name="lineEdit">
+        <widget class="QLineEdit" name="dl_name">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -35,7 +35,7 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="download">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -48,16 +48,23 @@
         </widget>
        </item>
        <item row="0" column="2">
-        <widget class="QLabel" name="label_4">
+        <widget class="QLabel" name="dl_used">
          <property name="text">
           <string/>
          </property>
         </widget>
        </item>
-       <item row="2" column="0" colspan="3">
-        <widget class="QProgressBar" name="progressBar">
+       <item row="2" column="0" colspan="2">
+        <widget class="QProgressBar" name="dl_bar">
          <property name="value">
           <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QLabel" name="dl_prog">
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>

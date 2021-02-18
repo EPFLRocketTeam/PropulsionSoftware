@@ -14,6 +14,7 @@
 #include <control.h>
 #include <epos4.h>
 #include <led.h>
+#include <storage.h>
 
 /**********************
  *	CONFIGURATION
@@ -228,6 +229,7 @@ static void init_idle(CONTROL_INST_t * control) {
 	control->pp_close_mov_started = 0;
 	control->pp_abort_mov_started = 0;
 	control->pp_motor_prepped = 0;
+	storage_disable();
 }
 
 static void idle(CONTROL_INST_t * control) {
@@ -296,6 +298,7 @@ static void calibration(CONTROL_INST_t * control) {
 static void init_armed(CONTROL_INST_t * control) {
 	control->state = CS_ARMED;
 	led_set_color(LED_YELLOW);
+	storage_enable();
 }
 
 static void armed(CONTROL_INST_t * control) {

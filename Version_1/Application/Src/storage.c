@@ -81,7 +81,7 @@ void write_header(uint32_t nb_ss, uint32_t st) {
 	flash_write(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	tmp_data = nb_ss;
 	flash_write(USED_SS_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
-	tmp_data = st;
+	tmp_data = st;l
 	flash_write(STATE_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	used_subsectors = nb_ss;
 	mem_state = st;

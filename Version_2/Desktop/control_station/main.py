@@ -204,14 +204,25 @@ def vent_cb(stat):
         else:
             window.vent_status.setText("CLOSED")
 
+def id_2_mem(id):
+    usage = float(id)*32
+    u_str = "B"
+    u_flt = usage
+    if(usage > 1000):
+        u_str = "KB"
+        u_flt =usage / 1000
+    if(usage > 1000000):
+        u_str = "MB"
+        u_flt =usage / 1000000
+    return "{} {}".format(u_flt, u_str)
 
 
 def ping_cb(stat, sens):
     global status_state
     global counter
 
-    if(stat and len(stat) == 16):
-        data = struct.unpack("HHHHii", bytes(stat))
+    if(stat and len(stat) == 18):
+        data = struct.unpack("HHHHiiH", bytes(stat))
         state = data[0]
         status_state = state
         window.status_state.clear()
@@ -225,6 +236,7 @@ def ping_cb(stat, sens):
         window.pp_error.insert(hex(data[2]))
         window.pp_psu.insert(str(data[1]/10))
         window.pp_motor_current.insert(str(inc2deg(data[4])))
+        window.dl_used.setText(id_2_mem(data[5]))
         if state == 1:
             temperature_data_1.clear()
             temperature_data_2.clear()
