@@ -5,4 +5,4 @@
 Stable version used for tests
 
 ## Version 2
-In developpement
+In developpement (somewhat stable)
