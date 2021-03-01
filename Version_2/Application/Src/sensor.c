@@ -26,7 +26,9 @@
 #define SENSOR_TIMER	htim3
 #define SENSOR_ADC		hadc1
 
-#define SENSOR_HEART_BEAT 5  /* ms */
+#define SENSOR_HEART_BEAT 2  /* ms */
+
+#define ADC_HEART_BEAT 0.1  /* ms */
 
 /**********************
  *	CONSTANTS
@@ -47,7 +49,7 @@
 #define CALIBRATION_CYCLES		(64)
 
 //this needs to be done correctly
-#define MS_2_SENSOR_TIMER(ms)	72e6/32*(ms)/1000
+#define MS_2_SENSOR_TIMER(ms)	72e6*(ms)/1000
 
 /*
  * KULITE CALIBRATION DATA
@@ -171,7 +173,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 
 
 static void sensor_init(void) {
-	SENSOR_TIMER.Instance->ARR = MS_2_SENSOR_TIMER(5);
+	SENSOR_TIMER.Instance->ARR = MS_2_SENSOR_TIMER(ADC_HEART_BEAT);
 	HAL_TIM_OC_Start(&SENSOR_TIMER, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&SENSOR_ADC, (uint32_t*)adc_buffer, NB_SENSOR);
 
@@ -209,8 +211,6 @@ void sensor_thread(void * arg) {
 	last_wake_time = xTaskGetTickCount();
 
 	sensor_init();
-
-	STORAGE_INST_t * storage = storage_get_inst();
 
 
 
@@ -320,9 +320,7 @@ void sensor_thread(void * arg) {
 		//Notify CAN for transfer
 
 		//Notify storage for storage
-		if(storage->ready_sem) {
-			xSemaphoreGive(storage->ready_sem);
-		}
+		storage_give_sem();
 
 		//Results accessible from DEBUG UART
 

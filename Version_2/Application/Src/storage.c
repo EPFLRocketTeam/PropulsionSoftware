@@ -14,6 +14,7 @@
 #include <sensor.h>
 #include <control.h>
 #include <flash.h>
+#include <led.h>
 
 /**********************
  *	CONSTANTS
@@ -69,48 +70,55 @@ typedef struct {
  *	VARIABLES
  **********************/
 
-static STORAGE_INST_t storage;
+
+static uint32_t used_subsectors;
+static uint32_t data_counter;
+static SemaphoreHandle_t ready_sem;
+static StaticSemaphore_t ready_sem_buffer;
+static uint8_t record_active;
+static uint8_t restart_required;
 
 
 /**********************
  *	PROTOTYPES
  **********************/
 
-static STORAGE_DATA_t read_data(STORAGE_INST_t * store, uint32_t address);
-static void write_header(STORAGE_INST_t * store, uint32_t nb_ss);
-static void write_data(STORAGE_INST_t * store, STORAGE_DATA_t data);
+static STORAGE_DATA_t read_data(uint32_t address);
+static void write_header(uint32_t nb_ss);
+static void write_data(STORAGE_DATA_t data);
 
 /**********************
  *	DECLARATIONS
  **********************/
 
-void storage_init(STORAGE_INST_t * store) {
+void storage_init() {
 	static uint32_t tmp_data;
 	flash_init();
 	flash_read(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	if(tmp_data == MAGIC_NUMBER) {
-		flash_read(USED_SS_ADDR, (uint8_t *) &store->used_subsectors, sizeof(uint32_t));
-		if(store->used_subsectors > 1) {
+		flash_read(USED_SS_ADDR, (uint8_t *) &used_subsectors, sizeof(uint32_t));
+		if(used_subsectors > 1) {
 			STORAGE_DATA_t data;
-			uint32_t count = (store->used_subsectors-2)*SAMPLES_PER_SS;
-			data = read_data(store, count);
+			uint32_t count = (used_subsectors-2)*SAMPLES_PER_SS;
+			data = read_data(count);
 			while(data.sample_id == count){
-				data = read_data(store, ++count);
+				data = read_data(++count);
 			}
-			store->data_counter = count;
+			data_counter = count;
 		} else {
-			store->data_counter = 0;
+			data_counter = 0;
 		}
 	} else {
-		write_header(store, 1);
-		store->data_counter = 0;
+		write_header(1);
+		data_counter = 0;
 	}
-	store->ready_sem = xSemaphoreCreateBinaryStatic(&store->ready_sem_buffer);
-	store->record_active = 0;
+	ready_sem = xSemaphoreCreateBinaryStatic(&ready_sem_buffer);
+	record_active = 0;
+	restart_required = 0;
 }
 
 
-void storage_record_sample(STORAGE_INST_t * store) {
+void storage_record_sample() {
 	STORAGE_DATA_t data = {0};
 	SENSOR_DATA_t sensor_data = sensor_get_last();
 	data.temp_1 = sensor_data.temperature[1];
@@ -124,70 +132,77 @@ void storage_record_sample(STORAGE_INST_t * store) {
 	data.motor_pos = control_data.pp_position;
 	data.system_status = control_data.state;
 
-	write_data(store, data);
+	write_data(data);
 
 }
 
-static void write_header(STORAGE_INST_t * store, uint32_t nb_ss) {
+static void write_header(uint32_t nb_ss) {
 	static uint32_t tmp_data;
 	flash_erase_subsector(MAGIC_ADDR);
 	tmp_data = MAGIC_NUMBER;
 	flash_write(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	tmp_data = nb_ss;
 	flash_write(USED_SS_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
-	store->used_subsectors = nb_ss;
+	used_subsectors = nb_ss;
 }
 
-static STORAGE_DATA_t read_data(STORAGE_INST_t * store, uint32_t id) {
+static STORAGE_DATA_t read_data(uint32_t id) {
 	static STORAGE_DATA_t data;
 	flash_read(ADDRESS(id), (uint8_t *) &data, sizeof(STORAGE_DATA_t));
 	return data;
 }
 
-static void write_data(STORAGE_INST_t * store, STORAGE_DATA_t data) {
-	data.sample_id = store->data_counter;
-	uint32_t addr = ADDRESS(store->data_counter++);
+static void write_data(STORAGE_DATA_t data) {
+	data.sample_id = data_counter;
+	uint32_t addr = ADDRESS(data_counter++);
 	if(addr % SUBSECTOR_SIZE == 0) {
-		write_header(store, store->used_subsectors + 1);
+		write_header(used_subsectors + 1);
 		flash_erase_subsector(addr);
 	}
 	flash_write(addr, (uint8_t *) &data, sizeof(STORAGE_DATA_t));
 }
 
 uint32_t storage_get_used() {
-	return storage.data_counter;
+	return data_counter;
 }
 
-void storage_get_sample(STORAGE_INST_t * store, uint32_t id, void * dest) {
-	*((STORAGE_DATA_t *)dest) = read_data(store, id);
+void storage_get_sample(uint32_t id, void * dest) {
+	*((STORAGE_DATA_t *)dest) = read_data(id);
 }
 
-SemaphoreHandle_t storage_get_sem(STORAGE_INST_t * store) {
-	return store->ready_sem;
-}
-
-STORAGE_INST_t * storage_get_inst() {
-	return &storage;
+void storage_give_sem() {
+	if(ready_sem != NULL) {
+		xSemaphoreGive(ready_sem);
+	}
 }
 
 void storage_enable() {
-	storage.record_active = 1;
+	record_active = 1;
 }
 
 void storage_disable() {
-	storage.record_active = 0;
+	record_active = 0;
+}
+
+void storage_restart() {
+	restart_required = 1;
 }
 
 
 void storage_thread(void * arg) {
 
-	storage_init(&storage);
+	storage_init();
 
 
 	for(;;) {
-		if(xSemaphoreTake(storage.ready_sem, LONG_TIME) == pdTRUE) {
-			if(storage.record_active) {
-				storage_record_sample(&storage);
+		if(xSemaphoreTake(ready_sem, LONG_TIME) == pdTRUE) {
+			if(restart_required) {
+				write_header(1);
+				data_counter = 0;
+				restart_required = 0;
+			}
+			if(record_active) {
+				storage_record_sample();
 			}
 		}
 	}

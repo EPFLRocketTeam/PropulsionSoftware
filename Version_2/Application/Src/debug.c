@@ -20,6 +20,7 @@
 #include <debug.h>
 #include <usart.h>
 #include <control.h>
+#include <storage.h>
 
 
 /**********************
@@ -31,9 +32,10 @@
 
 #define PP_PARAMS_LEN (32)
 #define PP_MOVE_LEN (6)
-#define STATUS_LEN (18)
+#define STATUS_LEN (20)
 #define SENSOR_LEN (24)
 #define VENTING_LEN	(2)
+#define DOWNLOAD_LEN	(4)
 
 #define SENSOR_BFR	(5)
 #define SENSOR_BFR_LEN SENSOR_BFR*SENSOR_LEN
@@ -262,8 +264,8 @@ static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 	util_encode_u16(resp+6, status.pp_status);
 	util_encode_i32(resp+8, status.pp_position);
 	util_encode_i32(resp+12, status.counter);
-	uint16_t memory = storage_get_used();
-	util_encode_u16(resp+16, memory);
+	uint32_t memory = storage_get_used();
+	util_encode_u32(resp+16, memory);
 	*resp_len = STATUS_LEN;
 }
 
@@ -286,9 +288,13 @@ static void debug_venting(uint8_t * data, uint16_t data_len, uint8_t * resp, uin
 }
 
 static void debug_download(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
-	//downloads 5 samples at a time
-	for(uint8_t i = 0; i < 5; i++) {
-
+	//downloads 5 samples at a certain location
+	if(data_len == DOWNLOAD_LEN) {
+		uint32_t location = util_decode_u32(data);
+		for(uint8_t i = 0; i < 5; i++) {
+			storage_get_sample(location+i, resp+i*32);
+		}
+		*resp_len = 32*5;
 	}
 }
 

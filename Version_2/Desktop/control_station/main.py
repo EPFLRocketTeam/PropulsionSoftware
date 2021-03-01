@@ -43,6 +43,8 @@ window = []
 #m = msv2.msv2()
 worker = []
 
+total_data = 1
+
 #COMMANDS
 READ_STATE =    0x00
 SET_PP_PARAMS = 0x01
@@ -57,6 +59,7 @@ RECOVER =       0x09
 GET_SENSOR =    0x0A
 GET_STATUS =    0x0B
 VENTING =       0x0C
+DOWNLOAD =      0x0D
 
 #MOVE MODES
 ABSOLUTE            = 0x00
@@ -214,15 +217,16 @@ def id_2_mem(id):
     if(usage > 1000000):
         u_str = "MB"
         u_flt =usage / 1000000
-    return "{} {}".format(u_flt, u_str)
+    return "{:.3f} {}".format(u_flt, u_str)
 
 
 def ping_cb(stat, sens):
     global status_state
     global counter
+    global total_data
 
-    if(stat and len(stat) == 18):
-        data = struct.unpack("HHHHiiH", bytes(stat))
+    if(stat and len(stat) == 20):
+        data = struct.unpack("HHHHiiI", bytes(stat))
         state = data[0]
         status_state = state
         window.status_state.clear()
@@ -236,7 +240,8 @@ def ping_cb(stat, sens):
         window.pp_error.insert(hex(data[2]))
         window.pp_psu.insert(str(data[1]/10))
         window.pp_motor_current.insert(str(inc2deg(data[4])))
-        window.dl_used.setText(id_2_mem(data[5]))
+        window.dl_used.setText(id_2_mem(data[6]))
+        total_data = data[6]
         if state == 1:
             temperature_data_1.clear()
             temperature_data_2.clear()
@@ -337,12 +342,24 @@ def record_sample(data):
         write_csv(rec_file, data)
         data_sampled = 0
 
+def download_trig():
+    serial_worker.download(0)
+
+
+def download_cb(data, cnt):
+    progress = cnt/total_data*100
+    print(progress)
+    window.dl_bar.setValue(progress)
+    if(cnt < total_data):
+        serial_worker.download(cnt)
+
 
 class Serial_worker(QObject):
     update_status_sig = Signal(list, list) #status, sensor
     update_pp_params_sig = Signal(list)
     update_venting_sig = Signal(list)
     connect_sig = Signal(str)
+    download_sig = Signal(list, int)
 
     def __init__(self):
         QObject.__init__(self)
@@ -367,17 +384,30 @@ class Serial_worker(QObject):
             print("ACTION")
             resp = self.msv2.send(opcode, data)
             print("AFTER")
-            if(not resp):
-                if(self.msv2.reconnect()):
-                    self.connect_sig.emit("CONNECTED")
-                else:
-                    self.connect_sig.emit("RECONNECTING...")
 
             if opcode == GET_PP_PARAMS:
                 self.update_pp_params_sig.emit(resp)
 
             if opcode == VENTING:
                 self.update_venting_sig.emit(resp)
+
+    @Slot()
+    def download(self, number):
+        if self.msv2.is_connected():
+            last_recv = number
+            bin_data = struct.pack("I", last_recv)
+            recv_data = []
+            data = self.msv2.send(DOWNLOAD, bin_data)
+            if(not data):
+                self.download_sig.emit([], last_recv)
+                return
+            for i in range(5):
+                tmp_data = struct.unpack("HhhhiihHIII", bytes(data[i*32:(i+1)*32]))
+                recv_data.append(tmp_data)
+            last_recv += 5
+            self.download_sig.emit(recv_data, last_recv)
+
+
 
     @Slot()
     def send_ping(self):
@@ -397,6 +427,9 @@ class Serial_worker(QObject):
         self.timer = QTimer()
         self.timer.timeout.connect(self.send_ping)
         self.timer.start(period)
+
+
+
 
 
 def clean_quit():
@@ -455,10 +488,11 @@ if __name__ == "__main__":
     serial_worker.update_pp_params_sig.connect(pp_motor_get_cb)
     serial_worker.update_status_sig.connect(ping_cb)
     serial_worker.update_venting_sig.connect(vent_cb)
+    serial_worker.download_sig.connect(download_cb)
 
     #start worker thread
     worker_thread.start()
-    worker_thread.setPriority(QThread.TimeCriticalPriority)
+    #worker_thread.setPriority(QThread.TimeCriticalPriority)
 
     serial_worker.start_ping(HEART_BEAT)
 
@@ -510,6 +544,7 @@ if __name__ == "__main__":
     window.local_record.clicked.connect(start_record)
     window.vent_open.clicked.connect(vent_open_trig)
     window.vent_close.clicked.connect(vent_close_trig)
+    window.download.clicked.connect(download_trig)
 
     window.show()
 

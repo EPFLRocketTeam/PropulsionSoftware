@@ -298,7 +298,6 @@ static void calibration(CONTROL_INST_t * control) {
 static void init_armed(CONTROL_INST_t * control) {
 	control->state = CS_ARMED;
 	led_set_color(LED_YELLOW);
-	storage_enable();
 }
 
 static void armed(CONTROL_INST_t * control) {
@@ -335,6 +334,8 @@ static void init_countdown(CONTROL_INST_t * control) {
 	control->state = CS_COUNTDOWN;
 	control->counter = control->pp_params.countdown_wait-CONTROL_HEART_BEAT;
 	control->counter_active = 1;
+	storage_restart();
+	storage_enable();
 }
 
 static void countdown(CONTROL_INST_t * control) {
@@ -353,7 +354,6 @@ static void init_ignition(CONTROL_INST_t * control) {
 }
 
 static void ignition(CONTROL_INST_t * control) {
-
 	if(control->counter <= 0) {
 		control->counter_active = 0;
 		init_thrust(control);
@@ -386,7 +386,6 @@ static void init_shutdown(CONTROL_INST_t * control) {
 	control->state = CS_SHUTDOWN;
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE, 0);
 	control->pp_close_mov_started = 1;
-	//start motor movement to close valve
 }
 
 static void shutdown(CONTROL_INST_t * control) {
@@ -406,6 +405,7 @@ static void shutdown(CONTROL_INST_t * control) {
 
 static void init_glide(CONTROL_INST_t * control) {
 	control->state = CS_GLIDE;
+	storage_disable();
 }
 
 static void glide(CONTROL_INST_t * control) {
