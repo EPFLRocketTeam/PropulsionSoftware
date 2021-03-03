@@ -77,7 +77,7 @@ rec_file = None
 start_rec = None
 
 data_labels = ['pres_1 [mBar]', 'pres_2 [mBar]', 'temp_1 [0.1deC]', 'temp_2 [0.1deC]', 'temp_3 [0.1degC]', 'sensor_time [ms]']
-
+remote_labels = ['data_id', 'temp_1', 'temp_2', 'temp_3', 'pres_1', 'pres_2', 'motor_pos', 'system_status', 'sensor_time', 'reserved', 'reserved']
 
 def safe_int(d):
     try:
@@ -343,15 +343,28 @@ def record_sample(data):
         data_sampled = 0
 
 def download_trig():
-    serial_worker.download(0)
+    global rem_file
+    fn = window.dl_name.text()
+    if(fn == ''):
+        fn = 'remote'
+    num = 0
+    fnam = "{}{}.csv".format(fn, num);
+    while(os.path.isfile(fnam)):
+        num += 1
+        fnam = "{}{}.csv".format(fn, num);
+    rem_file = open(fnam, 'w')
+    write_csv(rem_file, remote_labels)
+    serial_worker.download()
 
 
 def download_cb(data, cnt):
     progress = cnt/total_data*100
     print(progress)
+    print(data)
     window.dl_bar.setValue(progress)
-    if(cnt < total_data):
-        serial_worker.download(cnt)
+    for d in data:
+        write_csv(rem_file, d)
+
 
 
 class Serial_worker(QObject):
@@ -392,20 +405,24 @@ class Serial_worker(QObject):
                 self.update_venting_sig.emit(resp)
 
     @Slot()
-    def download(self, number):
+    def download(self):
         if self.msv2.is_connected():
-            last_recv = number
-            bin_data = struct.pack("I", last_recv)
-            recv_data = []
-            data = self.msv2.send(DOWNLOAD, bin_data)
-            if(not data):
-                self.download_sig.emit([], last_recv)
-                return
-            for i in range(5):
-                tmp_data = struct.unpack("HhhhiihHIII", bytes(data[i*32:(i+1)*32]))
-                recv_data.append(tmp_data)
-            last_recv += 5
-            self.download_sig.emit(recv_data, last_recv)
+            last_recv = 0
+            while 1:
+                bin_data = struct.pack("I", last_recv)
+                recv_data = []
+                data = self.msv2.send(DOWNLOAD, bin_data)
+                if(not data):
+                    self.download_sig.emit([], last_recv)
+                    return
+                for i in range(5):
+                    tmp_data = struct.unpack("HhhhiihHIII", bytes(data[i*32:(i+1)*32]))
+                    recv_data.append(tmp_data)
+                last_recv += 5
+                self.download_sig.emit(recv_data, last_recv)
+                if(last_recv > total_data):
+                    break
+               
 
 
 
