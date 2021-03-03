@@ -361,17 +361,51 @@ static void ignition(CONTROL_INST_t * control) {
 
 }
 
+static uint32_t tc_stub = 0;
+static int32_t tc_stub_target = 90;
+
 static void init_thrust(CONTROL_INST_t * control) {
 	control->state = CS_THRUST;
 	led_set_color(LED_TEAL);
 	control->counter = control->pp_params.full_wait-CONTROL_HEART_BEAT;
 	control->counter_active = 1;
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.full_angle);
+	//TC start
+	tc_stub=0;
+	tc_stub_target = 90;
 }
 
 static void thrust(CONTROL_INST_t * control) {
 
 	//THRUST CONTROL HERE
+	tc_stub++;
+
+	if(tc_stub > 10) {
+		tc_stub_target = 80;
+	}
+	if(tc_stub > 20) {
+		tc_stub_target = 70;
+	}
+	if(tc_stub > 30) {
+		tc_stub_target = 90;
+	}
+	if(tc_stub > 40) {
+		tc_stub_target = 60;
+	}
+	if(tc_stub > 50) {
+		tc_stub_target = 20;
+	}
+	if(tc_stub > 51) {
+		tc_stub_target = 90;
+	}
+	if(tc_stub > 60) {
+		tc_stub_target = 60;
+	}
+	if(tc_stub > 65) {
+		tc_stub_target = 90;
+	}
+
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, DEG2INC(tc_stub_target));
 
 
 	if(control->counter <= 0) {
@@ -384,7 +418,7 @@ static void thrust(CONTROL_INST_t * control) {
 
 static void init_shutdown(CONTROL_INST_t * control) {
 	control->state = CS_SHUTDOWN;
-	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE, 0);
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, 0);
 	control->pp_close_mov_started = 1;
 }
 
