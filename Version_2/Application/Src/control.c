@@ -26,6 +26,8 @@
 
 #define VENTING_PORT	SOLENOID_GPIO_Port
 
+#define THRUST_CONTROL_ENABLE 1
+
 /**********************
  *	CONSTANTS
  **********************/
@@ -364,49 +366,43 @@ static void ignition(CONTROL_INST_t * control) {
 static uint32_t tc_stub = 0;
 static int32_t tc_stub_target = 90;
 
+
+static int32_t tc_stub_curve[] = {
+		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
+		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
+		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
+		89, 87, 86, 85, 83, 80, 79, 78, 77, 76,
+		75, 74, 73, 72, 71, 70, 69, 68, 70, 71,
+		72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+		82, 83, 84, 85, 86, 86, 87, 90, 90, 90,
+		60, 60, 60, 60, 60, 60, 60, 65, 65, 65,
+		70, 70, 70, 80, 80, 80, 90, 90, 80, 90
+};
+
 static void init_thrust(CONTROL_INST_t * control) {
 	control->state = CS_THRUST;
 	led_set_color(LED_TEAL);
 	control->counter = control->pp_params.full_wait-CONTROL_HEART_BEAT;
 	control->counter_active = 1;
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.full_angle);
+#if THRUST_CONTROL_ENABLE == 1
 	//TC start
 	tc_stub=0;
 	tc_stub_target = 90;
+#endif
 }
 
 static void thrust(CONTROL_INST_t * control) {
-
+#if THRUST_CONTROL_ENABLE == 1
 	//THRUST CONTROL HERE
 	tc_stub++;
 
-	if(tc_stub > 10) {
-		tc_stub_target = 80;
-	}
-	if(tc_stub > 20) {
-		tc_stub_target = 70;
-	}
-	if(tc_stub > 30) {
-		tc_stub_target = 90;
-	}
-	if(tc_stub > 40) {
-		tc_stub_target = 60;
-	}
-	if(tc_stub > 50) {
-		tc_stub_target = 20;
-	}
-	if(tc_stub > 51) {
-		tc_stub_target = 90;
-	}
-	if(tc_stub > 60) {
-		tc_stub_target = 60;
-	}
-	if(tc_stub > 65) {
-		tc_stub_target = 90;
+	if(tc_stub < sizeof(tc_stub_curve)/sizeof(int32_t)) {
+		tc_stub_target = tc_stub_curve[tc_stub];
 	}
 
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, DEG2INC(tc_stub_target));
-
+#endif
 
 	if(control->counter <= 0) {
 		control->counter_active = 0;
