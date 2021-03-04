@@ -20,13 +20,13 @@
  *	CONFIGURATION
  **********************/
 
-#define CONTROL_HEART_BEAT	20 /* ms */
+#define CONTROL_HEART_BEAT	10 /* ms */
 
 #define VENTING_PIN		SOLENOID_Pin
 
 #define VENTING_PORT	SOLENOID_GPIO_Port
 
-#define THRUST_CONTROL_ENABLE 1
+#define THRUST_CONTROL_ENABLE 0
 
 /**********************
  *	CONSTANTS
@@ -213,8 +213,8 @@ static void init_control(CONTROL_INST_t * control) {
 	control->sched = CONTROL_SCHED_NOTHING;
 	control->counter_active = 0;
 
-	control->pp_params.acc = 50000;
-	control->pp_params.dec = 50000;
+	control->pp_params.acc = 25000;
+	control->pp_params.dec = 25000;
 	control->pp_params.speed = 8000;
 	control->pp_params.countdown_wait = 2000;
 	control->pp_params.half_wait = 2500;
@@ -368,6 +368,15 @@ static int32_t tc_stub_target = 90;
 
 
 static int32_t tc_stub_curve[] = {
+		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
+		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
+		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
+		89, 87, 86, 85, 83, 80, 79, 78, 77, 76,
+		75, 74, 73, 72, 71, 70, 69, 68, 70, 71,
+		72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+		82, 83, 84, 85, 86, 86, 87, 90, 90, 90,
+		60, 60, 60, 60, 60, 60, 60, 65, 65, 65,
+		70, 70, 70, 80, 80, 80, 90, 90, 80, 90,
 		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
 		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
 		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,

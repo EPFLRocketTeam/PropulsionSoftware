@@ -31,7 +31,7 @@
  **********************/
 
 
-#define TC_MBAR_2_PASCAL(pres)			(pres*100)
+#define TC_MBAR_2_PASCAL(pres)			((pres)*100)
 
 #define TC_THRUST_2_PRESSURE(thrust)	((thrust)*TC_TRUST_PRESS_COEFF)
 

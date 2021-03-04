@@ -9,6 +9,9 @@
  *
  *				  The algorithm will take as input the CC pressure and thrust command value
  *				  and output the desired valve opening angle
+ *
+ *				  controller: c = tf([1 28.6 484], [1 200 0])
+ *				  discretization: d = c2d(c, 0.01)
  */
 
 /**********************
@@ -42,10 +45,20 @@
  **********************/
 
 
+
+
+
 /**********************
  *	DECLARATIONS
  **********************/
 
+void tc_init() {
+
+}
+
+int32_t tc_compute(int32_t cc_pressure, int32_t desired_thrust, uint32_t time) {
+
+}
 
 
 
