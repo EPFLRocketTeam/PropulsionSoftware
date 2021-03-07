@@ -58,7 +58,7 @@ extern "C"{
 
 void tc_init();
 
-int32_t tc_compute(int32_t cc_pressure, int32_t desired_thrust, uint32_t time);
+int32_t tc_compute(int32_t cc_pressure, int32_t desired_thrust);
 
 
 #ifdef __cplusplus

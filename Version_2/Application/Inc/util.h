@@ -61,6 +61,23 @@ static inline uint8_t util_buffer_##name##_isempty(UTIL_BUFFER_##name##_t * bfr)
 
 #define util_abs(a)	((a)<0?-(a):(a))
 
+
+
+//fixed point arithmetic 20.12
+
+#define UTIL_DECIMAL	(12)
+
+
+#define util_double_2_fix(a) 	((a)*(1<<UTIL_DECIMAL))
+#define util_int_2_fix(a)	((a)<<UTIL_DECIMAL)
+#define util_fix_2_int(a)	((a)>>UTIL_DECIMAL)
+
+#define util_fix_add(a,b)   ((a)+(b))
+#define util_fix_sub(a,b)   ((a)-(b))
+#define util_fix_mul(a,b)   (((a)*(b))>>UTIL_DECIMAL)
+#define util_fix_div(a,b)   (((a)/(b))<<UTIL_DECIMAL))
+
+
 /**********************
  *  TYPEDEFS
  **********************/
@@ -86,7 +103,22 @@ typedef struct UTIL_BUFFER_I16{
 	int16_t * buffer;
 }UTIL_BUFFER_I16_t;
 
+typedef struct UTIL_MAT21{
+	int32_t x11;
+	int32_t x21;
+}UTIL_MAT21_t;
 
+typedef struct UTIL_MAT12{
+	int32_t x11;
+	int32_t x12;
+}UTIL_MAT12_t;
+
+typedef struct UTIL_MAT22{
+	int32_t x11;
+	int32_t x12;
+	int32_t x21;
+	int32_t x22;
+}UTIL_MAT22_t;
 
 
 /**********************
@@ -238,6 +270,76 @@ static inline int16_t util_decode_i16(uint8_t * data) {
 static inline int32_t util_decode_i32(uint8_t * data) {
 	return (int32_t) data[0] | data[1] << 8 | data[2] << 16 | data[3] << 24;
 }
+
+static inline UTIL_MAT21_t util_fix_mat22_mul_mat21(UTIL_MAT22_t A, UTIL_MAT21_t B) {
+	UTIL_MAT21_t R;
+	R.x11 = util_fix_mul(A.x11, B.x11) + util_fix_mul(A.x12, B.x21);
+	R.x21 = util_fix_mul(A.x21, B.x11) + util_fix_mul(A.x22, B.x21);
+	return R;
+}
+
+static inline int32_t util_fix_mat12_mul_mat21(UTIL_MAT12_t A, UTIL_MAT21_t B) {
+	int32_t R;
+	R = util_fix_mul(A.x11, B.x11) + util_fix_mul(A.x12, B.x21);
+	return R;
+}
+
+static inline UTIL_MAT22_t util_fix_mat21_mul_mat12(UTIL_MAT21_t A, UTIL_MAT12_t B) {
+	UTIL_MAT22_t R;
+	R.x11 = util_fix_mul(A.x11, B.x11);
+	R.x12 = util_fix_mul(A.x11, B.x12);
+	R.x21 = util_fix_mul(A.x21, B.x11);
+	R.x22 = util_fix_mul(A.x21, B.x12);
+	return R;
+}
+
+static inline UTIL_MAT22_t util_fix_fix_mul_mat22(int32_t A, UTIL_MAT22_t B) {
+	UTIL_MAT22_t R;
+	R.x11 = util_fix_mul(A, B.x11);
+	R.x12 = util_fix_mul(A, B.x12);
+	R.x21 = util_fix_mul(A, B.x21);
+	R.x22 = util_fix_mul(A, B.x22);
+	return R;
+}
+
+static inline UTIL_MAT21_t util_fix_fix_mul_mat21(int32_t A, UTIL_MAT21_t B) {
+	UTIL_MAT21_t R;
+	R.x11 = util_fix_mul(A, B.x11);
+	R.x21 = util_fix_mul(A, B.x21);
+	return R;
+}
+
+static inline UTIL_MAT12_t util_fix_fix_mul_mat12(int32_t A, UTIL_MAT12_t B) {
+	UTIL_MAT12_t R;
+	R.x11 = util_fix_mul(A, B.x11);
+	R.x12 = util_fix_mul(A, B.x12);
+	return R;
+}
+
+
+static inline UTIL_MAT22_t util_fix_mat22_add_mat22(UTIL_MAT22_t A, UTIL_MAT22_t B) {
+	UTIL_MAT22_t R;
+	R.x11 = A.x11 + B.x11;
+	R.x12 = A.x12 + B.x12;
+	R.x21 = A.x21 + B.x21;
+	R.x22 = A.x22 + B.x22;
+	return R;
+}
+
+static inline UTIL_MAT21_t util_fix_mat21_add_mat21(UTIL_MAT21_t A, UTIL_MAT21_t B) {
+	UTIL_MAT21_t R;
+	R.x11 = A.x11 + B.x11;
+	R.x21 = A.x21 + B.x21;
+	return R;
+}
+
+static inline UTIL_MAT12_t util_fix_mat12_add_mat12(UTIL_MAT12_t A, UTIL_MAT12_t B) {
+	UTIL_MAT12_t R;
+	R.x11 = A.x11 + B.x11;
+	R.x12 = A.x12 + B.x12;
+	return R;
+}
+
 
 
 

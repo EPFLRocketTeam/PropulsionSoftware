@@ -26,7 +26,7 @@
 
 #define VENTING_PORT	SOLENOID_GPIO_Port
 
-#define THRUST_CONTROL_ENABLE 0
+#define THRUST_CONTROL_ENABLE 1
 
 /**********************
  *	CONSTANTS
@@ -363,31 +363,6 @@ static void ignition(CONTROL_INST_t * control) {
 
 }
 
-static uint32_t tc_stub = 0;
-static int32_t tc_stub_target = 90;
-
-
-static int32_t tc_stub_curve[] = {
-		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
-		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
-		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
-		89, 87, 86, 85, 83, 80, 79, 78, 77, 76,
-		75, 74, 73, 72, 71, 70, 69, 68, 70, 71,
-		72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-		82, 83, 84, 85, 86, 86, 87, 90, 90, 90,
-		60, 60, 60, 60, 60, 60, 60, 65, 65, 65,
-		70, 70, 70, 80, 80, 80, 90, 90, 80, 90,
-		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
-		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
-		90, 90, 90, 90, 90, 90, 90, 90, 90, 90,
-		89, 87, 86, 85, 83, 80, 79, 78, 77, 76,
-		75, 74, 73, 72, 71, 70, 69, 68, 70, 71,
-		72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-		82, 83, 84, 85, 86, 86, 87, 90, 90, 90,
-		60, 60, 60, 60, 60, 60, 60, 65, 65, 65,
-		70, 70, 70, 80, 80, 80, 90, 90, 80, 90
-};
-
 static void init_thrust(CONTROL_INST_t * control) {
 	control->state = CS_THRUST;
 	led_set_color(LED_TEAL);
@@ -396,21 +371,14 @@ static void init_thrust(CONTROL_INST_t * control) {
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.full_angle);
 #if THRUST_CONTROL_ENABLE == 1
 	//TC start
-	tc_stub=0;
-	tc_stub_target = 90;
 #endif
 }
 
 static void thrust(CONTROL_INST_t * control) {
 #if THRUST_CONTROL_ENABLE == 1
 	//THRUST CONTROL HERE
-	tc_stub++;
 
-	if(tc_stub < sizeof(tc_stub_curve)/sizeof(int32_t)) {
-		tc_stub_target = tc_stub_curve[tc_stub];
-	}
-
-	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, DEG2INC(tc_stub_target));
+	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, DEG2INC(90));
 #endif
 
 	if(control->counter <= 0) {
