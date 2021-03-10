@@ -78,10 +78,10 @@
 //Propulsion Data
 #define DATA_COMMAND_CHECK_VALUE	0xC0FFEE
 
-#define DATA_ID_START_OPERATION	80
-#define DATA_ID_OPEN_SOLENOID	81
-#define DATA_ID_CLOSE_SOLENOID	82
-#define DATA_ID_START_HOMING	83
+#define DATA_ID_OPERATION	    80
+#define DATA_ID_ARMING			81
+#define DATA_ID_VENTING			82
+#define DATA_ID_CALIBRATION		83
 #define DATA_ID_ABORT			84
 
 #define DATA_ID_PRESS_1			85
@@ -108,6 +108,9 @@
 #define MAX_BOARD_ID 9 // used to implement redundant info in CAN_handling
 #define MAX_BOARD_NUMBER (MAX_BOARD_ID+1)
 
+#define DATA_MAGIC_1		0xC0FEBABE
+#define DATA_MAGIC_2		0xBEEFBEEF
+#define DATA_MAGIC_3		0xDEADDEAD
 
 /**********************
  *  MACROS

@@ -317,7 +317,7 @@ void sensor_thread(void * arg) {
 		}
 
 
-		//Notify CAN for transfer
+		//The CAN thread will periodically get the data
 
 		//Notify storage for storage
 		storage_give_sem();

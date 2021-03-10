@@ -1,6 +1,6 @@
 /*  Title		: CAN communication
  *  Filename	: can_comm.c
- *	Author		: Tim Lebailly
+ *	Author		: Tim Lebailly (modified by Iacopo Sprenger)
  *	Date		: 23.02.2019
  *	Version		: 0.1
  *	Description	: can communication
@@ -18,7 +18,11 @@
  **********************/
 
 #include "can.h"
+#include <cmsis_os.h>
+#include <main.h>
 #include <can_comm.h>
+#include <sensor.h>
+#include <control.h>
 
 
 /**********************
@@ -26,6 +30,8 @@
  **********************/
 
 #define CAN_BUFFER_DEPTH 64
+
+#define CAN_HEART_BEAT 20
 
 
 /**********************
@@ -229,6 +235,31 @@ uint32_t can_readFrame(void) {
         can_current_msg.id_CAN = RxHeader.StdId;
     }
     return fill_level;
+}
+
+
+void can_thread(void * arg) {
+	static TickType_t last_wake_time;
+	static const TickType_t period = pdMS_TO_TICKS(CAN_HEART_BEAT);
+
+	last_wake_time = xTaskGetTickCount();
+
+
+	for(;;) {
+
+		SENSOR_DATA_t sensor_data = sensor_get_last();
+		CONTROL_STATUS_t control_data = control_get_status();
+		can_setFrame((uint32_t) sensor_data.pressure_1, DATA_ID_PRESS_1, sensor_data.time);
+		can_setFrame((uint32_t) sensor_data.pressure_2, DATA_ID_PRESS_2, sensor_data.time);
+		can_setFrame((uint32_t) sensor_data.temperature[0], DATA_ID_TEMP_1, sensor_data.time);
+		can_setFrame((uint32_t) sensor_data.temperature[0], DATA_ID_TEMP_2, sensor_data.time);
+		can_setFrame((uint32_t) sensor_data.temperature[0], DATA_ID_TEMP_3, sensor_data.time);
+		can_setFrame((uint32_t) control_data.state, DATA_ID_STATUS, control_data.time);
+		can_setFrame((uint32_t) control_data.pp_position, DATA_ID_MOT_POS, control_data.time);
+
+
+		vTaskDelayUntil( &last_wake_time, period );
+	}
 }
 
 

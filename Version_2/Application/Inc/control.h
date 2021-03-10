@@ -70,6 +70,8 @@ typedef struct CONTROL_STATUS {
 	int32_t ab_position;
 	uint16_t ab_status;
 	int32_t counter;
+	uint32_t time;
+	uint8_t venting;
 }CONTROL_STATUS_t;
 
 
@@ -107,6 +109,7 @@ typedef struct CONTROL_INST{
 	uint8_t pp_close_mov_started;
 	uint8_t pp_abort_mov_started;
 	CAN_msg msg;
+	uint8_t venting;
 }CONTROL_INST_t;
 
 

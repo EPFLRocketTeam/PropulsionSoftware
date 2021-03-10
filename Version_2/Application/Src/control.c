@@ -21,7 +21,7 @@
  *	CONFIGURATION
  **********************/
 
-#define CONTROL_HEART_BEAT	10 /* ms */
+#define CONTROL_HEART_BEAT	20 /* ms */
 
 #define VENTING_PIN		SOLENOID_Pin
 
@@ -37,6 +37,8 @@
 #define TARGET_REACHED_DELAY_CYCLES	(50)
 
 #define SCHED_ALLOWED_WIDTH	(5)
+
+#define CONTROL_SAVE_DELAY	(5000)
 
 /**********************
  *	MACROS
@@ -186,6 +188,10 @@ void control_thread(void * arg) {
 
 
 static void control_update(CONTROL_INST_t * control) {
+
+	//TIMING TEST
+	//HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
+
 	control->last_time = control->time;
 	control->time = HAL_GetTick();
 	control->iter++;
@@ -196,11 +202,48 @@ static void control_update(CONTROL_INST_t * control) {
 
 	control->msg = can_readBuffer();
 
+	if(control->msg.id == DATA_ID_OPERATION){
+		if(control->msg.data == DATA_MAGIC_1) {
+			control_ignite();
+		}
+	}
+	if(control->msg.id == DATA_ID_ARMING){
+		if(control->msg.data == DATA_MAGIC_1) {
+			control_arm();
+		}
+		if(control->msg.data == DATA_MAGIC_2) {
+			control_disarm();
+		}
+	}
+	if(control->msg.id == DATA_ID_VENTING){
+		if(control->msg.data == DATA_MAGIC_1) {
+			control_open_vent();
+		}
+		if(control->msg.data == DATA_MAGIC_2) {
+			control_close_vent();
+		}
+	}
+	if(control->msg.id == DATA_ID_CALIBRATION){
+		if(control->msg.data == DATA_MAGIC_1) {
+			control_calibrate();
+		}
+		if(control->msg.data == DATA_MAGIC_2) {
+			control_recover();
+		}
+	}
+	if(control->msg.id == DATA_ID_ABORT){
+		if(control->msg.data == DATA_MAGIC_3) {
+			control_abort();
+		}
+	}
+
 	//do something depending on what msg was received
 
 
 	//read motors parameters
 	epos4_sync(control->pp_epos4);
+
+	control->venting = VENTING_PORT->IDR & VENTING_PIN?1:0;
 
 	if(control->pp_epos4->error && control->state != CS_ERROR) {
 		init_error(control);
@@ -420,20 +463,28 @@ static void shutdown(CONTROL_INST_t * control) {
 
 static void init_glide(CONTROL_INST_t * control) {
 	control->state = CS_GLIDE;
-	storage_disable();
+	control->counter_active = 1;
+	control->counter = CONTROL_SAVE_DELAY;
+
+
 }
 
 static void glide(CONTROL_INST_t * control) {
 	//AB algorithm controls the airbrakes motor
 
 	//expect a stop signal to go to idle
-	init_idle(control);
+	if(control->counter <= 0) {
+		control->counter_active = 0;
+		storage_disable();
+		init_idle(control);
+	}
 }
 
 static void init_abort(CONTROL_INST_t * control) {
 	led_set_color(LED_PINK);
 	control->state = CS_ABORT;
-	control->counter_active = 0;
+	control->counter_active = 1;
+	control->counter = CONTROL_SAVE_DELAY;
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, 0);
 	control->pp_abort_mov_started = 1;
 }
@@ -454,9 +505,15 @@ static void _abort(CONTROL_INST_t * control) {
 		}
 	}
 
-	if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
-		init_idle(control);
-		control_sched_done(control, CONTROL_SCHED_RECOVER);
+	if(control->counter <= 0) {
+		control->counter_active = 0;
+		storage_disable();
+	}
+	if(control->counter_active == 0) {
+		if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
+			init_idle(control);
+			control_sched_done(control, CONTROL_SCHED_RECOVER);
+		}
 	}
 }
 
@@ -526,6 +583,8 @@ CONTROL_STATUS_t control_get_status() {
 	status.pp_position = control.pp_epos4->position;
 	status.pp_status = control.pp_epos4->status;
 	status.counter = control.counter;
+	status.time = control.time;
+	status.venting = control.venting;
 	return status;
 }
 
