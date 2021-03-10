@@ -206,12 +206,12 @@ class msv2:
                     #print("dta: {}".format(hex(ord(byte))))
                     if not byte:
                         print("no resp error")
-                        return -1
+                        self.mutex.unlock()
+                        return 0
                     res = self.decode(byte)
                     #print("res:", res)
                     if not res == MSV2_PROGRESS:
-                        print("STATE_ERROR", res)
-                        return 0
+                        break
                 #print('[{}]'.format(', '.join(hex(x) for x in self.data)))
                 if self.data == [0xce, 0xec] or self.data == [0xbe, 0xeb]:
                     self.mutex.unlock()
