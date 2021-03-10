@@ -27,7 +27,7 @@
 
 #define VENTING_PORT	SOLENOID_GPIO_Port
 
-#define THRUST_CONTROL_ENABLE 1
+#define THRUST_CONTROL_ENABLE 0
 
 /**********************
  *	CONSTANTS
