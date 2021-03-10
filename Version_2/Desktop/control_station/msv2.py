@@ -197,32 +197,38 @@ class msv2:
             except:
                 print("WRITE ERROR")
                 self.mutex.unlock()
-                return None
+                self.reconnect()
+                return -1
             #print('[{}]'.format(', '.join(hex(x) for x in msg)))
             try:
                 while 1:
                     byte = self.ser.read(1)
                     #print("dta: {}".format(hex(ord(byte))))
                     if not byte:
-                        print("error")
-                        break
+                        print("no resp error")
+                        return -1
                     res = self.decode(byte)
                     #print("res:", res)
                     if not res == MSV2_PROGRESS:
-                        break
+                        print("STATE_ERROR", res)
+                        return 0
                 #print('[{}]'.format(', '.join(hex(x) for x in self.data)))
                 if self.data == [0xce, 0xec] or self.data == [0xbe, 0xeb]:
                     self.mutex.unlock()
-                    return None
+                    print("CRC_ERROR")
+                    return 0
                 else:
                     self.mutex.unlock()
+                    print("nominal_resp")
                     return self.data
             except:
                 print("READ ERROR")
                 self.mutex.unlock()
-                return None
+                self.reconnect()
+                return -1
         else:
-              return None
+            print("CONN_ERROR")
+            return -1
 
 
 

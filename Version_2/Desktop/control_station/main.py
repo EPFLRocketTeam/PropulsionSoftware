@@ -100,17 +100,19 @@ def deg2inc(deg):
 @Slot()
 def connect_trig():
     device = window.connect_device.text()
-    if connection_status == "CONNECTED":
-        serial_worker.ser_disconnect()
-    else:
+    if connection_status == "DISCONNECTED":
         serial_worker.ser_connect(device)
         serial_worker.send_generic(GET_PP_PARAMS, [0x00, 0x00])
+    else:
+        serial_worker.ser_disconnect()
+        
 
 @Slot(str)
 def connect_cb(stat):
     global connection_status
     connection_status = stat
     window.connect_status.setText(stat)
+    print("connection_updated")
 
 
 def pp_motor_get_trig():
@@ -387,17 +389,15 @@ class Serial_worker(QObject):
     @Slot()
     def ser_disconnect(self):
         if(self.msv2.disconnect()):
-            self.connect_sig.emit("DISCONNECETD")
+            self.connect_sig.emit("DISCONNECTED")
         else:
             self.connect_sig.emit("ERROR")
 
     @Slot(int, list)
     def send_generic(self, opcode, data):
         if self.msv2.is_connected():
-            print("ACTION")
             resp = self.msv2.send(opcode, data)
-            print("AFTER")
-
+            print("generic:",resp)
             if opcode == GET_PP_PARAMS:
                 self.update_pp_params_sig.emit(resp)
 
@@ -431,12 +431,10 @@ class Serial_worker(QObject):
         if self.msv2.is_connected():
             stat = self.msv2.send(GET_STATUS, [0x00, 0x00])
             sens = self.msv2.send(GET_SENSOR, [0x00, 0x00])
-            if(not sens):
-                print("reconnect")
-                if(self.msv2.reconnect()):
-                    self.connect_sig.emit("CONNECTED")
-                else:
-                    self.connect_sig.emit("RECONNECTING...")
+            if sens == -1 or sens==0:
+                self.connect_sig.emit("RECONNECTING...")
+            else:
+                self.connect_sig.emit("CONNECTED")
             self.update_status_sig.emit(stat, sens)
 
     @Slot()
