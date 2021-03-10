@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <epos4.h>
+#include <can_comm.h>
 
 /**********************
  *  CONSTANTS
@@ -105,6 +106,7 @@ typedef struct CONTROL_INST{
 	uint8_t pp_motor_prepped;
 	uint8_t pp_close_mov_started;
 	uint8_t pp_abort_mov_started;
+	CAN_msg msg;
 }CONTROL_INST_t;
 
 

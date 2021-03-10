@@ -15,6 +15,7 @@
 #include <epos4.h>
 #include <led.h>
 #include <storage.h>
+#include <can_comm.h>
 
 /**********************
  *	CONFIGURATION
@@ -193,6 +194,10 @@ static void control_update(CONTROL_INST_t * control) {
 		control->counter -= (control->time - control->last_time);
 	}
 
+	control->msg = can_readBuffer();
+
+	//do something depending on what msg was received
+
 
 	//read motors parameters
 	epos4_sync(control->pp_epos4);
@@ -221,6 +226,9 @@ static void init_control(CONTROL_INST_t * control) {
 	control->pp_params.full_wait = 20000;
 	control->pp_params.half_angle = DEG2INC(27);
 	control->pp_params.full_angle = DEG2INC(90);
+
+
+	CAN_Config(CAN_ID_PROPULSION_BOARD);
 }
 
 static void init_idle(CONTROL_INST_t * control) {
