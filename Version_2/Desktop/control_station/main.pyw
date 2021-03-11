@@ -77,7 +77,7 @@ rec_file = None
 start_rec = None
 
 data_labels = ['pres_1 [mBar]', 'pres_2 [mBar]', 'temp_1 [0.1deC]', 'temp_2 [0.1deC]', 'temp_3 [0.1degC]', 'sensor_time [ms]']
-remote_labels = ['data_id', 'temp_1', 'temp_2', 'temp_3', 'pres_1', 'pres_2', 'motor_pos', 'system_status', 'sensor_time', 'reserved', 'reserved']
+remote_labels = ['data_id', 'temp_1', 'temp_2', 'temp_3', 'pres_1', 'pres_2', 'motor_pos', 'system_status', 'sensor_time', 'reserved']
 
 def safe_int(d):
     try:
@@ -365,7 +365,10 @@ def download_cb(data, cnt):
     print(data)
     window.dl_bar.setValue(progress)
     for d in data:
-        write_csv(rem_file, d)
+        if(d[0] != 0xffff):
+            write_csv(rem_file, d)
+    if(cnt > total_data):
+        rem_file.close()
 
 
 
@@ -422,7 +425,7 @@ class Serial_worker(QObject):
                         err_counter = 0
                     continue
                 for i in range(5):
-                    tmp_data = struct.unpack("HhhhiihHIII", bytes(data[i*32:(i+1)*32]))
+                    tmp_data = struct.unpack("HhhhiiiIII", bytes(data[i*32:(i+1)*32]))
                     recv_data.append(tmp_data)
                 last_recv += 5
                 self.download_sig.emit(recv_data, last_recv)

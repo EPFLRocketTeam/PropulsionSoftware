@@ -469,6 +469,7 @@ static void glide(CONTROL_INST_t * control) {
 	//AB algorithm controls the airbrakes motor
 
 	//expect a stop signal to go to idle
+	init_idle(control);
 }
 
 static void init_abort(CONTROL_INST_t * control) {

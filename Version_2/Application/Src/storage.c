@@ -64,11 +64,10 @@ typedef struct {
 	int16_t temp_3;
 	int32_t pres_1;
 	int32_t pres_2;
-	int16_t motor_pos;
-	uint16_t system_status;
+	int32_t motor_pos;
+	uint32_t system_status;
 	uint32_t sensor_time;
 	uint32_t padding_1;
-	uint32_t padding_2;
 }STORAGE_DATA_t;  //MUST BE AN INTEGER DIVISOR OF 4096
 
 
