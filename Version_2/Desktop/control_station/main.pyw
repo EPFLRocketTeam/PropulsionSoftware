@@ -379,6 +379,7 @@ class Serial_worker(QObject):
     def __init__(self):
         QObject.__init__(self)
         self.msv2 = msv2.msv2()
+        self.downloading = 0
 
     @Slot(str)
     def ser_connect(self, port):
@@ -408,19 +409,25 @@ class Serial_worker(QObject):
     def download(self):
         if self.msv2.is_connected():
             last_recv = 0
+            err_counter = 0
+            self.downloading = 1
             while 1:
                 bin_data = struct.pack("I", last_recv)
                 recv_data = []
                 data = self.msv2.send(DOWNLOAD, bin_data)
                 if(not data):
-                    self.download_sig.emit([], last_recv)
-                    return
+                    err_counter += 1
+                    if(err_counter > 10):
+                        last_recv += 1
+                        err_counter = 0
+                    continue
                 for i in range(5):
                     tmp_data = struct.unpack("HhhhiihHIII", bytes(data[i*32:(i+1)*32]))
                     recv_data.append(tmp_data)
                 last_recv += 5
                 self.download_sig.emit(recv_data, last_recv)
                 if(last_recv > total_data):
+                    self.downloading = 0
                     break
                
 
@@ -428,7 +435,7 @@ class Serial_worker(QObject):
 
     @Slot()
     def send_ping(self):
-        if self.msv2.is_connected():
+        if self.msv2.is_connected() and not self.downloading:
             stat = self.msv2.send(GET_STATUS, [0x00, 0x00])
             sens = self.msv2.send(GET_SENSOR, [0x00, 0x00])
             if sens == -1 or sens==0:

@@ -60,6 +60,9 @@ uint8_t sensor_calib_done(void);
 SENSOR_DATA_t sensor_get_last(void);
 SENSOR_DATA_t sensor_get_last_bfr(uint8_t n);
 
+uint8_t sensor_new_data_storage();
+uint8_t sensor_new_data_can();
+
 void sensor_thread(void * arg);
 
 

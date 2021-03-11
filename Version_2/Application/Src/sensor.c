@@ -17,7 +17,6 @@
 #include <main.h>
 #include <cmsis_os.h>
 #include <util.h>
-#include <storage.h>
 
 /**********************
  *	CONFIGURATION
@@ -26,9 +25,9 @@
 #define SENSOR_TIMER	htim3
 #define SENSOR_ADC		hadc1
 
-#define SENSOR_HEART_BEAT 2  /* ms */
+#define SENSOR_HEART_BEAT 1  /* ms */
 
-#define ADC_HEART_BEAT 0.1  /* ms */
+#define ADC_HEART_BEAT 0.05  /* ms */
 
 /**********************
  *	CONSTANTS
@@ -121,6 +120,8 @@ static SENSOR_DATA_t offset = {0};
 static uint8_t calib = 0;
 static uint16_t calib_counter = 0;
 
+static uint8_t new_data_storage;
+static uint8_t new_data_can;
 
 /**********************
  *	PROTOTYPES
@@ -200,6 +201,18 @@ SENSOR_DATA_t sensor_get_last_bfr(uint8_t n) {
 	return util_buffer_SENSOR_access(&filter_bfr, n);
 }
 
+uint8_t sensor_new_data_storage() {
+	uint8_t tmp = new_data_storage;
+	new_data_storage = 0;
+	return tmp;
+}
+
+uint8_t sensor_new_data_can() {
+	uint8_t tmp = new_data_can;
+	new_data_can = 0;
+	return tmp;
+}
+
 void sensor_thread(void * arg) {
 	//perform averaging on the fifo contents
 	//perform data processing (Kalman??)
@@ -215,6 +228,9 @@ void sensor_thread(void * arg) {
 
 
 	for(;;) {
+
+		//TIMING TEST
+		//HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
 
 		//second processing i.e. empty buffer and average all samples
 		//trend prediction
@@ -318,9 +334,10 @@ void sensor_thread(void * arg) {
 
 
 		//The CAN thread will periodically get the data
+		new_data_can = 1;
 
-		//Notify storage for storage
-		storage_give_sem();
+		//The storage thread will periodically get the data
+		new_data_storage = 1;
 
 		//Results accessible from DEBUG UART
 

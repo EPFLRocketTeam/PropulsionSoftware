@@ -21,7 +21,7 @@
  *	CONFIGURATION
  **********************/
 
-#define CONTROL_HEART_BEAT	20 /* ms */
+#define CONTROL_HEART_BEAT	50 /* ms */
 
 #define VENTING_PIN		SOLENOID_Pin
 
@@ -463,30 +463,21 @@ static void shutdown(CONTROL_INST_t * control) {
 
 static void init_glide(CONTROL_INST_t * control) {
 	control->state = CS_GLIDE;
-	control->counter_active = 1;
-	control->counter = CONTROL_SAVE_DELAY;
-
-
 }
 
 static void glide(CONTROL_INST_t * control) {
 	//AB algorithm controls the airbrakes motor
 
 	//expect a stop signal to go to idle
-	if(control->counter <= 0) {
-		control->counter_active = 0;
-		storage_disable();
-		init_idle(control);
-	}
 }
 
 static void init_abort(CONTROL_INST_t * control) {
 	led_set_color(LED_PINK);
 	control->state = CS_ABORT;
-	control->counter_active = 1;
-	control->counter = CONTROL_SAVE_DELAY;
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, 0);
 	control->pp_abort_mov_started = 1;
+	control->counter_active=0;
+	storage_disable();
 }
 
 static void _abort(CONTROL_INST_t * control) {
@@ -505,15 +496,9 @@ static void _abort(CONTROL_INST_t * control) {
 		}
 	}
 
-	if(control->counter <= 0) {
-		control->counter_active = 0;
-		storage_disable();
-	}
-	if(control->counter_active == 0) {
-		if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
-			init_idle(control);
-			control_sched_done(control, CONTROL_SCHED_RECOVER);
-		}
+	if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
+		init_idle(control);
+		control_sched_done(control, CONTROL_SCHED_RECOVER);
 	}
 }
 
@@ -521,6 +506,7 @@ static void init_error(CONTROL_INST_t * control) {
 	led_set_color(LED_RED);
 	control->state = CS_ERROR;
 	control->counter_active = 0;
+	storage_disable();
 }
 
 static void error(CONTROL_INST_t * control) {

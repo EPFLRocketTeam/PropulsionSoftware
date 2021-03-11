@@ -32,13 +32,13 @@
 #define CONTROL_PRIO	(6)
 
 #define SENSOR_SZ	DEFAULT_SZ
-#define SENSOR_PRIO	(5)
+#define SENSOR_PRIO	(4)
 
 #define SERIAL_SZ	DEFAULT_SZ
-#define SERIAL_PRIO	(2)
+#define SERIAL_PRIO	(5)
 
 #define STORAGE_SZ	DEFAULT_SZ
-#define STORAGE_PRIO	(1)
+#define STORAGE_PRIO	(3)
 
 
 /**********************

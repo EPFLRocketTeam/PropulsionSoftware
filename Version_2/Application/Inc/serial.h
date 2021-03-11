@@ -24,7 +24,7 @@
  **********************/
 
 #define SERIAL_MAX_INST	(16)
-#define SERIAL_FIFO_LEN	(128)
+#define SERIAL_FIFO_LEN	(1024)
 
 
 #define SERIAL_USE_GENERIC 1

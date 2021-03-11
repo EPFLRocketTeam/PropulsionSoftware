@@ -35,6 +35,12 @@
 #define NB_SUBSECTOR	4096
 
 #define LONG_TIME		0xffff
+#define SS_TO_PREP		500
+
+#define STORAGE_AFTER_SAVE 3000
+
+
+#define STORAGE_HEART_BEAT 1
 
 
 
@@ -73,10 +79,10 @@ typedef struct {
 
 static uint32_t used_subsectors;
 static uint32_t data_counter;
-static SemaphoreHandle_t ready_sem;
-static StaticSemaphore_t ready_sem_buffer;
 static uint8_t record_active;
 static uint8_t restart_required;
+
+static int32_t record_should_stop;
 
 
 /**********************
@@ -112,7 +118,6 @@ void storage_init() {
 		write_header(1);
 		data_counter = 0;
 	}
-	ready_sem = xSemaphoreCreateBinaryStatic(&ready_sem_buffer);
 	record_active = 0;
 	restart_required = 0;
 }
@@ -170,18 +175,12 @@ void storage_get_sample(uint32_t id, void * dest) {
 	*((STORAGE_DATA_t *)dest) = read_data(id);
 }
 
-void storage_give_sem() {
-	if(ready_sem != NULL) {
-		xSemaphoreGive(ready_sem);
-	}
-}
-
 void storage_enable() {
 	record_active = 1;
 }
 
 void storage_disable() {
-	record_active = 0;
+	record_should_stop = STORAGE_AFTER_SAVE;
 }
 
 void storage_restart() {
@@ -191,20 +190,35 @@ void storage_restart() {
 
 void storage_thread(void * arg) {
 
+	static TickType_t last_wake_time;
+	static const TickType_t period = pdMS_TO_TICKS(STORAGE_HEART_BEAT);
+
 	storage_init();
+
+	last_wake_time = xTaskGetTickCount();
+
+
 
 
 	for(;;) {
-		if(xSemaphoreTake(ready_sem, LONG_TIME) == pdTRUE) {
-			if(restart_required) {
-				write_header(1);
-				data_counter = 0;
-				restart_required = 0;
-			}
-			if(record_active) {
-				storage_record_sample();
+		//TIMING TEST
+		HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
+		if(restart_required) {
+			write_header(1);
+			data_counter = 0;
+			restart_required = 0;
+		}
+		if(record_should_stop) {
+			record_should_stop -= STORAGE_HEART_BEAT;
+			if(record_should_stop<=0){
+				record_active=0;
+				record_should_stop=0;
 			}
 		}
+		if(record_active && sensor_new_data_storage()) {
+			storage_record_sample();
+		}
+		vTaskDelayUntil( &last_wake_time, period );
 	}
 }
 

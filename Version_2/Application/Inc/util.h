@@ -27,35 +27,35 @@
  *  MACROS
  **********************/
 
-#define UTIL_GENERATE_BUFFER(type, name)   	\
-	typedef struct UTIL_BUFFER_##name{   	\
-		uint16_t c_ix;                	\
-		uint16_t l_ix;            		\
-		uint16_t bfr_len;           	\
-		type * buffer;            		\
-	}UTIL_BUFFER_##name##_t;             	\
-static inline void util_buffer_##name##_init(UTIL_BUFFER_##name##_t * bfr, type * buffer, uint16_t bfr_len) { \
-	bfr->c_ix = 0;                                                                                   \
-	bfr->l_ix = 0;                                                                                   \
-	bfr->bfr_len = bfr_len;                                                                          \
-	bfr->buffer = buffer;                                                                            \
-}                                                                                                \
-static inline void util_buffer_##name##_add(UTIL_BUFFER_##name##_t * bfr, type d) {                          \
-	bfr->buffer[bfr->c_ix++] = d;                                                                    \
-	if(bfr->c_ix == bfr->bfr_len) bfr->c_ix = 0;                                                     \
-}                                                                                                    \
-static inline type util_buffer_##name##_get(UTIL_BUFFER_##name##_t * bfr) {                               \
-	type tmp = bfr->buffer[bfr->l_ix++];                                                          	 \
-	if(bfr->l_ix == bfr->bfr_len) bfr->l_ix=0;                                                       \
-	return tmp;                                                                                      \
-}                                                                                                    \
-static inline type util_buffer_##name##_access(UTIL_BUFFER_##name##_t * bfr, uint16_t ix) {                   \
-	int16_t i = bfr->c_ix - ix - 1;                                                                       \
-	while(i < 0) i += bfr->bfr_len;                                                    \
-	return bfr->buffer[i];                                                                          \
-}																										\
-static inline uint8_t util_buffer_##name##_isempty(UTIL_BUFFER_##name##_t * bfr) {                           \
-	return bfr->l_ix == bfr->c_ix;                                                                   \
+#define UTIL_GENERATE_BUFFER(type, name)   																		\
+	typedef struct UTIL_BUFFER_##name{   																		\
+		uint16_t c_ix;                																			\
+		uint16_t l_ix;            																				\
+		uint16_t bfr_len;           																			\
+		type * buffer;            																				\
+	}UTIL_BUFFER_##name##_t;             																		\
+static inline void util_buffer_##name##_init(UTIL_BUFFER_##name##_t * bfr, type * buffer, uint16_t bfr_len) { 	\
+	bfr->c_ix = 0;                                                                                   			\
+	bfr->l_ix = 0;                                                                                   			\
+	bfr->bfr_len = bfr_len;                                                                          			\
+	bfr->buffer = buffer;                                                                            			\
+}                                                                                                    			\
+static inline void util_buffer_##name##_add(UTIL_BUFFER_##name##_t * bfr, type d) {                  			\
+	bfr->buffer[bfr->c_ix++] = d;                                                                    			\
+	if(bfr->c_ix == bfr->bfr_len) bfr->c_ix = 0;                                                     			\
+}                                                                                                    			\
+static inline type util_buffer_##name##_get(UTIL_BUFFER_##name##_t * bfr) {                          			\
+	type tmp = bfr->buffer[bfr->l_ix++];                                                          	 			\
+	if(bfr->l_ix == bfr->bfr_len) bfr->l_ix=0;                                                       			\
+	return tmp;                                                                                      			\
+}                                                                                                    			\
+static inline type util_buffer_##name##_access(UTIL_BUFFER_##name##_t * bfr, uint16_t ix) {          			\
+	int16_t i = bfr->c_ix - ix - 1;                                                                  			\
+	while(i < 0) i += bfr->bfr_len;                                                      			 			\
+	return bfr->buffer[i];                                                                           			\
+}																									  			\
+static inline uint8_t util_buffer_##name##_isempty(UTIL_BUFFER_##name##_t * bfr) {                           	\
+	return bfr->l_ix == bfr->c_ix;                                                                   			\
 }
 
 
