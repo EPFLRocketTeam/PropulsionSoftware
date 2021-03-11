@@ -201,7 +201,7 @@ void storage_thread(void * arg) {
 
 	for(;;) {
 		//TIMING TEST
-		HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
+		//HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
 		if(restart_required) {
 			write_header(1);
 			data_counter = 0;

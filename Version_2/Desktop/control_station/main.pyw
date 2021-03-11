@@ -493,7 +493,7 @@ if __name__ == "__main__":
     if(res is not None):
         COM_PORT = res
     else:
-        COM_PORT = 'COM18'
+        COM_PORT = 'COM17'
 
 
     window.connect_device.clear()
