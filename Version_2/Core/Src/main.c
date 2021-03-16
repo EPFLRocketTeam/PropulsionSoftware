@@ -105,6 +105,7 @@ int main(void)
   MX_QUADSPI_Init();
   MX_TIM3_Init();
   MX_CAN1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
 
