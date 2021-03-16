@@ -20,6 +20,7 @@
 #include <serial.h>
 #include <debug.h>
 #include <epos4.h>
+#include <can_comm.h>
 
 /**********************
  *	CONSTANTS
@@ -32,13 +33,16 @@
 #define CONTROL_PRIO	(6)
 
 #define SENSOR_SZ	DEFAULT_SZ
-#define SENSOR_PRIO	(4)
+#define SENSOR_PRIO		(4)
 
 #define SERIAL_SZ	DEFAULT_SZ
-#define SERIAL_PRIO	(5)
+#define SERIAL_PRIO		(5)
 
 #define STORAGE_SZ	DEFAULT_SZ
 #define STORAGE_PRIO	(3)
+
+#define CAN_SZ		DEFAULT_SZ
+#define CAN_PRIO		(3)
 
 
 /**********************
@@ -71,6 +75,7 @@ static TaskHandle_t sensor_handle = NULL;
 static TaskHandle_t control_handle = NULL;
 static TaskHandle_t serial_handle = NULL;
 static TaskHandle_t storage_handle = NULL;
+static TaskHandle_t can_send_handle = NULL;
 
 
 /**********************
@@ -124,6 +129,12 @@ void threads_init(void) {
 	 *  Highest priority
 	 */
 	CREATE_THREAD(control_handle, control, control_thread, CONTROL_SZ, CONTROL_PRIO);
+
+	/*
+	 *  CAN send thread
+	 *  Highest priority
+	 */
+	CREATE_THREAD(can_send_handle, can_send, can_send_thread, CAN_SZ, CAN_PRIO);
 
 
 

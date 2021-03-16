@@ -238,7 +238,7 @@ uint32_t can_readFrame(void) {
 }
 
 
-void can_thread(void * arg) {
+void can_send_thread(void * arg) {
 	static TickType_t last_wake_time;
 	static const TickType_t period = pdMS_TO_TICKS(CAN_HEART_BEAT);
 
