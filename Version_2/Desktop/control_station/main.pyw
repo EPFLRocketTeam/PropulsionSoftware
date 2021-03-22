@@ -479,7 +479,7 @@ if __name__ == "__main__":
         print(loader.errorString())
         sys.exit(-1)
 
-    res = None
+    res = ""
 
     if platform.system() == 'Darwin':
         dev_dir = os.listdir('/dev');
