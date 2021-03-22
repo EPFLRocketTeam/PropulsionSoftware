@@ -27,7 +27,6 @@
  *  CONSTANTS
  **********************/
 
-#define EPOS4_MAX_CHILDREN	(16)
 
 
 
@@ -66,9 +65,7 @@ struct EPOS4_INST{
 	uint8_t can_id; //CAN ID for communication and gateway to other boards
 	MSV2_INST_t msv2;
 	SERIAL_INST_t ser;
-	EPOS4_INST_t * parent;
 	uint8_t nb_chilren;
-	EPOS4_INST_t * children[EPOS4_MAX_CHILDREN];
 	uint16_t status;
 	uint16_t error;
 	int32_t position;

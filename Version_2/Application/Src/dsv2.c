@@ -112,7 +112,7 @@ void dsv2_init(DSV2_INST_t * dsv2) {
 uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t packet_id, uint16_t data_len, uint8_t * data) {
 	uint16_t array_len = data_len+5; //we add 1 for the opcode and len fields and 1 for the crc
 	dsv2->tx.data_len = data_len;
-	dsv2->tx.packet_id = packet_id;
+	dsv2->tx.dev_id = packet_id;
 	dsv2->tx.data[0] = H1;
 	dsv2->tx.data[1] = H2;
 	dsv2->tx.data[2] = H3;
@@ -181,7 +181,7 @@ DSV2_ERROR_t dsv2_decode_fragment(DSV2_INST_t * dsv2, uint8_t d) {
     if(dsv2->rx.state == DSV2_WAITING_ID) {
 		dsv2->rx.state = DSV2_WAITING_LEN1;
 		dsv2->rx.crc_data[4] = d;
-		dsv2->rx.packet_id = d;
+		dsv2->rx.dev_id = d;
 		return DSV2_PROGRESS;
 	}
     if(dsv2->rx.state == DSV2_WAITING_LEN1) {

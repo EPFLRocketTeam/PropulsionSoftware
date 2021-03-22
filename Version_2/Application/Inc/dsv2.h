@@ -55,7 +55,7 @@ typedef enum DSV2_DECODE_STATE{
 }DSV2_DECODE_STATE_t;
 
 typedef struct DSV2_RX_DATA{
-	uint8_t packet_id;
+	uint8_t dev_id;
 	uint16_t data_len;
 	uint16_t crc;
 	DSV2_DECODE_STATE_t state;
@@ -68,7 +68,7 @@ typedef struct DSV2_RX_DATA{
 }DSV2_RX_DATA_t;
 
 typedef struct DSV2_TX_DATA{
-	uint8_t packet_id;
+	uint8_t dev_id;
 	uint16_t data_len;
 	uint16_t crc;
 	uint8_t data[DSV2_MAX_FRAME_LEN];
@@ -102,7 +102,7 @@ DSV2_ERROR_t dsv2_decode_fragment(DSV2_INST_t * dsv2, uint8_t d);
 
 void dsv2_init(DSV2_INST_t * dsv2);
 
-uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t packet_id, uint16_t data_len, uint8_t * data);
+uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t dev_id, uint16_t data_len, uint8_t * data);
 
 uint8_t * dsv2_rx_data(DSV2_INST_t * dsv2);
 
