@@ -49,6 +49,7 @@ typedef enum DSV2_DECODE_STATE{
 	DSV2_WAITING_ID,
 	DSV2_WAITING_LEN1,
 	DSV2_WAITING_LEN2,
+	DSV2_WAITING_INST,
 	DSV2_WAITING_DATA,
 	DSV2_WAITING_CRC1,
 	DSV2_WAITING_CRC2
@@ -58,6 +59,7 @@ typedef struct DSV2_RX_DATA{
 	uint8_t dev_id;
 	uint16_t data_len;
 	uint16_t crc;
+	uint8_t inst;
 	DSV2_DECODE_STATE_t state;
 	DSV2_DECODE_STATE_t restart_state;
 	uint8_t escape;
@@ -102,7 +104,7 @@ DSV2_ERROR_t dsv2_decode_fragment(DSV2_INST_t * dsv2, uint8_t d);
 
 void dsv2_init(DSV2_INST_t * dsv2);
 
-uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t dev_id, uint16_t data_len, uint8_t * data);
+uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t dev_id, uint16_t data_len, uint8_t inst,  uint8_t * data);
 
 uint8_t * dsv2_rx_data(DSV2_INST_t * dsv2);
 

@@ -16,6 +16,7 @@
 #include <led.h>
 #include <storage.h>
 #include <can_comm.h>
+#include <servo.h>
 
 /**********************
  *	CONFIGURATION
@@ -126,6 +127,18 @@ void control_thread(void * arg) {
 
 	static EPOS4_INST_t pp_epos4;
 	static EPOS4_INST_t ab_epos4;
+	static SERVO_INST_t tvc;
+
+	servo_global_init();
+
+
+	servo_init(&tvc, 1);
+
+
+	uint8_t data[16];
+	SERVO_ERROR_t err = servo_read_object(&tvc, 65, 1, data);
+
+
 
 	epos4_global_init();
 

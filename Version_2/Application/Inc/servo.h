@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <dsv2.h>
+#include <cmsis_os.h>
 
 /**********************
  *  CONSTANTS
@@ -32,6 +33,15 @@
  *  TYPEDEFS
  **********************/
 
+
+typedef enum SERVO_ERROR {
+	SERVO_SUCCESS = 0,
+	SERVO_TIMEOUT = 0b001,
+	SERVO_REMOTE_ERROR = 0b010,
+	SERVO_BUSY = 0b100,
+	SERVO_ERROR
+}SERVO_ERROR_t;
+
 typedef struct SERVO_INST SERVO_INST_t;
 
 
@@ -42,6 +52,9 @@ struct SERVO_INST{
 	uint8_t dev_id;
 	uint8_t first;
 	SERVO_INST_t * parent;
+	SemaphoreHandle_t rx_sem;
+	StaticSemaphore_t rx_sem_buffer;
+
 };
 
 
@@ -65,6 +78,10 @@ void servo_init(SERVO_INST_t * servo, uint8_t dev_id);
 
 
 SERIAL_RET_t servo_decode_fcn(void * inst, uint8_t data);
+
+SERVO_ERROR_t servo_read_object(SERVO_INST_t * servo, uint16_t address, uint16_t length, uint8_t * data);
+
+SERVO_ERROR_t servo_write_object(SERVO_INST_t * servo, uint16_t address, uint16_t length, uint8_t * data);
 
 
 

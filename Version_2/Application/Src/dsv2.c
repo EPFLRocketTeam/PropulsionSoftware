@@ -109,18 +109,19 @@ void dsv2_init(DSV2_INST_t * dsv2) {
 	dsv2->id = id_counter++;
 }
 
-uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t packet_id, uint16_t data_len, uint8_t * data) {
-	uint16_t array_len = data_len+5; //we add 1 for the opcode and len fields and 1 for the crc
+uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t dev_id, uint16_t data_len, uint8_t inst, uint8_t * data) {
+	uint16_t array_len = data_len+5;
 	dsv2->tx.data_len = data_len;
-	dsv2->tx.dev_id = packet_id;
+	dsv2->tx.dev_id = dev_id;
 	dsv2->tx.data[0] = H1;
 	dsv2->tx.data[1] = H2;
 	dsv2->tx.data[2] = H3;
 	dsv2->tx.data[3] = H4;
-	dsv2->tx.data[4] = packet_id;
+	dsv2->tx.data[4] = dev_id;
 	dsv2->tx.data[5] = data_len & 0xff;
 	dsv2->tx.data[6] = data_len>>8;
-	uint16_t counter=7;
+	dsv2->tx.data[7] = inst;
+	uint16_t counter=8;
 	for(uint16_t i = 0; i < data_len; i++) {
 		dsv2->tx.data[counter++] = data[i];
 	}
@@ -191,13 +192,19 @@ DSV2_ERROR_t dsv2_decode_fragment(DSV2_INST_t * dsv2, uint8_t d) {
 		return DSV2_PROGRESS;
 	}
     if(dsv2->rx.state == DSV2_WAITING_LEN2) {
-		dsv2->rx.state = DSV2_WAITING_DATA;
+		dsv2->rx.state = DSV2_WAITING_INST;
 		dsv2->rx.crc_data[6] = d;
 		dsv2->rx.data_len |= d<<8;
 		return DSV2_PROGRESS;
 	}
+    if(dsv2->rx.state == DSV2_WAITING_INST) {
+		dsv2->rx.state = DSV2_WAITING_DATA;
+		dsv2->rx.crc_data[7] = d;
+		dsv2->rx.inst = d;
+		return DSV2_PROGRESS;
+	}
 	if(dsv2->rx.state == DSV2_WAITING_DATA) {
-		dsv2->rx.crc_data[dsv2->rx.counter + 7] = d;
+		dsv2->rx.crc_data[dsv2->rx.counter + 8] = d;
 		dsv2->rx.data[dsv2->rx.counter++] = d;
 		if(dsv2->rx.counter == dsv2->rx.data_len) {
 			dsv2->rx.state = DSV2_WAITING_CRC1;
