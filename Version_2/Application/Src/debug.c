@@ -32,10 +32,11 @@
 
 #define PP_PARAMS_LEN (32)
 #define PP_MOVE_LEN (6)
-#define STATUS_LEN (20)
+#define STATUS_LEN (28)
 #define SENSOR_LEN (24)
 #define VENTING_LEN	(2)
-#define DOWNLOAD_LEN	(4)
+#define DOWNLOAD_LEN  (4)
+#define TVC_MOVE_LEN  (4)
 
 #define SENSOR_BFR	(5)
 #define SENSOR_BFR_LEN SENSOR_BFR*SENSOR_LEN
@@ -84,6 +85,7 @@ static void debug_get_sensor(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_venting(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 static void debug_download(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
+static void debug_tvc_move(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len);
 
 /**********************
  *	DEBUG FCN ARRAY
@@ -102,7 +104,8 @@ static void (*debug_fcn[]) (uint8_t *, uint16_t, uint8_t *, uint16_t *) = {
 		debug_get_sensor,		//0x0A
 		debug_get_status,		//0x0B
 		debug_venting,			//0x0C
-		debug_download			//0x0D
+		debug_download,			//0x0D
+		debug_tvc_move,			//0x0E
 };
 
 static uint16_t debug_fcn_max = sizeof(debug_fcn) / sizeof(void *);
@@ -192,7 +195,7 @@ static void debug_pp_move(uint8_t * data, uint16_t data_len, uint8_t * resp, uin
 	if(data_len == PP_MOVE_LEN) {
 		int32_t target = util_decode_i32(data);
 		uint16_t mode = util_decode_u16(data+4);
-		control_move(mode, target);
+		control_move_pp(mode, target);
 		resp[0] = OK_LO;
 		resp[1] = OK_HI;
 		*resp_len = 2;
@@ -266,6 +269,10 @@ static void debug_get_status(uint8_t * data, uint16_t data_len, uint8_t * resp, 
 	util_encode_i32(resp+12, status.counter);
 	uint32_t memory = storage_get_used();
 	util_encode_u32(resp+16, memory);
+	util_encode_i32(resp+20, status.tvc_position);
+	util_encode_u16(resp+24, status.tvc_psu_voltage);
+	util_encode_u8(resp+26, status.tvc_error);
+	util_encode_i8(resp+27, status.tvc_temperature);
 	*resp_len = STATUS_LEN;
 }
 
@@ -295,6 +302,20 @@ static void debug_download(uint8_t * data, uint16_t data_len, uint8_t * resp, ui
 			storage_get_sample(location+i, resp+i*32);
 		}
 		*resp_len = 32*5;
+	}
+}
+
+static void debug_tvc_move(uint8_t * data, uint16_t data_len, uint8_t * resp, uint16_t * resp_len) {
+	if(data_len == TVC_MOVE_LEN) {
+		int32_t target = util_decode_i32(data);
+		control_move_tvc(target);
+		resp[0] = OK_LO;
+		resp[1] = OK_HI;
+		*resp_len = 2;
+	} else {
+		resp[0] = ERROR_LO;
+		resp[1] = ERROR_HI;
+		*resp_len = 2;
 	}
 }
 

@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <epos4.h>
+#include <servo.h>
 #include <can_comm.h>
 
 /**********************
@@ -65,10 +66,10 @@ typedef struct CONTROL_STATUS {
 	uint16_t pp_error;
 	int32_t pp_position;
 	uint16_t pp_status;
-	uint16_t ab_psu_voltage;
-	uint16_t ab_error;
-	int32_t ab_position;
-	uint16_t ab_status;
+	uint16_t tvc_psu_voltage;
+	int8_t tvc_temperature;
+	uint8_t tvc_error;
+	int32_t tvc_position;
 	int32_t counter;
 	uint32_t time;
 	uint8_t venting;
@@ -81,7 +82,8 @@ typedef struct CONTROL_STATUS {
 typedef enum CONTROL_SCHED{
 	CONTROL_SCHED_NOTHING = 0x00,
 	CONTROL_SCHED_ABORT,
-	CONTROL_SCHED_MOVE,
+	CONTROL_SCHED_MOVE_PP,
+	CONTROL_SCHED_MOVE_TVC,
 	CONTROL_SCHED_CALIBRATE,
 	CONTROL_SCHED_ARM,
 	CONTROL_SCHED_DISARM,
@@ -100,10 +102,13 @@ typedef struct CONTROL_INST{
 	uint32_t iter;
 	EPOS4_INST_t * pp_epos4;
 	EPOS4_INST_t * ab_epos4;
+	SERVO_INST_t * tvc_servo;
 	CONTROL_PP_PARAMS_t pp_params;
-	EPOS4_MOV_t mov_type;
-	int32_t mov_target;
-	uint8_t mov_started;
+	EPOS4_MOV_t pp_mov_type;
+	int32_t pp_mov_target;
+	uint8_t pp_mov_started;
+	int32_t	tvc_mov_target;
+	uint8_t tvc_mov_started;
 	CONTROL_SCHED_t sched;
 	uint8_t pp_motor_prepped;
 	uint8_t pp_close_mov_started;
@@ -136,7 +141,9 @@ CONTROL_PP_PARAMS_t control_get_pp_params();
 
 void control_set_pp_params(CONTROL_PP_PARAMS_t params);
 
-void control_move(EPOS4_MOV_t mov_type, int32_t target);
+void control_move_pp(EPOS4_MOV_t mov_type, int32_t target);
+
+void control_move_tvc(int32_t target);
 
 void control_calibrate();
 

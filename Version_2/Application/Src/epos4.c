@@ -24,7 +24,7 @@
  **********************/
 
 
-#define EPOS4_UART	huart6
+#define EPOS4_UART	huart1
 
 
 

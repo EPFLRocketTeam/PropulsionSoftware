@@ -82,6 +82,8 @@ void Error_Handler(void);
 #define MOTOR_TX_GPIO_Port GPIOC
 #define MOTOR_RX_Pin GPIO_PIN_7
 #define MOTOR_RX_GPIO_Port GPIOC
+#define SERVO_TX_Pin GPIO_PIN_9
+#define SERVO_TX_GPIO_Port GPIOA
 #define BUZZER_Pin GPIO_PIN_15
 #define BUZZER_GPIO_Port GPIOA
 #define SOLENOID_Pin GPIO_PIN_7

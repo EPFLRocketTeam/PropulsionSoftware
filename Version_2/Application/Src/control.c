@@ -29,6 +29,7 @@
 #define VENTING_PORT	SOLENOID_GPIO_Port
 
 #define THRUST_CONTROL_ENABLE 0
+#define TVC_ENABLE 1
 
 /**********************
  *	CONSTANTS
@@ -37,7 +38,7 @@
 
 #define TARGET_REACHED_DELAY_CYCLES	(50)
 
-#define SCHED_ALLOWED_WIDTH	(5)
+#define SCHED_ALLOWED_WIDTH	(6)
 
 #define CONTROL_SAVE_DELAY	(5000)
 
@@ -60,16 +61,16 @@
 static CONTROL_INST_t control;
 
 static CONTROL_SCHED_t sched_allowed[][SCHED_ALLOWED_WIDTH] = {
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_MOVE, CONTROL_SCHED_CALIBRATE, CONTROL_SCHED_ARM, CONTROL_SCHED_NOTHING}, 		//IDLE
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//CALIBRATION
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_IGNITE, CONTROL_SCHED_DISARM, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//ARMED
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//COUNTDOWN
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//IGNITION
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//THRUST
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//SHUTDOWN
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//GLIDE
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_RECOVER, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//ABORT
-		{CONTROL_SCHED_ABORT, CONTROL_SCHED_RECOVER, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING} 	//ERROR
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_MOVE_PP, CONTROL_SCHED_CALIBRATE, CONTROL_SCHED_ARM, CONTROL_SCHED_MOVE_TVC, CONTROL_SCHED_NOTHING}, 		//IDLE
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//CALIBRATION
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_IGNITE, CONTROL_SCHED_DISARM, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//ARMED
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//COUNTDOWN
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//IGNITION
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//THRUST
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//SHUTDOWN
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//GLIDE
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_RECOVER, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING}, 	//ABORT
+		{CONTROL_SCHED_ABORT, CONTROL_SCHED_RECOVER, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING, CONTROL_SCHED_NOTHING} 	//ERROR
 };
 
 
@@ -127,18 +128,16 @@ void control_thread(void * arg) {
 
 	static EPOS4_INST_t pp_epos4;
 	static EPOS4_INST_t ab_epos4;
-	static SERVO_INST_t tvc;
+
+#if TVC_ENABLE == 1
+	static SERVO_INST_t tvc_servo;
 
 	servo_global_init();
 
+	servo_init(&tvc_servo, 1);
 
-	servo_init(&tvc, 1);
-
-
-	uint8_t data[16];
-	SERVO_ERROR_t err = servo_read_object(&tvc, 65, 1, data);
-
-
+	servo_config(&tvc_servo);
+#endif
 
 	epos4_global_init();
 
@@ -146,11 +145,25 @@ void control_thread(void * arg) {
 	//epos4_init_bridged(&ab_epos4, &pp_epos4, 2);
 	//Bridged func not yet ready
 
+	control.tvc_servo = &tvc_servo;
 	control.pp_epos4 = &pp_epos4;
 	control.ab_epos4 = &ab_epos4;
 
 
 	for(;;) {
+
+		static uint8_t lol = 0;
+		static uint16_t cnt = 0;
+		if(cnt++ > 10) {
+			lol = !lol;
+			cnt = 0;
+		}
+
+		if(lol) {
+			servo_enable_led(control.tvc_servo, NULL);
+		} else {
+			servo_disable_led(control.tvc_servo, NULL);
+		}
 
 
 		control_update(&control);
@@ -256,10 +269,15 @@ static void control_update(CONTROL_INST_t * control) {
 	//read motors parameters
 	epos4_sync(control->pp_epos4);
 
+#if TVC_ENABLE == 1
+	//read servo parameters
+	servo_sync(control->tvc_servo);
+#endif
+
 	control->venting = VENTING_PORT->IDR & VENTING_PIN?1:0;
 
 	if(control->pp_epos4->error && control->state != CS_ERROR) {
-		init_error(control);
+		//init_error(control);
 	}
 
 	//init error if there is an issue with a motor
@@ -291,7 +309,7 @@ static void init_idle(CONTROL_INST_t * control) {
 	control->state = CS_IDLE;
 	led_set_color(LED_GREEN);
 	control->counter_active = 0;
-	control->mov_started = 0;
+	control->pp_mov_started = 0;
 	control->pp_close_mov_started = 0;
 	control->pp_abort_mov_started = 0;
 	control->pp_motor_prepped = 0;
@@ -300,29 +318,40 @@ static void init_idle(CONTROL_INST_t * control) {
 
 static void idle(CONTROL_INST_t * control) {
 
-	if(control->mov_started) {
-		control->mov_started++;
-		if(control->mov_started > TARGET_REACHED_DELAY_CYCLES) {
+	if(control->pp_mov_started) {
+		control->pp_mov_started++;
+		if(control->pp_mov_started > TARGET_REACHED_DELAY_CYCLES) {
 			uint8_t terminated = 0;
 			epos4_ppm_terminate(control->pp_epos4, &terminated);
 			if(terminated) {
-				control->mov_started = 0;
-				control_sched_done(control, CONTROL_SCHED_MOVE);
+				control->pp_mov_started = 0;
+				control_sched_done(control, CONTROL_SCHED_MOVE_PP);
 			}
 		}
 	}
 
+
+
 	//if a move is scheduled, perform it
-	if(control_sched_should_run(control, CONTROL_SCHED_MOVE) && !control->mov_started) {
+	if(control_sched_should_run(control, CONTROL_SCHED_MOVE_PP) && !control->pp_mov_started) {
 		EPOS4_PPM_CONFIG_t ppm_config;
 		ppm_config.profile_acceleration = control->pp_params.acc;
 		ppm_config.profile_deceleration = control->pp_params.dec;
 		ppm_config.profile_velocity = control->pp_params.speed;
 		epos4_ppm_config(control->pp_epos4, ppm_config);
 		epos4_ppm_prep(control->pp_epos4);
-		epos4_ppm_move(control->pp_epos4, control->mov_type, control->mov_target);
-		control->mov_started = 1;
+		epos4_ppm_move(control->pp_epos4, control->pp_mov_type, control->pp_mov_target);
+		control->pp_mov_started = 1;
 	}
+
+#if TVC_ENABLE == 1
+	if(control_sched_should_run(control, CONTROL_SCHED_MOVE_TVC)) {
+		servo_move(control->tvc_servo, control->tvc_mov_target);
+		control_sched_done(control, CONTROL_SCHED_MOVE_TVC);
+	}
+#endif
+
+
 
 	if(control_sched_should_run(control, CONTROL_SCHED_CALIBRATE)) {
 		init_calibration(control);
@@ -544,11 +573,16 @@ void control_set_pp_params(CONTROL_PP_PARAMS_t params) {
 	control.pp_params = params;
 }
 
-void control_move(EPOS4_MOV_t mov_type, int32_t target) {
-	control_sched_set(&control, CONTROL_SCHED_MOVE);
-	control.mov_type = mov_type;
-	control.mov_target = target;
-	control.mov_started = 0;
+void control_move_pp(EPOS4_MOV_t mov_type, int32_t target) {
+	control_sched_set(&control, CONTROL_SCHED_MOVE_PP);
+	control.pp_mov_type = mov_type;
+	control.pp_mov_target = target;
+	control.pp_mov_started = 0;
+}
+
+void control_move_tvc(int32_t target) {
+	control_sched_set(&control, CONTROL_SCHED_MOVE_TVC);
+	control.tvc_mov_target = target;
 }
 
 void control_calibrate() {
@@ -576,7 +610,7 @@ void control_recover() {
 }
 
 CONTROL_STATUS_t control_get_status() {
-	CONTROL_STATUS_t status;
+	CONTROL_STATUS_t status = {0};
 	status.state = control.state;
 	status.pp_error = control.pp_epos4->error;
 	status.pp_psu_voltage = control.pp_epos4->psu_voltage;
@@ -585,6 +619,13 @@ CONTROL_STATUS_t control_get_status() {
 	status.counter = control.counter;
 	status.time = control.time;
 	status.venting = control.venting;
+#if	TVC_ENABLE == 1
+	status.tvc_error = control.tvc_servo->error;
+	status.tvc_psu_voltage = control.tvc_servo->psu_voltage;
+	status.tvc_temperature = control.tvc_servo->temperature;
+	status.tvc_position = control.tvc_servo->position;
+#endif
+
 	return status;
 }
 

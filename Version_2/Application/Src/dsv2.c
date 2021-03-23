@@ -29,6 +29,7 @@
 #define H4		(0x00)
 
 
+
 /**********************
  *	MACROS
  **********************/
@@ -50,14 +51,14 @@
  *	PROTOTYPES
  **********************/
 
-static uint16_t calc_crc(uint16_t crc_accum, uint16_t * data_blk_ptr, uint16_t data_blk_size);
+static uint16_t calc_crc(uint16_t crc_accum, uint8_t * data_blk_ptr, uint16_t data_blk_size);
 
 
 /**********************
  *	DECLARATIONS
  **********************/
 
-static uint16_t calc_crc(uint16_t crc_accum, uint16_t * data_blk_ptr, uint16_t data_blk_size) {
+static uint16_t calc_crc(uint16_t crc_accum, uint8_t * data_blk_ptr, uint16_t data_blk_size) {
     unsigned short i, j;
     unsigned short crc_table[256] = {
         0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
@@ -110,22 +111,19 @@ void dsv2_init(DSV2_INST_t * dsv2) {
 }
 
 uint16_t dsv2_create_frame(DSV2_INST_t * dsv2, uint8_t dev_id, uint16_t data_len, uint8_t inst, uint8_t * data) {
-	uint16_t array_len = data_len+5;
-	dsv2->tx.data_len = data_len;
-	dsv2->tx.dev_id = dev_id;
 	dsv2->tx.data[0] = H1;
 	dsv2->tx.data[1] = H2;
 	dsv2->tx.data[2] = H3;
 	dsv2->tx.data[3] = H4;
 	dsv2->tx.data[4] = dev_id;
-	dsv2->tx.data[5] = data_len & 0xff;
-	dsv2->tx.data[6] = data_len>>8;
+	dsv2->tx.data[5] = (data_len+3) & 0xff;
+	dsv2->tx.data[6] = (data_len+3)>>8;
 	dsv2->tx.data[7] = inst;
 	uint16_t counter=8;
 	for(uint16_t i = 0; i < data_len; i++) {
 		dsv2->tx.data[counter++] = data[i];
 	}
-	uint16_t crc = calc_crc(0, (uint16_t *)dsv2->tx.data, array_len);
+	uint16_t crc = calc_crc(0, dsv2->tx.data, data_len + 8);
 	dsv2->tx.data[counter++] = crc&0xff; //crc bytes are inverted (LSB first) !!
 	dsv2->tx.data[counter++] = crc>>8;
 	return counter;
@@ -141,23 +139,23 @@ SERIAL_RET_t dsv2_decode_func(void * inst, uint8_t data) {
  */
 DSV2_ERROR_t dsv2_decode_fragment(DSV2_INST_t * dsv2, uint8_t d) {
 	//Recover logic
+	/*
 	if(dsv2->rx.restart_state == DSV2_WAITING_H4 && d == H4) {
 		dsv2->rx.state = DSV2_WAITING_ID;
 		dsv2->rx.crc_data[3] = d;
+		dsv2->rx.counter = 0;
 		return DSV2_PROGRESS;
-	}
-	if(dsv2->rx.restart_state == DSV2_WAITING_H3 && d == H3) {
+	} else if(dsv2->rx.restart_state == DSV2_WAITING_H3 && d == H3) {
 		dsv2->rx.restart_state = DSV2_WAITING_H4;
 		dsv2->rx.crc_data[2] = d;
-	}
-	if(dsv2->rx.restart_state == DSV2_WAITING_H2 && d == H2) {
+	} else if(dsv2->rx.restart_state == DSV2_WAITING_H2 && d == H2) {
 		dsv2->rx.restart_state = DSV2_WAITING_H3;
 		dsv2->rx.crc_data[1] = d;
-	}
-	if(d == H1) {
+	} else if(d == H1) {
 		dsv2->rx.restart_state = DSV2_WAITING_H2;
 		dsv2->rx.crc_data[0] = d;
 	}
+	*/
 
     if(dsv2->rx.state == DSV2_WAITING_H1 && d == H1) {
     	dsv2->rx.state = DSV2_WAITING_H2;
@@ -199,14 +197,18 @@ DSV2_ERROR_t dsv2_decode_fragment(DSV2_INST_t * dsv2, uint8_t d) {
 	}
     if(dsv2->rx.state == DSV2_WAITING_INST) {
 		dsv2->rx.state = DSV2_WAITING_DATA;
+		dsv2->rx.counter = 0;
 		dsv2->rx.crc_data[7] = d;
 		dsv2->rx.inst = d;
+		if(dsv2->rx.inst != 85) {
+			dsv2->rx.state = DSV2_WAITING_H1;
+		}
 		return DSV2_PROGRESS;
 	}
 	if(dsv2->rx.state == DSV2_WAITING_DATA) {
 		dsv2->rx.crc_data[dsv2->rx.counter + 8] = d;
 		dsv2->rx.data[dsv2->rx.counter++] = d;
-		if(dsv2->rx.counter == dsv2->rx.data_len) {
+		if(dsv2->rx.counter == dsv2->rx.data_len-3) {  //DATA LENGTH CONTAINS INST, ERR AND CRC
 			dsv2->rx.state = DSV2_WAITING_CRC1;
 		}
 		return DSV2_PROGRESS;
@@ -220,14 +222,25 @@ DSV2_ERROR_t dsv2_decode_fragment(DSV2_INST_t * dsv2, uint8_t d) {
 		dsv2->rx.state = DSV2_WAITING_H1;
 		dsv2->rx.crc |= d<<8;
 
-		uint16_t crc = calc_crc(0, (uint16_t *) dsv2->rx.crc_data, dsv2->rx.data_len + 5);
-		if(crc == dsv2->rx.crc) {
-			return DSV2_SUCCESS;
-		}else {
-			return DSV2_WRONG_CRC;
+		uint16_t crc = calc_crc(0, dsv2->rx.crc_data, dsv2->rx.data_len + 5);
+		dsv2->rx.counter = 0;
+
+		if(dsv2->rx.inst == 85) {
+			if(crc == dsv2->rx.crc) {
+				return DSV2_SUCCESS;
+			}else {
+				return DSV2_WRONG_CRC;
+			}
+		} else {
+			return DSV2_PROGRESS;
 		}
+
+
+
+
 	}
 	dsv2->rx.state = DSV2_WAITING_H1;
+	dsv2->rx.counter = 0;
 	return DSV2_ERROR;
 }
 

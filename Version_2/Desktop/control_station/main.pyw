@@ -60,6 +60,7 @@ GET_SENSOR =    0x0A
 GET_STATUS =    0x0B
 VENTING =       0x0C
 DOWNLOAD =      0x0D
+TVC_MOVE =      0x0E
 
 #MOVE MODES
 ABSOLUTE            = 0x00
@@ -96,6 +97,13 @@ def inc2deg(inc):
 
 def deg2inc(deg):
     return int(round(-deg*4*1024*66/1/360))
+
+#4096 -> 360 and 2048 is the middle
+def deg2dyn(deg):
+    return int(round(deg*4096/360 + 2048))
+
+def dyn2deg(dyn):
+    return round((dyn - 2048)*360/4096, 2)
 
 @Slot()
 def connect_trig():
@@ -169,6 +177,11 @@ def pp_motor_move_trig():
     bin_data = struct.pack("iH", target, mode)
     serial_worker.send_generic(PP_MOVE, bin_data)
 
+def tvc_motor_move_trig():
+    target = deg2dyn(safe_float(window.tvc_motor_target.text()))
+    bin_data = struct.pack("i", target)
+    serial_worker.send_generic(TVC_MOVE, bin_data)
+
 def calibrate_trig():
     serial_worker.send_generic(CALIBRATE, [0x00, 0x00])
 
@@ -227,13 +240,17 @@ def ping_cb(stat, sens):
     global counter
     global total_data
 
-    if(stat and len(stat) == 20):
-        data = struct.unpack("HHHHiiI", bytes(stat))
+    if(stat and len(stat) == 28):
+        data = struct.unpack("HHHHiiIiHBb", bytes(stat))
         state = data[0]
         status_state = state
         window.status_state.clear()
         window.pp_error.clear()
         window.pp_psu.clear()
+        window.tvc_psu.clear()
+        window.tvc_motor_current.clear()
+        window.tvc_error.clear()
+        window.tvc_temperature.clear()
         window.status_counter.setText(str(round(float(data[5])/1000, 1)))
         #window.status_counter.display(round(float(data[5])/1000, 1))
         window.pp_motor_current.clear()
@@ -244,6 +261,10 @@ def ping_cb(stat, sens):
         window.pp_motor_current.insert(str(inc2deg(data[4])))
         window.dl_used.setText(id_2_mem(data[6]))
         total_data = data[6]
+        window.tvc_psu.insert(str(data[8]/10))
+        window.tvc_motor_current.insert(str(dyn2deg(data[7])))
+        window.tvc_error.insert(hex(data[9]))
+        window.tvc_temperature.insert(str(data[10]))
         if state == 1:
             temperature_data_1.clear()
             temperature_data_2.clear()
@@ -570,6 +591,7 @@ if __name__ == "__main__":
     window.vent_open.clicked.connect(vent_open_trig)
     window.vent_close.clicked.connect(vent_close_trig)
     window.download.clicked.connect(download_trig)
+    window.tvc_motor_move.clicked.connect(tvc_motor_move_trig)
 
     window.show()
 

@@ -258,10 +258,10 @@
       <widget class="QLabel" name="label_16">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>70</y>
-         <width>311</width>
-         <height>281</height>
+         <x>120</x>
+         <y>10</y>
+         <width>61</width>
+         <height>611</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -280,7 +280,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap>Logo.png</pixmap>
+        <pixmap>rocket.png</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
@@ -289,87 +289,69 @@
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
-      <widget class="QLabel" name="label_17">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>40</y>
-         <width>251</width>
-         <height>41</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>14</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>STABLE VERSION</string>
-       </property>
-      </widget>
       <widget class="QLabel" name="temp_1">
        <property name="geometry">
         <rect>
-         <x>210</x>
-         <y>340</y>
+         <x>200</x>
+         <y>230</y>
          <width>81</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>TEMP</string>
        </property>
       </widget>
       <widget class="QLabel" name="temp_2">
        <property name="geometry">
         <rect>
-         <x>210</x>
-         <y>360</y>
+         <x>200</x>
+         <y>250</y>
          <width>81</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>TEMP</string>
        </property>
       </widget>
       <widget class="QLabel" name="temp_3">
        <property name="geometry">
         <rect>
-         <x>210</x>
-         <y>380</y>
+         <x>200</x>
+         <y>270</y>
          <width>81</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>TEMP</string>
        </property>
       </widget>
       <widget class="QLabel" name="pres_1">
        <property name="geometry">
         <rect>
-         <x>210</x>
-         <y>470</y>
+         <x>200</x>
+         <y>310</y>
          <width>81</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>PRES</string>
        </property>
       </widget>
       <widget class="QLabel" name="pres_2">
        <property name="geometry">
         <rect>
-         <x>210</x>
-         <y>530</y>
+         <x>200</x>
+         <y>390</y>
          <width>81</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>PRES</string>
        </property>
       </widget>
      </widget>
@@ -731,7 +713,7 @@
        <string notr="true"/>
       </property>
       <property name="title">
-       <string>AB motor</string>
+       <string>TVC motor</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_12">
        <item row="0" column="0">
@@ -746,6 +728,26 @@
           <string>Move</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_9">
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="tvc_motor_current">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="tvc_motor_target">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_9">
             <property name="sizePolicy">
@@ -759,23 +761,6 @@
             </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="ab_motor_target">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QRadioButton" name="ab_motor_relative">
-            <property name="text">
-             <string>Relative</string>
             </property>
            </widget>
           </item>
@@ -795,37 +780,10 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="3">
-           <widget class="QPushButton" name="ab_motor_move">
+          <item row="1" column="2">
+           <widget class="QPushButton" name="tvc_motor_move">
             <property name="text">
              <string>Go</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QRadioButton" name="ab_motor_absolute">
-            <property name="text">
-             <string>Absolute</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="ab_motor_current">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QCheckBox" name="ab_motor_immediate">
-            <property name="text">
-             <string>Immediate</string>
             </property>
            </widget>
           </item>
@@ -838,8 +796,15 @@
           <string>Status</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_11">
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="lineEdit_4">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>PSU Voltage</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLineEdit" name="tvc_error">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -848,10 +813,13 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_19">
-            <property name="text">
-             <string>PSU Voltage</string>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="tvc_psu">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
            </widget>
           </item>
@@ -862,13 +830,20 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QLineEdit" name="lineEdit_5">
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="tvc_temperature">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_22">
+            <property name="text">
+             <string>Temperature</string>
             </property>
            </widget>
           </item>
