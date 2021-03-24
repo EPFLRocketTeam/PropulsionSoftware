@@ -57,7 +57,7 @@
  **********************/
 
 
-typedef struct {
+typedef struct STORAGE_DATA{
 	uint16_t sample_id;
 	int16_t temp_1;
 	int16_t temp_2;
@@ -65,10 +65,14 @@ typedef struct {
 	int32_t pres_1;
 	int32_t pres_2;
 	int32_t motor_pos;
-	uint32_t system_status;
 	uint32_t sensor_time;
-	uint32_t padding_1;
+	uint8_t system_state;
+	uint8_t counter_active;
+	uint16_t padding;
+	int32_t counter;
 }STORAGE_DATA_t;  //MUST BE AN INTEGER DIVISOR OF 4096
+
+
 
 
 /**********************
@@ -80,7 +84,6 @@ static uint32_t used_subsectors;
 static uint32_t data_counter;
 static uint8_t record_active;
 static uint8_t restart_required;
-
 static int32_t record_should_stop;
 
 
@@ -104,11 +107,19 @@ void storage_init() {
 		flash_read(USED_SS_ADDR, (uint8_t *) &used_subsectors, sizeof(uint32_t));
 		if(used_subsectors > 1) {
 			STORAGE_DATA_t data;
+			STORAGE_DATA_t last_valid_data;
 			uint32_t count = (used_subsectors-2)*SAMPLES_PER_SS;
 			data = read_data(count);
 			while(data.sample_id == count){
+				last_valid_data = data;
 				data = read_data(++count);
 			}
+			CONTROL_STATUS_t last_status;
+			last_status.state = last_valid_data.system_state;
+			last_status.counter = last_valid_data.counter;
+			last_status.counter_active = last_valid_data.counter_active;
+			last_status.time = last_valid_data.sensor_time;
+			control_attempt_recover(last_status);
 			data_counter = count;
 		} else {
 			data_counter = 0;
@@ -134,8 +145,9 @@ void storage_record_sample() {
 
 	CONTROL_STATUS_t control_data = control_get_status();
 	data.motor_pos = control_data.pp_position;
-	data.system_status = control_data.state;
-
+	data.system_state = control_data.state;
+	data.counter = control_data.counter;
+	data.counter_active = control_data.counter_active;
 	write_data(data);
 
 }

@@ -30,6 +30,7 @@
 
 #define THRUST_CONTROL_ENABLE 0
 #define TVC_ENABLE 1
+#define ATTEMPT_RECOVER	0
 
 /**********************
  *	CONSTANTS
@@ -137,6 +138,8 @@ void control_thread(void * arg) {
 	servo_init(&tvc_servo, 1);
 
 	servo_config(&tvc_servo);
+
+	control.tvc_servo = &tvc_servo;
 #endif
 
 	epos4_global_init();
@@ -145,13 +148,14 @@ void control_thread(void * arg) {
 	//epos4_init_bridged(&ab_epos4, &pp_epos4, 2);
 	//Bridged func not yet ready
 
-	control.tvc_servo = &tvc_servo;
+
 	control.pp_epos4 = &pp_epos4;
 	control.ab_epos4 = &ab_epos4;
 
 
 	for(;;) {
 
+#if TVC_ENABLE == 1
 		static uint8_t lol = 0;
 		static uint16_t cnt = 0;
 		if(cnt++ > 10) {
@@ -164,7 +168,7 @@ void control_thread(void * arg) {
 		} else {
 			servo_disable_led(control.tvc_servo, NULL);
 		}
-
+#endif
 
 		control_update(&control);
 		//read status
@@ -263,7 +267,17 @@ static void control_update(CONTROL_INST_t * control) {
 		}
 	}
 
-	//do something depending on what msg was received
+#if ATTEMPT_RECOVER == 1
+	if(control->needs_recover) {
+		EPOS4_PPM_CONFIG_t ppm_config;
+		ppm_config.profile_acceleration = control->pp_params.acc;
+		ppm_config.profile_deceleration = control->pp_params.dec;
+		ppm_config.profile_velocity = control->pp_params.speed;
+		epos4_ppm_config(control->pp_epos4, ppm_config);
+		epos4_ppm_prep(control->pp_epos4);
+		control->needs_recover = 0;
+	}
+#endif
 
 
 	//read motors parameters
@@ -539,6 +553,10 @@ static void _abort(CONTROL_INST_t * control) {
 		}
 	}
 
+#if TVC_ENABLE == 1
+	servo_move(control->tvc_servo, 2048); //2048 is the straight position
+#endif
+
 	if(control_sched_should_run(control, CONTROL_SCHED_RECOVER)) {
 		init_idle(control);
 		control_sched_done(control, CONTROL_SCHED_RECOVER);
@@ -617,6 +635,7 @@ CONTROL_STATUS_t control_get_status() {
 	status.pp_position = control.pp_epos4->position;
 	status.pp_status = control.pp_epos4->status;
 	status.counter = control.counter;
+	status.counter_active = control.counter_active;
 	status.time = control.time;
 	status.venting = control.venting;
 #if	TVC_ENABLE == 1
@@ -627,6 +646,18 @@ CONTROL_STATUS_t control_get_status() {
 #endif
 
 	return status;
+}
+
+
+void control_attempt_recover(CONTROL_STATUS_t last_state) {
+#if ATTEMPT_RECOVER == 1
+	if(last_state.state >= CS_COUNTDOWN && last_state.state <= CS_GLIDE) {
+		control.state = last_state.state;
+		control.counter = last_state.counter;
+		control.counter_active = last_state.counter_active;
+		control.needs_recover = 1;
+	}
+#endif
 }
 
 uint8_t control_open_vent() {

@@ -22,7 +22,7 @@
  *  CONSTANTS
  **********************/
 
-#define DYNAMIXEL_UART	huart6
+#define DYNAMIXEL_UART	huart1
 
 
 /**********************

@@ -446,7 +446,7 @@ class Serial_worker(QObject):
                         err_counter = 0
                     continue
                 for i in range(5):
-                    tmp_data = struct.unpack("HhhhiiiIII", bytes(data[i*32:(i+1)*32]))
+                    tmp_data = struct.unpack("HhhhiiiIBBHi", bytes(data[i*32:(i+1)*32]))
                     recv_data.append(tmp_data)
                 last_recv += 5
                 self.download_sig.emit(recv_data, last_recv)
@@ -500,7 +500,7 @@ if __name__ == "__main__":
         print(loader.errorString())
         sys.exit(-1)
 
-    res = ""
+    res = None
 
     if platform.system() == 'Darwin':
         dev_dir = os.listdir('/dev');
@@ -516,9 +516,10 @@ if __name__ == "__main__":
     else:
         COM_PORT = 'COM17'
 
-
-    window.connect_device.clear()
-    window.connect_device.insert(COM_PORT)
+    print(type(COM_PORT))
+    if(type(COM_PORT)==str):
+        window.connect_device.clear()
+        window.connect_device.insert(COM_PORT)
 
     #CONNECT THREADED CALLBACKS
 

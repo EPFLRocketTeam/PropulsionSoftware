@@ -71,6 +71,7 @@ typedef struct CONTROL_STATUS {
 	uint8_t tvc_error;
 	int32_t tvc_position;
 	int32_t counter;
+	uint8_t counter_active;
 	uint32_t time;
 	uint8_t venting;
 }CONTROL_STATUS_t;
@@ -115,6 +116,7 @@ typedef struct CONTROL_INST{
 	uint8_t pp_abort_mov_started;
 	CAN_msg msg;
 	uint8_t venting;
+	uint8_t needs_recover;
 }CONTROL_INST_t;
 
 
@@ -162,6 +164,8 @@ uint8_t control_open_vent();
 uint8_t control_close_vent();
 
 CONTROL_STATUS_t control_get_status();
+
+void control_attempt_recover(CONTROL_STATUS_t last_state);
 
 
 
