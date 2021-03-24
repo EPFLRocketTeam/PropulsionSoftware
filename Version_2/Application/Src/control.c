@@ -232,40 +232,33 @@ static void control_update(CONTROL_INST_t * control) {
 
 	control->msg = can_readBuffer();
 
-	if(control->msg.id == DATA_ID_OPERATION){
-		if(control->msg.data == DATA_MAGIC_1) {
+	if(control->msg.id == DATA_ID_COMMAND){
+		if(control->msg.data == COMMAND_IGNITION) {
 			control_ignite();
 		}
-	}
-	if(control->msg.id == DATA_ID_ARMING){
-		if(control->msg.data == DATA_MAGIC_1) {
+		if(control->msg.data == COMMAND_ARM) {
 			control_arm();
 		}
-		if(control->msg.data == DATA_MAGIC_2) {
+		if(control->msg.data == COMMAND_DISARM) {
 			control_disarm();
 		}
-	}
-	if(control->msg.id == DATA_ID_VENTING){
-		if(control->msg.data == DATA_MAGIC_1) {
+		if(control->msg.data == COMMAND_OPEN_VENTING) {
 			control_open_vent();
 		}
-		if(control->msg.data == DATA_MAGIC_2) {
+		if(control->msg.data == COMMAND_CLOSE_VENTING) {
 			control_close_vent();
 		}
-	}
-	if(control->msg.id == DATA_ID_CALIBRATION){
-		if(control->msg.data == DATA_MAGIC_1) {
+		if(control->msg.data == COMMAND_START_CALIBRATION) {
 			control_calibrate();
 		}
-		if(control->msg.data == DATA_MAGIC_2) {
+		if(control->msg.data == COMMAND_RECOVER) {
 			control_recover();
 		}
-	}
-	if(control->msg.id == DATA_ID_ABORT){
-		if(control->msg.data == DATA_MAGIC_3) {
+		if(control->msg.data == COMMAND_ABORT) {
 			control_abort();
 		}
 	}
+
 
 #if ATTEMPT_RECOVER == 1
 	if(control->needs_recover) {

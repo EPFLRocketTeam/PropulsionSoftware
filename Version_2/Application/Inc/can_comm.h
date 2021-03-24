@@ -78,11 +78,7 @@
 //Propulsion Data
 #define DATA_COMMAND_CHECK_VALUE	0xC0FFEE
 
-#define DATA_ID_OPERATION	    80
-#define DATA_ID_ARMING			81
-#define DATA_ID_VENTING			82
-#define DATA_ID_CALIBRATION		83
-#define DATA_ID_ABORT			84
+#define DATA_ID_COMMAND	    	80
 
 #define DATA_ID_PRESS_1			85
 #define DATA_ID_PRESS_2			86
@@ -92,6 +88,19 @@
 #define DATA_ID_STATUS			90
 #define DATA_ID_MOT_POS			91
 
+
+typedef enum COMMAND_TYPE {
+	COMMAND_NO_OPERATION = 0x00,
+	COMMAND_IGNITION = 0x01,
+	COMMAND_ARM = 0x02,
+	COMMAND_DISARM = 0x03,
+	COMMAND_OPEN_VENTING = 0x04,
+	COMMAND_CLOSE_VENTING = 0x05,
+	COMMAND_START_CALIBRATION = 0x06,
+	COMMAND_RECOVER = 0x07,
+	COMMAND_ABORT = 0x08
+
+}COMMAND_TYPE_t;
 
 // Define all the board ID's (lower means higher priority for CAN protocol)
 #define CAN_ID_MAIN_BOARD 0
