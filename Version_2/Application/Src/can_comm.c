@@ -25,30 +25,10 @@
 #include <control.h>
 
 
-/**********************
- *	CONSTANTS
- **********************/
-
 #define CAN_BUFFER_DEPTH 64
 
 #define CAN_HEART_BEAT 20
 
-
-/**********************
- *	MACROS
- **********************/
-
-
-/**********************
- *	TYPEDEFS
- **********************/
-
-
-
-
-/**********************
- *	VARIABLES
- **********************/
 
 CAN_TxHeaderTypeDef   TxHeader;
 CAN_RxHeaderTypeDef   RxHeader;
@@ -61,28 +41,7 @@ CAN_msg can_buffer[CAN_BUFFER_DEPTH];
 volatile int32_t can_buffer_pointer_rx = 0;
 volatile int32_t can_buffer_pointer_tx = 0;
 
-
-/**********************
- *	PROTOTYPES
- **********************/
-
-
-
-
-
-
 uint32_t can_readFrame(void);
-
-
-/**********************
- *	DECLARATIONS
- **********************/
-
-
-
-
-
-
 
 uint32_t pointer_inc(uint32_t val, uint32_t size) {
 	return (val + 1) % size;
@@ -165,7 +124,9 @@ void can_setFrame(uint32_t data, uint8_t data_id, uint32_t timestamp) {
     TxData[6] = (uint8_t) (timestamp >> 8);
     TxData[7] = (uint8_t) (timestamp >> 0);
 
-	while (HAL_CAN_IsTxMessagePending(&hcan1, TxMailbox)) {} // wait for CAN to be ready
+	while (HAL_CAN_IsTxMessagePending(&hcan1, TxMailbox)) {
+		osDelay(1);
+	} // wait for CAN to be ready
 
 	CAN_msg message = (CAN_msg) {data, data_id, timestamp, TxHeader.StdId};
 
@@ -238,6 +199,11 @@ uint32_t can_readFrame(void) {
 }
 
 
+void can_init(void) {
+	CAN_Config(CAN_ID_PROPULSION_BOARD);
+}
+
+
 void can_send_thread(void * arg) {
 	static TickType_t last_wake_time;
 	static const TickType_t period = pdMS_TO_TICKS(CAN_HEART_BEAT);
@@ -257,7 +223,6 @@ void can_send_thread(void * arg) {
 		can_setFrame((uint32_t) sensor_data.temperature[0], DATA_ID_TEMP_3, sensor_data.time);
 		can_setFrame((uint32_t) status, DATA_ID_STATUS, control_data.time);
 		can_setFrame((uint32_t) control_data.pp_position, DATA_ID_MOT_POS, control_data.time);
-
 
 		vTaskDelayUntil( &last_wake_time, period );
 	}

@@ -97,6 +97,8 @@ void threads_init(void) {
 	static DEBUG_INST_t debug;
 	debug_init(&debug);
 
+	can_init();
+
 
 	/*
 	 *  Feedback thread

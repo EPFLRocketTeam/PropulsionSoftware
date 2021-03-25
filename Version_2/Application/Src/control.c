@@ -230,32 +230,34 @@ static void control_update(CONTROL_INST_t * control) {
 		control->counter -= (control->time - control->last_time);
 	}
 
-	control->msg = can_readBuffer();
+	while(can_msgPending()) {
+		control->msg = can_readBuffer();
 
-	if(control->msg.id == DATA_ID_COMMAND){
-		if(control->msg.data == COMMAND_IGNITION) {
-			control_ignite();
-		}
-		if(control->msg.data == COMMAND_ARM) {
-			control_arm();
-		}
-		if(control->msg.data == COMMAND_DISARM) {
-			control_disarm();
-		}
-		if(control->msg.data == COMMAND_OPEN_VENTING) {
-			control_open_vent();
-		}
-		if(control->msg.data == COMMAND_CLOSE_VENTING) {
-			control_close_vent();
-		}
-		if(control->msg.data == COMMAND_START_CALIBRATION) {
-			control_calibrate();
-		}
-		if(control->msg.data == COMMAND_RECOVER) {
-			control_recover();
-		}
-		if(control->msg.data == COMMAND_ABORT) {
-			control_abort();
+		if(control->msg.id == DATA_ID_COMMAND){
+			if(control->msg.data == COMMAND_IGNITION) {
+				control_ignite();
+			}
+			if(control->msg.data == COMMAND_ARM) {
+				control_arm();
+			}
+			if(control->msg.data == COMMAND_DISARM) {
+				control_disarm();
+			}
+			if(control->msg.data == COMMAND_OPEN_VENTING) {
+				control_open_vent();
+			}
+			if(control->msg.data == COMMAND_CLOSE_VENTING) {
+				control_close_vent();
+			}
+			if(control->msg.data == COMMAND_START_CALIBRATION) {
+				control_calibrate();
+			}
+			if(control->msg.data == COMMAND_RECOVER) {
+				control_recover();
+			}
+			if(control->msg.data == COMMAND_ABORT) {
+				control_abort();
+			}
 		}
 	}
 
@@ -308,8 +310,6 @@ static void init_control(CONTROL_INST_t * control) {
 	control->pp_params.half_angle = DEG2INC(27);
 	control->pp_params.full_angle = DEG2INC(90);
 
-
-	CAN_Config(CAN_ID_PROPULSION_BOARD);
 }
 
 static void init_idle(CONTROL_INST_t * control) {

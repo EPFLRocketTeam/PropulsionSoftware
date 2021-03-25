@@ -162,6 +162,8 @@ CAN_msg can_readBuffer();
 
 void can_send_thread(void * arg);
 
+void can_init(void);
+
 
 
 
