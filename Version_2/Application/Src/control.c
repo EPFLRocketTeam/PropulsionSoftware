@@ -36,6 +36,8 @@
  *	CONSTANTS
  **********************/
 
+#define TIME_TOL (CONTROL_HEART_BEAT/2)
+
 
 #define TARGET_REACHED_DELAY_CYCLES	(50)
 
@@ -441,7 +443,7 @@ static void init_countdown(CONTROL_INST_t * control) {
 }
 
 static void countdown(CONTROL_INST_t * control) {
-	if(control->counter <= 0) {
+	if(control->counter <= TIME_TOL) {
 		control->counter_active = 0;
 		init_ignition(control);
 	}
@@ -456,7 +458,7 @@ static void init_ignition(CONTROL_INST_t * control) {
 }
 
 static void ignition(CONTROL_INST_t * control) {
-	if(control->counter <= 0) {
+	if(control->counter <= TIME_TOL) {
 		control->counter_active = 0;
 		init_thrust(control);
 	}
@@ -481,7 +483,7 @@ static void thrust(CONTROL_INST_t * control) {
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, DEG2INC(90));
 #endif
 
-	if(control->counter <= 0) {
+	if(control->counter <= TIME_TOL) {
 		control->counter_active = 0;
 		init_shutdown(control);
 	}

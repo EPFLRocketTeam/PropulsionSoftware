@@ -57,7 +57,7 @@
  **********************/
 
 
-typedef struct STORAGE_DATA{
+typedef struct  STORAGE_DATA{
 	uint16_t sample_id;
 	int16_t temp_1;
 	int16_t temp_2;
@@ -140,13 +140,12 @@ void storage_init() {
 void storage_record_sample() {
 	STORAGE_DATA_t data = {0};
 	SENSOR_DATA_t sensor_data = sensor_get_last();
-	data.temp_1 = sensor_data.temperature[1];
-	data.temp_2 = sensor_data.temperature[2];
-	data.temp_3 = sensor_data.temperature[3];
+	data.temp_1 = sensor_data.temperature[0];
+	data.temp_2 = sensor_data.temperature[1];
+	data.temp_3 = sensor_data.temperature[2];
 	data.pres_1 = sensor_data.pressure_1;
 	data.pres_2 = sensor_data.pressure_2;
 	data.sensor_time = sensor_data.time;
-
 	CONTROL_STATUS_t control_data = control_get_status();
 	data.motor_pos = control_data.pp_position;
 	data.system_state = control_data.state;
