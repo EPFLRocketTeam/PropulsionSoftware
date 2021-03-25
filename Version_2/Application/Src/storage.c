@@ -40,7 +40,7 @@
 #define STORAGE_AFTER_SAVE 3000
 
 
-#define STORAGE_HEART_BEAT 1
+#define STORAGE_HEART_BEAT 2
 
 
 
@@ -86,6 +86,9 @@ static uint8_t record_active;
 static uint8_t restart_required;
 static int32_t record_should_stop;
 
+static SemaphoreHandle_t storage_sem = NULL;
+static StaticSemaphore_t storage_sem_buffer;
+
 
 /**********************
  *	PROTOTYPES
@@ -130,6 +133,7 @@ void storage_init() {
 	}
 	record_active = 0;
 	restart_required = 0;
+	storage_sem = xSemaphoreCreateBinaryStatic(&storage_sem_buffer);
 }
 
 
@@ -198,38 +202,45 @@ void storage_restart() {
 	restart_required = 1;
 }
 
+void storage_notify() {
+	if(storage_sem != NULL) {
+		xSemaphoreGive(storage_sem);
+	}
+}
+
 
 void storage_thread(void * arg) {
 
-	static TickType_t last_wake_time;
-	static const TickType_t period = pdMS_TO_TICKS(STORAGE_HEART_BEAT);
+
 
 	storage_init();
 
-	last_wake_time = xTaskGetTickCount();
+	static uint32_t time;
+	static uint32_t last_time;
 
 
 
 
 	for(;;) {
-		//TIMING TEST
-		//HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
+		last_time = time;
+		time = HAL_GetTick();
 		if(restart_required) {
 			write_header(1);
 			data_counter = 0;
 			restart_required = 0;
 		}
 		if(record_should_stop) {
-			record_should_stop -= STORAGE_HEART_BEAT;
+			record_should_stop -= time-last_time;;
 			if(record_should_stop<=0){
 				record_active=0;
 				record_should_stop=0;
 			}
 		}
-		if(record_active && sensor_new_data_storage()) {
-			storage_record_sample();
+		if(xSemaphoreTake(storage_sem, 0xffff) == pdTRUE) {
+			if(record_active) {
+				storage_record_sample();
+			}
 		}
-		vTaskDelayUntil( &last_wake_time, period );
 	}
 }
 

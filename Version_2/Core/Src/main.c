@@ -32,6 +32,7 @@
 /* USER CODE BEGIN Includes */
 #include <threads.h>
 #include <led.h>
+#include <cmsis_os.h>
 
 /* USER CODE END Includes */
 
@@ -130,6 +131,7 @@ int main(void)
 
   while (1)
   {
+	osDelay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

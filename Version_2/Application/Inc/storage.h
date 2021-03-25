@@ -67,6 +67,8 @@ void storage_restart();
 
 void storage_disable();
 
+void storage_notify();
+
 
 
 #ifdef __cplusplus

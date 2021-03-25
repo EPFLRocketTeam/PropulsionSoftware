@@ -78,7 +78,7 @@ rec_file = None
 start_rec = None
 
 data_labels = ['pres_1 [mBar]', 'pres_2 [mBar]', 'temp_1 [0.1deC]', 'temp_2 [0.1deC]', 'temp_3 [0.1degC]', 'sensor_time [ms]']
-remote_labels = ['data_id', 'temp_1', 'temp_2', 'temp_3', 'pres_1', 'pres_2', 'motor_pos', 'system_status', 'sensor_time', 'reserved']
+remote_labels = ['data_id', 'temp_1', 'temp_2', 'temp_3', 'pres_1', 'pres_2', 'motor_pos', 'sensor_time', 'system state', 'counter_active', 'padding', 'counter']
 
 def safe_int(d):
     try:
@@ -447,6 +447,7 @@ class Serial_worker(QObject):
                     continue
                 for i in range(5):
                     tmp_data = struct.unpack("HhhhiiiIBBHi", bytes(data[i*32:(i+1)*32]))
+                    print(bytes(data[i*32:(i+1)*32]))
                     recv_data.append(tmp_data)
                 last_recv += 5
                 self.download_sig.emit(recv_data, last_recv)
