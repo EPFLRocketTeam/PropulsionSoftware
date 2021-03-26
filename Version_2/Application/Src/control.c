@@ -28,8 +28,12 @@
 
 #define VENTING_PORT	SOLENOID_GPIO_Port
 
+#define BUZZER_PIN		BUZZER_Pin
+
+#define BUZZER_PORT		BUZZER_GPIO_Port
+
 #define THRUST_CONTROL_ENABLE 0
-#define TVC_ENABLE 1
+#define TVC_ENABLE 0
 #define ATTEMPT_RECOVER	0
 
 /**********************
@@ -113,6 +117,8 @@ static uint8_t control_sched_should_run(CONTROL_INST_t * control, CONTROL_SCHED_
 static void control_sched_done(CONTROL_INST_t * control, CONTROL_SCHED_t num);
 static void control_sched_set(CONTROL_INST_t * control, CONTROL_SCHED_t num);
 
+static void blink_led(void);
+
 /**********************
  *	DECLARATIONS
  **********************/
@@ -144,6 +150,8 @@ void control_thread(void * arg) {
 	control.tvc_servo = &tvc_servo;
 #endif
 
+
+
 	epos4_global_init();
 
 	epos4_init(&pp_epos4, 1);
@@ -171,6 +179,9 @@ void control_thread(void * arg) {
 			servo_disable_led(control.tvc_servo, NULL);
 		}
 #endif
+
+		blink_led();
+
 
 		control_update(&control);
 		//read status
@@ -663,6 +674,22 @@ uint8_t control_open_vent() {
 uint8_t control_close_vent() {
 	VENTING_PORT->BSRR |= VENTING_PIN << 16;
 	return VENTING_PORT->IDR & VENTING_PIN;
+}
+
+static void blink_led(void) {
+	static uint8_t state = 0;
+	static uint16_t counter = 0;
+	if(counter++ > 10) {
+		state = !state;
+		counter = 0;
+		if(state) {
+			BUZZER_PORT->BSRR |= BUZZER_PIN;
+		} else {
+			BUZZER_PORT->BSRR |= BUZZER_PIN << 16;
+		}
+	}
+
+
 }
 
 static uint8_t control_sched_should_run(CONTROL_INST_t * control, CONTROL_SCHED_t num) {
