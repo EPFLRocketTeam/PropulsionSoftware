@@ -326,25 +326,6 @@ static void perform_recover(CONTROL_INST_t * control) {
 
 	epos4_recover(control->pp_epos4);
 
-	//MOTOR RECOVER HOME
-
-	osDelay(20); //delay for epos4
-
-	EPOS4_HOM_CONFIG_t config;
-	config.method = EPOS4_HOM_ACTUAL_POSITION;
-	config.home_offset = control->pp_recover_pos;
-	epos4_hom_config(control->pp_epos4, config);
-	epos4_hom_move(control->pp_epos4);
-
-	osDelay(20); //delay for epos4
-	//Wait for homing to finish
-	uint8_t terminated = 0;
-	while(!terminated) {
-		osDelay(5);
-		epos4_hom_terminate(control->pp_epos4, &terminated);
-	}
-
-
 
 	//MOTOR RECOVER MOVE
 	EPOS4_PPM_CONFIG_t ppm_config;
@@ -356,8 +337,6 @@ static void perform_recover(CONTROL_INST_t * control) {
 	control->needs_recover = 0;
 
 	storage_enable();
-
-	osDelay(20); //Wait for epos4
 
 	switch(control->state) {
 	case CS_COUNTDOWN:
@@ -481,6 +460,7 @@ static void calibration(CONTROL_INST_t * control) {
 	epos4_hom_terminate(control->pp_epos4, &terminated);
 
 	if(sensor_calib_done() && terminated) {
+		epos4_save_all(control->pp_epos4);
 		init_idle(control);
 	}
 }

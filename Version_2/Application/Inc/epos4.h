@@ -176,8 +176,9 @@ EPOS4_ERROR_t epos4_csp_config(EPOS4_INST_t * epos4, EPOS4_CSP_CONFIG_t config);
 
 EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config);
 EPOS4_ERROR_t epos4_hom_move(EPOS4_INST_t * epos4);
-EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated)
-;
+EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated);
+
+EPOS4_ERROR_t epos4_save_all(EPOS4_INST_t * epos4);
 
 
 #ifdef __cplusplus

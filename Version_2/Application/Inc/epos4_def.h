@@ -56,6 +56,9 @@
 #define EPOS4_HOMING_SPEED_ZERO				0x6099, 0x02 //u32
 #define EPOS4_HOMING_ACC					0x609A, 0x00
 
+#define EPOS4_SAVE_ALL						0x1010, 0x01
+#define EPOS4_SAVE_ALL_MAGIC				0x65766173 //"save"
+
 #define EPOS4_INTERP_TIME					0x60C2, 0x01 // u8
 #define EPOS4_INTERP_EXP					0x60C2, 0x02 // i8
 #define EPOS4_POSITION_OFFSET				0x60B0, 0x00 //i32

@@ -552,6 +552,17 @@ EPOS4_ERROR_t epos4_recover(EPOS4_INST_t * epos4) {
 }
 
 
+EPOS4_ERROR_t epos4_save_all(EPOS4_INST_t * epos4) {
+	EPOS4_ERROR_t error = 0;
+	uint32_t err;
+
+	error |= epos4_write_u32(epos4, EPOS4_SAVE_ALL, EPOS4_SAVE_ALL_MAGIC, &err);
+
+
+	return error;
+}
+
+
 /* END */
 
 
