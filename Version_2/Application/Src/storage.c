@@ -23,9 +23,8 @@
 #define DATA_SIZE		(32)
 
 #define MAGIC_NUMBER	0xCBE0C5E6
-#define MAGIC_ADDR		0x00000000
+#define HEADER_ADDR		0x00000000
 #define USED_SS_ADDR	0x00000004
-#define STATE_ADDR		0x00000008
 
 #define SUBSECTOR_SIZE	4096
 #define SAMPLES_PER_SS	(SUBSECTOR_SIZE/DATA_SIZE)
@@ -73,7 +72,12 @@ typedef struct  STORAGE_DATA{
 }STORAGE_DATA_t;  //MUST BE AN INTEGER DIVISOR OF 4096
 
 
-
+typedef struct STORAGE_HEADER{
+	uint32_t magic;
+	uint32_t used;
+	int32_t calib_1;
+	int32_t calib_2;
+}STORAGE_HEADER_t;
 
 /**********************
  *	VARIABLES
@@ -95,19 +99,23 @@ static StaticSemaphore_t storage_sem_buffer;
  **********************/
 
 static STORAGE_DATA_t read_data(uint32_t address);
-static void write_header(uint32_t nb_ss);
+static void write_header_used(uint32_t used);
+static void write_header_calib(int32_t calib_1, int32_t calib_2);
 static void write_data(STORAGE_DATA_t data);
+
+static void storage_recover_calib(int32_t calib_1, int32_t calib_2);
 
 /**********************
  *	DECLARATIONS
  **********************/
 
 void storage_init() {
-	static uint32_t tmp_data;
+	static STORAGE_HEADER_t header;
 	flash_init();
-	flash_read(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
-	if(tmp_data == MAGIC_NUMBER) {
-		flash_read(USED_SS_ADDR, (uint8_t *) &used_subsectors, sizeof(uint32_t));
+	flash_read(HEADER_ADDR, (uint8_t *) &header, sizeof(STORAGE_HEADER_t));
+	if(header.magic == MAGIC_NUMBER) {
+		used_subsectors = header.used;
+		storage_recover_calib(header.calib_1, header.calib_2);
 		if(used_subsectors > 1) {
 			STORAGE_DATA_t data;
 			STORAGE_DATA_t last_valid_data;
@@ -122,18 +130,21 @@ void storage_init() {
 			last_status.counter = last_valid_data.counter;
 			last_status.counter_active = last_valid_data.counter_active;
 			last_status.time = last_valid_data.sensor_time;
+			last_status.pp_position = last_valid_data.motor_pos;
 			control_attempt_recover(last_status);
+
 			data_counter = count;
 		} else {
 			data_counter = 0;
 		}
 	} else {
-		write_header(1);
+		write_header_used(1);
 		data_counter = 0;
 	}
 	record_active = 0;
 	restart_required = 0;
 	storage_sem = xSemaphoreCreateBinaryStatic(&storage_sem_buffer);
+	control_release();
 }
 
 
@@ -155,15 +166,39 @@ void storage_record_sample() {
 
 }
 
-static void write_header(uint32_t nb_ss) {
-	static uint32_t tmp_data;
-	flash_erase_subsector(MAGIC_ADDR);
-	tmp_data = MAGIC_NUMBER;
-	flash_write(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
-	tmp_data = nb_ss;
-	flash_write(USED_SS_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
-	used_subsectors = nb_ss;
+void storage_record_calib() {
+	SENSOR_DATA_t data = sensor_get_calib();
+	write_header_calib(data.pressure_1, data.pressure_2);
 }
+
+static void storage_recover_calib(int32_t calib_1, int32_t calib_2) {
+	SENSOR_DATA_t data;
+	data.pressure_1 = calib_1;
+	data.pressure_2 = calib_2;
+	sensor_set_calib(data);
+}
+
+static void write_header_used(uint32_t used) {
+	static STORAGE_HEADER_t header;
+	flash_read(HEADER_ADDR, (uint8_t *) &header, sizeof(STORAGE_HEADER_t));
+	flash_erase_subsector(HEADER_ADDR);
+	header.magic = MAGIC_NUMBER;
+	header.used = used;
+	flash_write(HEADER_ADDR, (uint8_t *) &header, sizeof(STORAGE_HEADER_t));
+	used_subsectors = used;
+}
+
+static void write_header_calib(int32_t calib_1, int32_t calib_2) {
+	static STORAGE_HEADER_t header;
+	flash_read(HEADER_ADDR, (uint8_t *) &header, sizeof(STORAGE_HEADER_t));
+	flash_erase_subsector(HEADER_ADDR);
+	header.magic = MAGIC_NUMBER;
+	header.calib_1 = calib_1;
+	header.calib_2 = calib_2;
+	flash_write(HEADER_ADDR, (uint8_t *) &header, sizeof(STORAGE_HEADER_t));
+}
+
+
 
 static STORAGE_DATA_t read_data(uint32_t id) {
 	static STORAGE_DATA_t data;
@@ -175,7 +210,7 @@ static void write_data(STORAGE_DATA_t data) {
 	data.sample_id = data_counter;
 	uint32_t addr = ADDRESS(data_counter++);
 	if(addr % SUBSECTOR_SIZE == 0) {
-		write_header(used_subsectors + 1);
+		write_header_used(used_subsectors + 1);
 		flash_erase_subsector(addr);
 	}
 	flash_write(addr, (uint8_t *) &data, sizeof(STORAGE_DATA_t));
@@ -224,7 +259,7 @@ void storage_thread(void * arg) {
 		last_time = time;
 		time = HAL_GetTick();
 		if(restart_required) {
-			write_header(1);
+			write_header_used(1);
 			data_counter = 0;
 			restart_required = 0;
 		}
@@ -236,8 +271,10 @@ void storage_thread(void * arg) {
 			}
 		}
 		if(xSemaphoreTake(storage_sem, 0xffff) == pdTRUE) {
-			if(record_active) {
+			if(record_active & sensor_new_data_storage()) {
 				storage_record_sample();
+			} else if(sensor_new_calib_storage()) {
+				storage_record_calib();
 			}
 		}
 	}

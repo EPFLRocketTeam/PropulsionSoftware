@@ -110,6 +110,7 @@ static uint8_t calib = 0;
 static uint16_t calib_counter = 0;
 
 static uint8_t new_data_storage;
+static uint8_t new_calib_storage;
 static uint8_t new_data_can;
 
 static SemaphoreHandle_t adc_conv_sem = NULL;
@@ -144,6 +145,14 @@ SENSOR_DATA_t sensor_get_last(void) {
 	return last_data;
 }
 
+SENSOR_DATA_t sensor_get_calib(void) {
+	return offset;
+}
+
+void sensor_set_calib(SENSOR_DATA_t calib) {
+	offset = calib;
+}
+
 uint8_t sensor_new_data_storage() {
 	uint8_t tmp = new_data_storage;
 	new_data_storage = 0;
@@ -153,6 +162,12 @@ uint8_t sensor_new_data_storage() {
 uint8_t sensor_new_data_can() {
 	uint8_t tmp = new_data_can;
 	new_data_can = 0;
+	return tmp;
+}
+
+uint8_t sensor_new_calib_storage() {
+	uint8_t tmp = new_calib_storage;
+	new_calib_storage = 0;
 	return tmp;
 }
 
@@ -193,8 +208,6 @@ static void sensor_init(void) {
 void sensor_thread(void * arg) {
 
 	sensor_init();
-
-
 
 	for(;;) {
 
@@ -291,6 +304,7 @@ void sensor_thread(void * arg) {
 						offset.pressure_2 = pressure_2 >> CALIBRATION_CYCLES_DIV;
 						calib = 0;
 						calib_counter = 0;
+						new_calib_storage = 1;
 					}
 				}
 				calib_counter++;
@@ -301,6 +315,9 @@ void sensor_thread(void * arg) {
 			new_data_can = 1;
 
 			//The storage thread will periodically get the data
+
+			new_data_storage = 1;
+
 			storage_notify();
 
 			//Results accessible from DEBUG UART

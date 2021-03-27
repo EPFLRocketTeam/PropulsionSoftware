@@ -45,7 +45,7 @@ typedef struct {
 }DATA_t;
 
 #define MAGIC_NUMBER	0xCBE0C5E6
-#define MAGIC_ADDR		0x00000000
+#define HEADER_ADDR		0x00000000
 #define USED_SS_ADDR	0x00000004
 #define STATE_ADDR		0x00000008
 
@@ -76,9 +76,9 @@ static uint32_t mem_state;
 
 
 void write_header(uint32_t nb_ss, uint32_t st) {
-	flash_erase_subsector(MAGIC_ADDR);
+	flash_erase_subsector(HEADER_ADDR);
 	tmp_data = MAGIC_NUMBER;
-	flash_write(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
+	flash_write(HEADER_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	tmp_data = nb_ss;
 	flash_write(USED_SS_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	tmp_data = st;
@@ -121,7 +121,7 @@ void get_32_samples(uint16_t sample_id, uint8_t * out) {
 
 void storage_init() {
 	flash_init();
-	flash_read(MAGIC_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
+	flash_read(HEADER_ADDR, (uint8_t *) &tmp_data, sizeof(uint32_t));
 	if(tmp_data == MAGIC_NUMBER) {
 		flash_read(USED_SS_ADDR, (uint8_t *) &used_subsectors, sizeof(uint32_t));
 		flash_read(STATE_ADDR, (uint8_t *) &mem_state, sizeof(uint32_t));

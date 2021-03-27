@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <serial.h>
 #include <msv2.h>
+#include <epos4_def.h>
 
 /**********************
  *  CONSTANTS
@@ -55,7 +56,7 @@ typedef enum EPOS4_MOV {
 }EPOS4_MOV_t;
 
 typedef enum EPOS4_HOM {
-	EPOS4_ACTUAL_POSITION = 37
+	EPOS4_HOM_ACTUAL_POSITION = 37
 }EPOS4_HOM_t;
 
 typedef struct EPOS4_INST EPOS4_INST_t;

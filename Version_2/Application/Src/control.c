@@ -34,7 +34,7 @@
 
 #define THRUST_CONTROL_ENABLE 0
 #define TVC_ENABLE 0
-#define ATTEMPT_RECOVER	0
+#define ATTEMPT_RECOVER_ENABLE	1
 
 /**********************
  *	CONSTANTS
@@ -86,6 +86,7 @@ static CONTROL_SCHED_t sched_allowed[][SCHED_ALLOWED_WIDTH] = {
  **********************/
 static void init_control(CONTROL_INST_t * control);
 static void control_update(CONTROL_INST_t * control);
+static void perform_recover(CONTROL_INST_t * control);
 
 // Enter state functions
 static void init_idle(CONTROL_INST_t * control);
@@ -128,7 +129,7 @@ void control_thread(void * arg) {
 	static TickType_t last_wake_time;
 	static const TickType_t period = pdMS_TO_TICKS(CONTROL_HEART_BEAT);
 
-	last_wake_time = xTaskGetTickCount();
+
 
 	led_init();
 
@@ -161,6 +162,30 @@ void control_thread(void * arg) {
 
 	control.pp_epos4 = &pp_epos4;
 	control.ab_epos4 = &ab_epos4;
+
+	epos4_config(control.pp_epos4);
+
+
+	//hang for recovery information from storage
+
+#if ATTEMPT_RECOVER_ENABLE == 1
+	while(control.hang_for_recovery) {
+		osDelay(5);
+	}
+
+	if(control.needs_recover) {
+		perform_recover(&control);
+	} else {
+		init_idle(&control);
+	}
+#else
+	init_idle(&control);
+
+#endif
+
+
+
+	last_wake_time = xTaskGetTickCount();
 
 
 	for(;;) {
@@ -275,19 +300,6 @@ static void control_update(CONTROL_INST_t * control) {
 	}
 
 
-#if ATTEMPT_RECOVER == 1
-	if(control->needs_recover) {
-		EPOS4_PPM_CONFIG_t ppm_config;
-		ppm_config.profile_acceleration = control->pp_params.acc;
-		ppm_config.profile_deceleration = control->pp_params.dec;
-		ppm_config.profile_velocity = control->pp_params.speed;
-		epos4_ppm_config(control->pp_epos4, ppm_config);
-		epos4_ppm_prep(control->pp_epos4);
-		control->needs_recover = 0;
-	}
-#endif
-
-
 	//read motors parameters
 	epos4_sync(control->pp_epos4);
 
@@ -310,9 +322,73 @@ static void control_update(CONTROL_INST_t * control) {
 	}
 }
 
+static void perform_recover(CONTROL_INST_t * control) {
+
+	epos4_recover(control->pp_epos4);
+
+	//MOTOR RECOVER HOME
+
+	osDelay(20); //delay for epos4
+
+	EPOS4_HOM_CONFIG_t config;
+	config.method = EPOS4_HOM_ACTUAL_POSITION;
+	config.home_offset = control->pp_recover_pos;
+	epos4_hom_config(control->pp_epos4, config);
+	epos4_hom_move(control->pp_epos4);
+
+	osDelay(20); //delay for epos4
+	//Wait for homing to finish
+	uint8_t terminated = 0;
+	while(!terminated) {
+		osDelay(5);
+		epos4_hom_terminate(control->pp_epos4, &terminated);
+	}
+
+
+
+	//MOTOR RECOVER MOVE
+	EPOS4_PPM_CONFIG_t ppm_config;
+	ppm_config.profile_acceleration = control->pp_params.acc;
+	ppm_config.profile_deceleration = control->pp_params.dec;
+	ppm_config.profile_velocity = control->pp_params.speed;
+	epos4_ppm_config(control->pp_epos4, ppm_config);
+	epos4_ppm_prep(control->pp_epos4);
+	control->needs_recover = 0;
+
+	storage_enable();
+
+	osDelay(20); //Wait for epos4
+
+	switch(control->state) {
+	case CS_COUNTDOWN:
+		led_set_color(LED_ORANGE);
+		break;
+	case CS_IGNITION:
+		led_set_color(LED_LILA);
+		epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.half_angle);
+		break;
+	case CS_THRUST:
+		led_set_color(LED_TEAL);
+		epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.full_angle);
+		break;
+	case CS_SHUTDOWN:
+		epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, 0);
+		control->pp_close_mov_started = 1;
+		break;
+	case CS_GLIDE:
+		break;
+	default:
+		break;
+	}
+
+	control->counter -= HAL_GetTick(); //remove startup time from counter
+}
+
 static void init_control(CONTROL_INST_t * control) {
 	control->sched = CONTROL_SCHED_NOTHING;
 	control->counter_active = 0;
+	control->needs_recover = 0;
+	control->hang_for_recovery = 1;
 
 	control->pp_params.acc = 25000;
 	control->pp_params.dec = 25000;
@@ -322,7 +398,6 @@ static void init_control(CONTROL_INST_t * control) {
 	control->pp_params.full_wait = 20000;
 	control->pp_params.half_angle = DEG2INC(27);
 	control->pp_params.full_angle = DEG2INC(90);
-
 }
 
 static void init_idle(CONTROL_INST_t * control) {
@@ -391,7 +466,7 @@ static void init_calibration(CONTROL_INST_t * control) {
 	led_set_color(LED_BLUE);
 	sensor_calib();
 	EPOS4_HOM_CONFIG_t config;
-	config.method = EPOS4_ACTUAL_POSITION;
+	config.method = EPOS4_HOM_ACTUAL_POSITION;
 	config.home_offset = 0;
 	epos4_hom_config(control->pp_epos4, config);
 	epos4_hom_move(control->pp_epos4);
@@ -447,7 +522,7 @@ static void armed(CONTROL_INST_t * control) {
 static void init_countdown(CONTROL_INST_t * control) {
 	led_set_color(LED_ORANGE);
 	control->state = CS_COUNTDOWN;
-	control->counter = control->pp_params.countdown_wait-CONTROL_HEART_BEAT;
+	control->counter = control->pp_params.countdown_wait;
 	control->counter_active = 1;
 	storage_restart();
 	storage_enable();
@@ -463,7 +538,7 @@ static void countdown(CONTROL_INST_t * control) {
 static void init_ignition(CONTROL_INST_t * control) {
 	control->state = CS_IGNITION;
 	led_set_color(LED_LILA);
-	control->counter = control->pp_params.half_wait-CONTROL_HEART_BEAT;
+	control->counter = control->pp_params.half_wait;
 	control->counter_active = 1;
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.half_angle);
 }
@@ -479,7 +554,7 @@ static void ignition(CONTROL_INST_t * control) {
 static void init_thrust(CONTROL_INST_t * control) {
 	control->state = CS_THRUST;
 	led_set_color(LED_TEAL);
-	control->counter = control->pp_params.full_wait-CONTROL_HEART_BEAT;
+	control->counter = control->pp_params.full_wait;
 	control->counter_active = 1;
 	epos4_ppm_move(control->pp_epos4, EPOS4_ABSOLUTE_IMMEDIATE, control->pp_params.full_angle);
 #if THRUST_CONTROL_ENABLE == 1
@@ -656,14 +731,21 @@ CONTROL_STATUS_t control_get_status() {
 
 
 void control_attempt_recover(CONTROL_STATUS_t last_state) {
-#if ATTEMPT_RECOVER == 1
+#if ATTEMPT_RECOVER_ENABLE == 1
 	if(last_state.state >= CS_COUNTDOWN && last_state.state <= CS_GLIDE) {
 		control.state = last_state.state;
 		control.counter = last_state.counter;
 		control.counter_active = last_state.counter_active;
+		control.pp_recover_pos = last_state.pp_position;
 		control.needs_recover = 1;
+	} else {
+		control.needs_recover = 0;
 	}
 #endif
+}
+
+void control_release() {
+	control.hang_for_recovery = 0;
 }
 
 uint8_t control_open_vent() {

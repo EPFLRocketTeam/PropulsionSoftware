@@ -447,7 +447,7 @@ class Serial_worker(QObject):
                     continue
                 for i in range(5):
                     tmp_data = struct.unpack("HhhhiiiIBBHi", bytes(data[i*32:(i+1)*32]))
-                    print(bytes(data[i*32:(i+1)*32]))
+                    #print(bytes(data[i*32:(i+1)*32]))
                     recv_data.append(tmp_data)
                 last_recv += 5
                 self.download_sig.emit(recv_data, last_recv)

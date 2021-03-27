@@ -183,11 +183,14 @@ EPOS4_ERROR_t epos4_readobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t sub
 		serial_send(&epos4->ser, msv2_tx_data(&epos4->msv2), length);
 		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
 			uint8_t * recieved_data = msv2_rx_data(&epos4->msv2);
-			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+			uint32_t error = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+			if(err != NULL) {
+				*err = error;
+			}
 			for(uint8_t i = 0; i < DATA_SIZE; i++){
 				data[i] = recieved_data[4+i];
 			}
-			if(*err == 0) {
+			if(error == 0) {
 				xSemaphoreGive(epos4_busy_sem);
 				return EPOS4_SUCCESS;
 			} else {
@@ -218,8 +221,11 @@ EPOS4_ERROR_t epos4_writeobject(EPOS4_INST_t * epos4, uint16_t index, uint8_t su
 		serial_send(&epos4->ser, msv2_tx_data(&epos4->msv2), length);
 		if(xSemaphoreTake(epos4_rx_sem, COMM_TIMEOUT) == pdTRUE) {
 			uint8_t * recieved_data = msv2_rx_data(&epos4->msv2);
-			*err = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
-			if(*err == 0) {
+			uint32_t error = recieved_data[0] | (recieved_data[1]<<8) | (recieved_data[2]<<16) | (recieved_data[3]<<24);
+			if(err != NULL) {
+				*err = error;
+			}
+			if(error == 0) {
 				xSemaphoreGive(epos4_busy_sem);
 				return EPOS4_SUCCESS;
 			} else {
@@ -492,7 +498,9 @@ EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config) 
 
 	error |= epos4_write_i8(epos4, EPOS4_MODE_OF_OPERATION, EPOS4_MODE_HOMING, &err);
 
-	error |= epos4_write_i32(epos4, EPOS4_HOME_OFFSET, config.home_offset, &err);
+	error |= epos4_write_i32(epos4, EPOS4_HOME_OFFSET, 0, &err);
+
+	error |= epos4_write_i32(epos4, EPOS4_HOME_POSITION, config.home_offset, &err);
 
 	error |= epos4_write_i8(epos4, EPOS4_HOMING_METHOD, config.method, &err);
 
@@ -517,12 +525,15 @@ EPOS4_ERROR_t epos4_hom_terminate(EPOS4_INST_t * epos4, uint8_t * terminated) {
 	uint32_t err;
 	*terminated = 0;
 
+	int32_t current_pos_dbg;
+
 	uint16_t status;
 
 	error |= epos4_read_statusword(epos4, &status, &err);
 
 
 	if(!EPOS4_SW_HOMING_ATTAINED(status)) {
+		error |= epos4_read_i32(epos4, EPOS4_ACTUAL_POSITION, &current_pos_dbg, &err);
 		epos4_control_disable(epos4, &err);
 		*terminated = 1;
 	}

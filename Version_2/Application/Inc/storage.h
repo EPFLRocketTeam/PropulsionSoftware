@@ -53,6 +53,8 @@ void storage_init();
 
 void storage_record_sample();
 
+
+
 uint32_t storage_get_used();
 
 void storage_get_sample(uint32_t id, void * dest);

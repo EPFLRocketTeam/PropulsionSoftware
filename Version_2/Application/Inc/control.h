@@ -108,6 +108,7 @@ typedef struct CONTROL_INST{
 	EPOS4_MOV_t pp_mov_type;
 	int32_t pp_mov_target;
 	uint8_t pp_mov_started;
+	int32_t pp_recover_pos;
 	int32_t	tvc_mov_target;
 	uint8_t tvc_mov_started;
 	CONTROL_SCHED_t sched;
@@ -117,6 +118,7 @@ typedef struct CONTROL_INST{
 	CAN_msg msg;
 	uint8_t venting;
 	uint8_t needs_recover;
+	uint8_t hang_for_recovery;
 }CONTROL_INST_t;
 
 
@@ -166,6 +168,8 @@ uint8_t control_close_vent();
 CONTROL_STATUS_t control_get_status();
 
 void control_attempt_recover(CONTROL_STATUS_t last_state);
+
+void control_release();
 
 
 

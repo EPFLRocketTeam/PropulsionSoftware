@@ -57,6 +57,9 @@
 
 void led_init(void) {
 	LED_TIM.Instance->ARR = LED_MAX;
+	LED_TIM.Instance->CCR1 = 0;
+	LED_TIM.Instance->CCR2 = 0;
+	LED_TIM.Instance->CCR3 = 0;
 	HAL_TIMEx_PWMN_Start(&LED_TIM, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&LED_TIM, TIM_CHANNEL_2);
 	HAL_TIMEx_PWMN_Start(&LED_TIM, TIM_CHANNEL_3);
