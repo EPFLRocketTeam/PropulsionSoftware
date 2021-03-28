@@ -219,8 +219,8 @@ void can_send_thread(void * arg) {
 		can_setFrame((uint32_t) sensor_data.pressure_1, DATA_ID_PRESS_1, sensor_data.time);
 		can_setFrame((uint32_t) sensor_data.pressure_2, DATA_ID_PRESS_2, sensor_data.time);
 		can_setFrame((uint32_t) sensor_data.temperature[0], DATA_ID_TEMP_1, sensor_data.time);
-		can_setFrame((uint32_t) sensor_data.temperature[0], DATA_ID_TEMP_2, sensor_data.time);
-		can_setFrame((uint32_t) sensor_data.temperature[0], DATA_ID_TEMP_3, sensor_data.time);
+		can_setFrame((uint32_t) sensor_data.temperature[1], DATA_ID_TEMP_2, sensor_data.time);
+		can_setFrame((uint32_t) sensor_data.temperature[2], DATA_ID_TEMP_3, sensor_data.time);
 		can_setFrame((uint32_t) status, DATA_ID_STATUS, control_data.time);
 		can_setFrame((uint32_t) control_data.pp_position, DATA_ID_MOT_POS, control_data.time);
 

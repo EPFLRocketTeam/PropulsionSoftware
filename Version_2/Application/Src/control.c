@@ -32,9 +32,9 @@
 
 #define BUZZER_PORT		BUZZER_GPIO_Port
 
-#define THRUST_CONTROL_ENABLE 0
-#define TVC_ENABLE 0
-#define ATTEMPT_RECOVER_ENABLE	1
+#define THRUST_CONTROL_ENABLE 	0
+#define TVC_ENABLE 				0
+#define ATTEMPT_RECOVER_ENABLE	0
 
 /**********************
  *	CONSTANTS
@@ -311,7 +311,7 @@ static void control_update(CONTROL_INST_t * control) {
 	control->venting = VENTING_PORT->IDR & VENTING_PIN?1:0;
 
 	if(control->pp_epos4->error && control->state != CS_ERROR) {
-		//init_error(control);
+		init_error(control);
 	}
 
 	//init error if there is an issue with a motor
@@ -460,7 +460,7 @@ static void calibration(CONTROL_INST_t * control) {
 	epos4_hom_terminate(control->pp_epos4, &terminated);
 
 	if(sensor_calib_done() && terminated) {
-		epos4_save_all(control->pp_epos4);
+		//sepos4_save_all(control->pp_epos4);
 		init_idle(control);
 	}
 }

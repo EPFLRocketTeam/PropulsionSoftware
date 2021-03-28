@@ -4,6 +4,9 @@
  *	Date		: 07.02.2021
  *	Version		: 0.1
  *	Description	: storage on the onboard flash memory
+ *
+ *
+ *	TODO: dual headers in case power is cut while a header is beeing written!
  */
 
 /**********************
