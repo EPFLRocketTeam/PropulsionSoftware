@@ -310,10 +310,6 @@ static void control_update(CONTROL_INST_t * control) {
 
 	control->venting = VENTING_PORT->IDR & VENTING_PIN?1:0;
 
-	if(control->pp_epos4->error && control->state != CS_ERROR) {
-		init_error(control);
-	}
-
 	//init error if there is an issue with a motor
 
 	if(control_sched_should_run(control, CONTROL_SCHED_ABORT)) {
@@ -414,6 +410,7 @@ static void idle(CONTROL_INST_t * control) {
 		ppm_config.profile_velocity = control->pp_params.speed;
 		epos4_ppm_config(control->pp_epos4, ppm_config);
 		epos4_ppm_prep(control->pp_epos4);
+		osDelay(10);
 		epos4_ppm_move(control->pp_epos4, control->pp_mov_type, control->pp_mov_target);
 		control->pp_mov_started = 1;
 	}
@@ -459,10 +456,15 @@ static void calibration(CONTROL_INST_t * control) {
 	uint8_t terminated = 0;
 	epos4_hom_terminate(control->pp_epos4, &terminated);
 
+	if(control->pp_epos4->error) {
+		init_error(control);
+	}
+
 	if(sensor_calib_done() && terminated) {
 		//sepos4_save_all(control->pp_epos4);
 		init_idle(control);
 	}
+
 }
 
 static void init_armed(CONTROL_INST_t * control) {
@@ -484,6 +486,10 @@ static void armed(CONTROL_INST_t * control) {
 			//disabled for testing at home
 			init_error(control);  //error state in case of motor failure
 		}
+	}
+
+	if(control->pp_epos4->error) {
+		init_error(control);
 	}
 
 	if(control_sched_should_run(control, CONTROL_SCHED_IGNITE)) {
