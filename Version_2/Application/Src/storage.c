@@ -120,8 +120,8 @@ void storage_init() {
 		used_subsectors = header.used;
 		storage_recover_calib(header.calib_1, header.calib_2);
 		if(used_subsectors > 1) {
-			STORAGE_DATA_t data;
-			STORAGE_DATA_t last_valid_data;
+			STORAGE_DATA_t data = {0};
+			STORAGE_DATA_t last_valid_data = {0};
 			uint32_t count = (used_subsectors-2)*SAMPLES_PER_SS;
 			data = read_data(count);
 			while(data.sample_id == count){
