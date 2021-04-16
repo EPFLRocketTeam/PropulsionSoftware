@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : QUADSPI.c
-  * Description        : This file provides code for the configuration
-  *                      of the QUADSPI instances.
+  * @file    quadspi.c
+  * @brief   This file provides code for the configuration
+  *          of the QUADSPI instances.
   ******************************************************************************
   * @attention
   *
@@ -30,6 +30,13 @@ QSPI_HandleTypeDef hqspi;
 void MX_QUADSPI_Init(void)
 {
 
+  /* USER CODE BEGIN QUADSPI_Init 0 */
+
+  /* USER CODE END QUADSPI_Init 0 */
+
+  /* USER CODE BEGIN QUADSPI_Init 1 */
+
+  /* USER CODE END QUADSPI_Init 1 */
   hqspi.Instance = QUADSPI;
   hqspi.Init.ClockPrescaler = 100;
   hqspi.Init.FifoThreshold = 1;
@@ -43,6 +50,9 @@ void MX_QUADSPI_Init(void)
   {
     Error_Handler();
   }
+  /* USER CODE BEGIN QUADSPI_Init 2 */
+
+  /* USER CODE END QUADSPI_Init 2 */
 
 }
 

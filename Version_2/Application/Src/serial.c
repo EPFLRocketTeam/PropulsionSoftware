@@ -95,6 +95,9 @@ void serial_send(SERIAL_INST_t * ser, uint8_t * data, uint16_t length) {
 	//HAL_UART_Transmit(ser->uart, data, length, 500);
 }
 
+void serial_garbage_clean(SERIAL_INST_t * ser) {
+	HAL_UART_Receive_DMA(ser->uart, &ser->dma_buffer, 1);
+}
 
 void serial_thread(void * arg) {
 

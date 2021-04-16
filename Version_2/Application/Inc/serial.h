@@ -75,6 +75,8 @@ void serial_init(SERIAL_INST_t * ser, UART_HandleTypeDef * uart, void * inst, SE
 
 void serial_send(SERIAL_INST_t * ser, uint8_t * data, uint16_t length);
 
+void serial_garbage_clean(SERIAL_INST_t * ser);
+
 void serial_thread(void * arg);
 
 void serial_epos4_thread(void * arg);
