@@ -4,7 +4,7 @@
 import serial
 import serial.tools.list_ports
 
-from PySide6.QtCore import QMutex
+from PySide2.QtCore import QMutex
 
 BAUDRATE = 115200
 
