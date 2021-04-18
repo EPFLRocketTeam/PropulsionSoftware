@@ -64,6 +64,23 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 /* GetIdleTaskMemory prototype (linked to static allocation support) */
 void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize );
 
+/* Hook prototypes */
+void configureTimerForRunTimeStats(void);
+unsigned long getRunTimeCounterValue(void);
+
+/* USER CODE BEGIN 1 */
+/* Functions needed when configGENERATE_RUN_TIME_STATS is on */
+__weak void configureTimerForRunTimeStats(void)
+{
+	TIM5->CR1 = 0b1;
+}
+
+__weak unsigned long getRunTimeCounterValue(void)
+{
+return TIM5->CNT;
+}
+/* USER CODE END 1 */
+
 /* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
 static StaticTask_t xIdleTaskTCBBuffer;
 static StackType_t xIdleStack[configMINIMAL_STACK_SIZE];
@@ -105,7 +122,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128, defaultTaskBuffer, &defaultTaskControlBlock);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128, defaultTaskBuffer, &defaultTaskControlBlock);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

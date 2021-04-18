@@ -503,6 +503,13 @@ EPOS4_ERROR_t epos4_hom_config(EPOS4_INST_t * epos4, EPOS4_HOM_CONFIG_t config) 
 
 	error |= epos4_write_i8(epos4, EPOS4_HOMING_METHOD, config.method, &err);
 
+	error |= epos4_write_u32(epos4, EPOS4_HOMING_SPEED_SEARCH, config.switch_search_speed, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_HOMING_SPEED_ZERO, config.zero_search_speed, &err);
+
+	error |= epos4_write_u32(epos4, EPOS4_HOMING_ACC, config.acceleration, &err);
+
+
 	return error;
 }
 

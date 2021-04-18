@@ -56,7 +56,10 @@ typedef enum EPOS4_MOV {
 }EPOS4_MOV_t;
 
 typedef enum EPOS4_HOM {
-	EPOS4_HOM_ACTUAL_POSITION = 37
+	EPOS4_HOM_ACTUAL_POSITION = 37,
+	EPOS4_HOM_NEGATIVE_LIMIT_SWITCH = 17,
+	EPOS4_HOM_HOME_SWITCH_POSITIVE_SPEED = 23,
+	EPOS4_HOM_HOME_SWITCH_NEGATIVE_SPEED = 27,
 }EPOS4_HOM_t;
 
 typedef struct EPOS4_INST EPOS4_INST_t;
@@ -89,6 +92,9 @@ typedef struct EPOS4_CSP_CONFIG {
 typedef struct EPOS4_HOM_CONFIG {
 	EPOS4_HOM_t method;
 	int32_t home_offset;
+	uint32_t switch_search_speed;
+	uint32_t zero_search_speed;
+	uint32_t acceleration;
 }EPOS4_HOM_CONFIG_t;
 
 
