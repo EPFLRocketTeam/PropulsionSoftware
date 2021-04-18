@@ -86,7 +86,18 @@
 #define DATA_ID_TEMP_2			88
 #define DATA_ID_TEMP_3			89
 #define DATA_ID_STATUS			90
-#define DATA_ID_MOT_POS			91
+#define DATA_ID_MOTOR_POS		91
+#define DATA_ID_VANE_POS_1		92
+#define DATA_ID_VANE_POS_2		93
+#define DATA_ID_VANE_POS_3		94
+#define DATA_ID_VANE_POS_4		95
+
+
+#define DATA_ID_MOTOR_CMD		100
+#define DATA_ID_VANE_CMD_1		101
+#define DATA_ID_VANE_CMD_2		102
+#define DATA_ID_VANE_CMD_3		103
+#define DATA_ID_VANE_CMD_4		104
 
 
 typedef enum COMMAND_TYPE {
